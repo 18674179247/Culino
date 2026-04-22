@@ -1,0 +1,22 @@
+[package]
+name = "menu-common"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+axum.workspace = true
+sqlx.workspace = true
+uuid.workspace = true
+chrono.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+anyhow.workspace = true
+jsonwebtoken.workspace = true
+argon2.workspace = true
+redis.workspace = true
+tracing.workspace = true
+dotenvy.workspace = true
+utoipa.workspace = true
+validator.workspace = true
+rust-s3.workspace = true

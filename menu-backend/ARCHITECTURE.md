@@ -1,0 +1,237 @@
+# Menu Backend 架构规范
+
+本文档定义项目的分层架构、模块结构和编码约定，确保所有模块风格一致。
+
+## 分层架构
+
+```
+Handler (HTTP 层)
+   ↓
+Service (业务逻辑层，可选)
+   ↓
+Repo trait → PgXxxRepo (数据访问层)
+```
+
+每一层的职责边界：
+
+| 层 | 职责 | 不该做的事 |
+|---|------|-----------|
+| Handler | 解析请求参数、调用 Service/Repo、组装响应 | 不写 SQL，不做复杂业务判断 |
+| Service | 业务编排、参数校验、跨 Repo 协调 | 不感知 HTTP（不引用 axum 类型） |
+| Repo trait | 定义数据访问接口 | 不包含业务逻辑 |
+| PgXxxRepo | 实现 Repo trait，执行 SQL | 不做业务判断，只做数据存取 |
+
+### 何时需要 Service 层
+
+- 有业务校验逻辑（如"标题不能为空"）→ 需要
+- 需要协调多个 Repo → 需要
+- Handler 只是简单的 CRUD 透传 → 可以省略，Handler 直接调 Repo
+
+## 模块结构
+
+每个 feature crate 遵循统一目录结构：
+
+```
+features/xxx/src/
+├── lib.rs        # 模块入口：OpenApi 定义 + routes()
+├── model.rs      # 数据模型 + 请求/响应 DTO
+├── handler.rs    # HTTP handler 函数（或 handler/ 目录）
+├── repo.rs       # Repo trait + PgXxxRepo 实现（或 repo/ 目录）
+└── service.rs    # 业务逻辑（可选）
+```
+
+当一个模块管理多个实体时（如 base-data 管理食材、调料、标签），使用目录形式：
+
+```
+├── handler/
+│   ├── mod.rs
+│   ├── ingredient.rs
+│   ├── seasoning.rs
+│   └── tag.rs
+├── repo/
+│   ├── mod.rs
+│   ├── ingredient_repo.rs
+│   ├── seasoning_repo.rs
+│   └── tag_repo.rs
+```
+
+## Repo 层规范
+
+### 必须定义 trait
+
+每个 Repo 都必须先定义 trait，再提供 `PgXxxRepo` 实现。这样做的好处：
+
+1. 接口即文档——trait 清晰列出所有数据操作
+2. 可测试性——可以用 mock 实现替换数据库
+3. 可替换性——未来切换数据库只需新增实现
+
+### trait 定义规范
+
+```rust
+use async_trait::async_trait;
+use menu_common::error::AppError;
+
+#[async_trait]
+pub trait XxxRepo: Send + Sync {
+    async fn find_by_id(&self, id: IdType) -> Result<Option<Model>, AppError>;
+    async fn create(&self, req: &CreateReq) -> Result<Model, AppError>;
+    async fn update(&self, id: IdType, req: &UpdateReq) -> Result<Model, AppError>;
+    async fn delete(&self, id: IdType) -> Result<(), AppError>;
+}
+```
+
+关键约定：
+
+- trait 必须标注 `Send + Sync`（支持跨线程共享）
+- 所有方法返回 `Result<T, AppError>`
+- 查询单条记录返回 `Option<T>`，由调用方决定 404 处理
+- 创建/更新返回完整实体（`RETURNING *`）
+- 删除返回 `()`，不存在时返回 `AppError::NotFound`
+
+### PgXxxRepo 实现规范
+
+```rust
+pub struct PgXxxRepo {
+    pool: PgPool,
+}
+
+impl PgXxxRepo {
+    pub fn new(pool: PgPool) -> Self {
+        Self { pool }
+    }
+}
+
+#[async_trait]
+impl XxxRepo for PgXxxRepo {
+    // ...
+}
+```
+
+约定：
+
+- struct 名称统一为 `Pg` + 实体名 + `Repo`
+- 构造函数统一为 `new(pool: PgPool)`
+- 唯一约束冲突统一转为 `AppError::Conflict`
+- 需要原子操作时使用事务（`self.pool.begin()`）
+
+### 不使用泛型 Repository trait
+
+不定义 `Repository<T, Id>` 这样的泛型基础 trait，原因：
+
+- 每个实体的查询参数差异大（有的按 user_id 过滤，有的按日期范围，有的支持全文搜索）
+- 强行泛型化会导致大量 associated type 和 where 子句，降低可读性
+- Rust 社区主流做法是为每个领域实体定义独立 trait
+
+## Handler 层规范
+
+```rust
+pub async fn create(
+    State(state): State<AppState>,
+    auth: AuthUser,                    // 需要认证时
+    Json(req): Json<CreateXxxReq>,
+) -> Result<Json<XxxResponse>, AppError> {
+    let repo = PgXxxRepo::new(state.pool.clone());
+    // 或通过 service：
+    // let svc = XxxService::new(state.pool.clone());
+    let result = repo.create(&req).await?;
+    Ok(Json(result))
+}
+```
+
+约定：
+
+- 参数顺序：`State` → `AuthUser`（可选）→ `Path`（可选）→ `Query`（可选）→ `Json`（可选）
+- 每个 handler 函数上方必须有 `#[utoipa::path(...)]` 宏
+- 删除操作统一返回 `Json(json!({ "ok": true }))`
+
+## Service 层规范
+
+```rust
+pub struct XxxService {
+    repo: PgXxxRepo,
+}
+
+impl XxxService {
+    pub fn new(pool: PgPool) -> Self {
+        Self { repo: PgXxxRepo::new(pool) }
+    }
+}
+```
+
+约定：
+
+- Service 内部持有具体 Repo 实现（当前阶段不需要泛型注入）
+- Service 方法签名不包含 HTTP 相关类型
+- 参数校验放在 Service 层
+
+## Model 层规范
+
+```rust
+// 数据库实体 —— 对应表结构
+#[derive(Debug, sqlx::FromRow, Serialize, ToSchema)]
+pub struct Xxx { ... }
+
+// 创建请求
+#[derive(Debug, Deserialize, ToSchema)]
+pub struct CreateXxxReq { ... }
+
+// 更新请求 —— 所有字段 Option，支持部分更新
+#[derive(Debug, Deserialize, ToSchema)]
+pub struct UpdateXxxReq { ... }
+```
+
+命名约定：
+
+| 类型 | 命名 | 示例 |
+|------|------|------|
+| 数据库实体 | 实体名 | `Recipe`, `User`, `Tag` |
+| 创建请求 | `Create` + 实体名 + `Req` | `CreateRecipeReq` |
+| 更新请求 | `Update` + 实体名 + `Req` | `UpdateRecipeReq` |
+| 列表项（精简） | 实体名 + `ListItem` | `RecipeListItem` |
+| 详情（含关联） | 实体名 + `Detail` | `RecipeDetail` |
+
+## lib.rs 入口规范
+
+每个 crate 的 `lib.rs` 统一结构：
+
+```rust
+pub mod handler;
+pub mod model;
+pub mod repo;
+pub mod service; // 可选
+
+use axum::Router;
+use menu_common::state::AppState;
+use utoipa::OpenApi;
+
+#[derive(OpenApi)]
+#[openapi(
+    paths(...),
+    components(schemas(...))
+)]
+pub struct XxxApi;
+
+pub fn routes() -> Router<AppState> {
+    Router::new()
+        // ...
+}
+```
+
+## 错误处理
+
+- 所有层统一使用 `menu_common::error::AppError`
+- 数据库错误通过 `From<sqlx::Error>` 自动转换
+- 业务错误使用语义化变体：`NotFound`, `BadRequest`, `Conflict`, `Unauthorized`, `Forbidden`
+- 不要在 Repo 层吞掉错误，让错误冒泡到 Handler 层统一处理
+
+## 依赖方向
+
+```
+src/main.rs (应用入口)
+    ↓ 依赖
+features/* (业务模块)
+    ↓ 依赖
+common (公共基础设施)
+```
+
+严格单向依赖，feature crate 之间不互相依赖。如果需要跨模块调用，通过 common 定义共享类型或在 main 层编排。
