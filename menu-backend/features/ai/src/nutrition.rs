@@ -71,13 +71,12 @@ impl NutritionService {
     async fn fetch_recipe_detail(&self, recipe_id: Uuid) -> Result<RecipeDetailForAnalysis> {
         // 这里需要查询菜谱、食材、调料等信息
         // 为了简化，我们直接使用 SQL 查询
-        let recipe = sqlx::query_as::<_, RecipeRow>(
-            "SELECT id, title, servings FROM recipes WHERE id = $1"
-        )
-        .bind(recipe_id)
-        .fetch_one(self.repo.pool())
-        .await
-        .context("Recipe not found")?;
+        let recipe =
+            sqlx::query_as::<_, RecipeRow>("SELECT id, title, servings FROM recipes WHERE id = $1")
+                .bind(recipe_id)
+                .fetch_one(self.repo.pool())
+                .await
+                .context("Recipe not found")?;
 
         let ingredients = sqlx::query_as::<_, IngredientRow>(
             r#"
@@ -86,7 +85,7 @@ impl NutritionService {
             JOIN ingredients i ON ri.ingredient_id = i.id
             WHERE ri.recipe_id = $1
             ORDER BY ri.sort_order
-            "#
+            "#,
         )
         .bind(recipe_id)
         .fetch_all(self.repo.pool())
@@ -100,7 +99,7 @@ impl NutritionService {
             JOIN seasonings s ON rs.seasoning_id = s.id
             WHERE rs.recipe_id = $1
             ORDER BY rs.sort_order
-            "#
+            "#,
         )
         .bind(recipe_id)
         .fetch_all(self.repo.pool())
@@ -145,11 +144,7 @@ impl NutritionService {
     }
 
     /// 解析 AI 响应为营养数据
-    fn parse_nutrition_response(
-        &self,
-        recipe_id: Uuid,
-        response: &str,
-    ) -> Result<RecipeNutrition> {
+    fn parse_nutrition_response(&self, recipe_id: Uuid, response: &str) -> Result<RecipeNutrition> {
         // 尝试提取 JSON 部分（AI 可能返回额外的文字）
         let json_str = if let Some(start) = response.find('{') {
             if let Some(end) = response.rfind('}') {
@@ -161,8 +156,8 @@ impl NutritionService {
             response
         };
 
-        let parsed: serde_json::Value = serde_json::from_str(json_str)
-            .context("Failed to parse AI response as JSON")?;
+        let parsed: serde_json::Value =
+            serde_json::from_str(json_str).context("Failed to parse AI response as JSON")?;
 
         Ok(RecipeNutrition {
             recipe_id,
@@ -172,41 +167,29 @@ impl NutritionService {
             protein: parsed["protein"]
                 .as_f64()
                 .and_then(Decimal::from_f64_retain),
-            fat: parsed["fat"]
-                .as_f64()
-                .and_then(Decimal::from_f64_retain),
+            fat: parsed["fat"].as_f64().and_then(Decimal::from_f64_retain),
             carbohydrate: parsed["carbohydrate"]
                 .as_f64()
                 .and_then(Decimal::from_f64_retain),
-            fiber: parsed["fiber"]
-                .as_f64()
-                .and_then(Decimal::from_f64_retain),
-            sodium: parsed["sodium"]
-                .as_f64()
-                .and_then(Decimal::from_f64_retain),
+            fiber: parsed["fiber"].as_f64().and_then(Decimal::from_f64_retain),
+            sodium: parsed["sodium"].as_f64().and_then(Decimal::from_f64_retain),
             analysis_text: parsed["analysis_text"].as_str().map(String::from),
             health_score: parsed["health_score"].as_i64().map(|v| v as i16),
-            health_tags: parsed["health_tags"]
-                .as_array()
-                .map(|arr| {
-                    arr.iter()
-                        .filter_map(|v| v.as_str().map(String::from))
-                        .collect()
-                }),
-            suitable_for: parsed["suitable_for"]
-                .as_array()
-                .map(|arr| {
-                    arr.iter()
-                        .filter_map(|v| v.as_str().map(String::from))
-                        .collect()
-                }),
-            cautions: parsed["cautions"]
-                .as_array()
-                .map(|arr| {
-                    arr.iter()
-                        .filter_map(|v| v.as_str().map(String::from))
-                        .collect()
-                }),
+            health_tags: parsed["health_tags"].as_array().map(|arr| {
+                arr.iter()
+                    .filter_map(|v| v.as_str().map(String::from))
+                    .collect()
+            }),
+            suitable_for: parsed["suitable_for"].as_array().map(|arr| {
+                arr.iter()
+                    .filter_map(|v| v.as_str().map(String::from))
+                    .collect()
+            }),
+            cautions: parsed["cautions"].as_array().map(|arr| {
+                arr.iter()
+                    .filter_map(|v| v.as_str().map(String::from))
+                    .collect()
+            }),
             generated_at: None,
             updated_at: None,
         })

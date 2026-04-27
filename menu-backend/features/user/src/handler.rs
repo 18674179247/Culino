@@ -2,8 +2,8 @@
 //!
 //! 处理用户注册、登录、登出、获取个人信息、更新个人资料等接口。
 
-use axum::{Json, extract::State};
 use axum::http::HeaderMap;
+use axum::{Json, extract::State};
 
 use menu_common::auth::{AuthUser, encode_jwt, hash_password, verify_password};
 use menu_common::error::AppError;
@@ -74,17 +74,16 @@ pub async fn login(
 
     let repo = PgUserRepo::new(state.pool.clone());
 
-    let user = repo
-        .find_by_username(&req.username)
-        .await?
-        .ok_or_else(|| {
-            tracing::warn!("登录失败，用户不存在: username={}", req.username);
-            AppError::Unauthorized("invalid username or password".into())
-        })?;
+    let user = repo.find_by_username(&req.username).await?.ok_or_else(|| {
+        tracing::warn!("登录失败，用户不存在: username={}", req.username);
+        AppError::Unauthorized("invalid username or password".into())
+    })?;
 
     if !verify_password(&req.password, &user.password_hash)? {
         tracing::warn!("登录失败，密码错误: username={}", req.username);
-        return Err(AppError::Unauthorized("invalid username or password".into()));
+        return Err(AppError::Unauthorized(
+            "invalid username or password".into(),
+        ));
     }
 
     if !user.is_active.unwrap_or(true) {
@@ -119,10 +118,7 @@ pub async fn login(
     security(("bearer" = [])),
     responses((status = 200, body = UserResponse))
 )]
-pub async fn me(
-    State(state): State<AppState>,
-    auth: AuthUser,
-) -> ApiResult<UserResponse> {
+pub async fn me(State(state): State<AppState>, auth: AuthUser) -> ApiResult<UserResponse> {
     tracing::debug!("获取用户信息: user_id={}", auth.user_id);
 
     let repo = PgUserRepo::new(state.pool.clone());

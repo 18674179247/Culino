@@ -2,16 +2,16 @@
 //!
 //! 挂载 Swagger UI 和所有业务模块，添加中间件层。
 
+use axum::Router;
 use axum::extract::DefaultBodyLimit;
 use axum::http::{HeaderName, Method, StatusCode};
 use axum::response::Json;
-use axum::Router;
 use menu_common::config::{AppConfig, RunMode};
 use menu_common::state::AppState;
 use serde_json::json;
 use std::time::Duration;
-use tower_governor::governor::GovernorConfigBuilder;
 use tower_governor::GovernorLayer;
+use tower_governor::governor::GovernorConfigBuilder;
 use tower_http::cors::{AllowOrigin, CorsLayer};
 use tower_http::request_id::{MakeRequestUuid, PropagateRequestIdLayer, SetRequestIdLayer};
 use tower_http::timeout::TimeoutLayer;
@@ -27,25 +27,58 @@ async fn health() -> Json<serde_json::Value> {
 fn ai_routes() -> Router<AppState> {
     Router::new()
         // 营养分析
-        .route("/nutrition/analyze/:recipe_id", axum::routing::post(menu_ai::analyze_nutrition))
-        .route("/nutrition/:recipe_id", axum::routing::get(menu_ai::get_nutrition))
+        .route(
+            "/nutrition/analyze/:recipe_id",
+            axum::routing::post(menu_ai::analyze_nutrition),
+        )
+        .route(
+            "/nutrition/:recipe_id",
+            axum::routing::get(menu_ai::get_nutrition),
+        )
         // 推荐系统
-        .route("/recommend/personalized", axum::routing::get(menu_ai::personalized_recommendations))
-        .route("/recommend/similar/:recipe_id", axum::routing::get(menu_ai::similar_recommendations))
-        .route("/recommend/trending", axum::routing::get(menu_ai::trending_recommendations))
-        .route("/recommend/health/:goal", axum::routing::get(menu_ai::health_goal_recommendations))
+        .route(
+            "/recommend/personalized",
+            axum::routing::get(menu_ai::personalized_recommendations),
+        )
+        .route(
+            "/recommend/similar/:recipe_id",
+            axum::routing::get(menu_ai::similar_recommendations),
+        )
+        .route(
+            "/recommend/trending",
+            axum::routing::get(menu_ai::trending_recommendations),
+        )
+        .route(
+            "/recommend/health/:goal",
+            axum::routing::get(menu_ai::health_goal_recommendations),
+        )
         // 用户偏好
-        .route("/preference/analyze", axum::routing::post(menu_ai::analyze_preference))
-        .route("/preference/profile", axum::routing::get(menu_ai::get_preference_profile))
+        .route(
+            "/preference/analyze",
+            axum::routing::post(menu_ai::analyze_preference),
+        )
+        .route(
+            "/preference/profile",
+            axum::routing::get(menu_ai::get_preference_profile),
+        )
         // 行为日志
         .route("/behavior/log", axum::routing::post(menu_ai::log_behavior))
-        .layer(TimeoutLayer::with_status_code(StatusCode::REQUEST_TIMEOUT, Duration::from_secs(120)))
+        .layer(TimeoutLayer::with_status_code(
+            StatusCode::REQUEST_TIMEOUT,
+            Duration::from_secs(120),
+        ))
 }
 
 /// 构建 CORS 层，根据配置决定允许的 Origin
 fn build_cors(config: &AppConfig) -> CorsLayer {
     let cors = CorsLayer::new()
-        .allow_methods([Method::GET, Method::POST, Method::PUT, Method::DELETE, Method::OPTIONS])
+        .allow_methods([
+            Method::GET,
+            Method::POST,
+            Method::PUT,
+            Method::DELETE,
+            Method::OPTIONS,
+        ])
         .allow_headers([
             axum::http::header::AUTHORIZATION,
             axum::http::header::CONTENT_TYPE,
@@ -76,13 +109,21 @@ pub fn build_router(state: AppState, doc: utoipa::openapi::OpenApi) -> Router {
 
     // 用户认证路由单独挂限流
     let user_auth = Router::new()
-        .route("/register", axum::routing::post(menu_user::handler::register))
+        .route(
+            "/register",
+            axum::routing::post(menu_user::handler::register),
+        )
         .route("/login", axum::routing::post(menu_user::handler::login))
-        .layer(GovernorLayer { config: rate_limit_config.into() });
+        .layer(GovernorLayer {
+            config: rate_limit_config.into(),
+        });
 
     // 用户其他路由（不限流）
     let user_other = Router::new()
-        .route("/me", axum::routing::get(menu_user::handler::me).put(menu_user::handler::update_profile))
+        .route(
+            "/me",
+            axum::routing::get(menu_user::handler::me).put(menu_user::handler::update_profile),
+        )
         .route("/logout", axum::routing::post(menu_user::handler::logout));
 
     // v1 API 路由
@@ -108,7 +149,10 @@ pub fn build_router(state: AppState, doc: utoipa::openapi::OpenApi) -> Router {
         .layer(SetRequestIdLayer::new(x_request_id, MakeRequestUuid))
         .layer(build_cors(&state.config))
         .layer(DefaultBodyLimit::max(1024 * 1024)) // 全局 1MB，upload 路由单独覆盖为 16MB
-        .layer(TimeoutLayer::with_status_code(StatusCode::REQUEST_TIMEOUT, Duration::from_secs(30)))
+        .layer(TimeoutLayer::with_status_code(
+            StatusCode::REQUEST_TIMEOUT,
+            Duration::from_secs(30),
+        ))
         .layer(TraceLayer::new_for_http())
         .with_state(state)
 }

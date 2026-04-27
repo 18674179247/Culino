@@ -2,13 +2,16 @@
 //!
 //! 处理标签的 CRUD 接口，支持按类型筛选。
 
-use axum::{Json, extract::{Path, Query, State}};
-use serde::Deserialize;
+use crate::model::*;
+use crate::repo::tag_repo::{PgTagRepo, TagRepo};
+use axum::{
+    Json,
+    extract::{Path, Query, State},
+};
 use menu_common::auth::AuthUser;
 use menu_common::response::{ApiResponse, ApiResult};
 use menu_common::state::AppState;
-use crate::model::*;
-use crate::repo::tag_repo::{TagRepo, PgTagRepo};
+use serde::Deserialize;
 
 /// 标签查询参数
 #[derive(Debug, Deserialize, utoipa::IntoParams)]
@@ -23,10 +26,7 @@ pub struct TagQuery {
     params(TagQuery),
     responses((status = 200, body = Vec<Tag>))
 )]
-pub async fn list(
-    State(state): State<AppState>,
-    Query(q): Query<TagQuery>,
-) -> ApiResult<Vec<Tag>> {
+pub async fn list(State(state): State<AppState>, Query(q): Query<TagQuery>) -> ApiResult<Vec<Tag>> {
     tracing::debug!("查询标签列表: type={:?}", q.tag_type);
     let repo = PgTagRepo::new(state.pool.clone());
     let rows = repo.list(q.tag_type.as_deref()).await?;

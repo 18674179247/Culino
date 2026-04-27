@@ -8,7 +8,10 @@ pub mod model;
 pub mod repo;
 pub mod service;
 
-use axum::{Router, routing::{get, post}};
+use axum::{
+    Router,
+    routing::{get, post},
+};
 use menu_common::state::AppState;
 use utoipa::OpenApi;
 
@@ -44,5 +47,10 @@ pub fn routes() -> Router<AppState> {
         .route("/", post(handler::create))
         .route("/search", get(handler::search))
         .route("/random", get(handler::random))
-        .route("/{id}", get(handler::get_detail).put(handler::update).delete(handler::delete))
+        .route(
+            "/{id}",
+            get(handler::get_detail)
+                .put(handler::update)
+                .delete(handler::delete),
+        )
 }

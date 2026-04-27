@@ -3,11 +3,11 @@
 //! 定义 FavoriteRepo trait 和 PostgreSQL 实现，
 //! 管理用户与菜谱的收藏关系，使用 ON CONFLICT 处理重复收藏。
 
+use crate::model::Favorite;
 use async_trait::async_trait;
+use menu_common::error::AppError;
 use sqlx::PgPool;
 use uuid::Uuid;
-use menu_common::error::AppError;
-use crate::model::Favorite;
 
 /// 收藏仓储接口
 #[async_trait]

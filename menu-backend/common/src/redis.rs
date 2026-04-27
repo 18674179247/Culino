@@ -3,8 +3,8 @@
 //! 提供 Redis 连接创建、通用 KV 操作，以及 Token 专用的存储/验证/撤销功能。
 
 use anyhow::Context;
-use redis::aio::MultiplexedConnection;
 use redis::AsyncCommands;
+use redis::aio::MultiplexedConnection;
 
 use crate::error::AppError;
 
@@ -24,7 +24,10 @@ pub async fn set_ex(
     value: &str,
     ttl_secs: u64,
 ) -> Result<(), AppError> {
-    Ok(conn.set_ex(key, value, ttl_secs).await.context("Redis SET EX 失败")?)
+    Ok(conn
+        .set_ex(key, value, ttl_secs)
+        .await
+        .context("Redis SET EX 失败")?)
 }
 
 /// 获取键对应的值
@@ -57,17 +60,11 @@ pub async fn save_token(
 }
 
 /// 验证 Token 是否存在于 Redis
-pub async fn verify_token(
-    conn: &mut MultiplexedConnection,
-    token: &str,
-) -> Result<bool, AppError> {
+pub async fn verify_token(conn: &mut MultiplexedConnection, token: &str) -> Result<bool, AppError> {
     Ok(get(conn, &token_key(token)).await?.is_some())
 }
 
 /// 撤销 Token（从 Redis 删除）
-pub async fn revoke_token(
-    conn: &mut MultiplexedConnection,
-    token: &str,
-) -> Result<(), AppError> {
+pub async fn revoke_token(conn: &mut MultiplexedConnection, token: &str) -> Result<(), AppError> {
     del(conn, &token_key(token)).await
 }

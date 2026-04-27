@@ -28,7 +28,11 @@ pub struct ErrorDetail {
 impl<T: Serialize> ApiResponse<T> {
     /// 构造成功响应
     pub fn ok(data: T) -> ApiResult<T> {
-        Ok(Self { ok: true, data: Some(data), error: None })
+        Ok(Self {
+            ok: true,
+            data: Some(data),
+            error: None,
+        })
     }
 
     /// 构造错误响应
@@ -36,7 +40,10 @@ impl<T: Serialize> ApiResponse<T> {
         Self {
             ok: false,
             data: None,
-            error: Some(ErrorDetail { code, message: message.into() }),
+            error: Some(ErrorDetail {
+                code,
+                message: message.into(),
+            }),
         }
     }
 }

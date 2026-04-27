@@ -2,12 +2,15 @@
 //!
 //! 处理调料的 CRUD 接口。
 
-use axum::{Json, extract::{Path, State}};
+use crate::model::*;
+use crate::repo::seasoning_repo::{PgSeasoningRepo, SeasoningRepo};
+use axum::{
+    Json,
+    extract::{Path, State},
+};
 use menu_common::auth::AuthUser;
 use menu_common::response::{ApiResponse, ApiResult};
 use menu_common::state::AppState;
-use crate::model::*;
-use crate::repo::seasoning_repo::{SeasoningRepo, PgSeasoningRepo};
 
 /// 获取所有调料列表
 #[utoipa::path(get, path = "/api/v1/ingredient/seasonings", tag = "调料",

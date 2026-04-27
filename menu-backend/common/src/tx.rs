@@ -18,7 +18,16 @@ use crate::error::AppError;
 pub async fn with_tx<'a, T, F>(pool: &PgPool, f: F) -> Result<T, AppError>
 where
     T: Send + 'a,
-    F: FnOnce(sqlx::Transaction<'a, sqlx::Postgres>) -> std::pin::Pin<Box<dyn std::future::Future<Output = Result<(T, sqlx::Transaction<'a, sqlx::Postgres>), AppError>> + Send + 'a>>,
+    F: FnOnce(
+        sqlx::Transaction<'a, sqlx::Postgres>,
+    ) -> std::pin::Pin<
+        Box<
+            dyn std::future::Future<
+                    Output = Result<(T, sqlx::Transaction<'a, sqlx::Postgres>), AppError>,
+                > + Send
+                + 'a,
+        >,
+    >,
 {
     let tx = pool.begin().await?;
     let (result, tx) = f(tx).await?;

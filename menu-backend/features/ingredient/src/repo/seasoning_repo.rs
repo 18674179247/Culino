@@ -3,10 +3,10 @@
 //! 定义 SeasoningRepo trait 和 PostgreSQL 实现，
 //! 管理调料的数据库操作。
 
-use async_trait::async_trait;
-use sqlx::PgPool;
-use menu_common::error::AppError;
 use crate::model::*;
+use async_trait::async_trait;
+use menu_common::error::AppError;
+use sqlx::PgPool;
 
 /// 调料仓储接口
 #[async_trait]

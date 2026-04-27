@@ -2,15 +2,18 @@
 //!
 //! 处理菜谱的创建、查看详情、更新、删除、搜索、随机推荐等接口。
 
-use axum::{Json, extract::{Path, Query, State}};
-use serde::Deserialize;
-use uuid::Uuid;
-use menu_common::auth::AuthUser;
-use menu_common::response::{ApiResponse, ApiResult};
-use menu_common::pagination::PaginatedResponse;
-use menu_common::state::AppState;
 use crate::model::*;
 use crate::service::RecipeService;
+use axum::{
+    Json,
+    extract::{Path, Query, State},
+};
+use menu_common::auth::AuthUser;
+use menu_common::pagination::PaginatedResponse;
+use menu_common::response::{ApiResponse, ApiResult};
+use menu_common::state::AppState;
+use serde::Deserialize;
+use uuid::Uuid;
 
 /// 创建菜谱（需要登录）
 #[utoipa::path(post, path = "/api/v1/recipe", tag = "菜谱",
@@ -37,12 +40,12 @@ pub async fn create(
         if let Some(key) = api_key {
             tracing::info!("开始异步分析菜谱营养: recipe_id={}", recipe_id);
             match menu_ai::nutrition::NutritionService::new(pool, key) {
-                Ok(ai_svc) => {
-                    match ai_svc.analyze_recipe_nutrition(recipe_id, false).await {
-                        Ok(_) => tracing::info!("菜谱营养分析完成: recipe_id={}", recipe_id),
-                        Err(e) => tracing::error!("菜谱营养分析失败: recipe_id={}, error={}", recipe_id, e),
+                Ok(ai_svc) => match ai_svc.analyze_recipe_nutrition(recipe_id, false).await {
+                    Ok(_) => tracing::info!("菜谱营养分析完成: recipe_id={}", recipe_id),
+                    Err(e) => {
+                        tracing::error!("菜谱营养分析失败: recipe_id={}, error={}", recipe_id, e)
                     }
-                }
+                },
                 Err(e) => tracing::error!("创建营养分析服务失败: {}", e),
             }
         } else {
@@ -119,13 +122,22 @@ pub async fn search(
     State(state): State<AppState>,
     Query(params): Query<RecipeSearchParams>,
 ) -> ApiResult<PaginatedResponse<RecipeListItem>> {
-    tracing::debug!("搜索菜谱: keyword={:?}, difficulty={:?}", params.keyword, params.difficulty);
+    tracing::debug!(
+        "搜索菜谱: keyword={:?}, difficulty={:?}",
+        params.keyword,
+        params.difficulty
+    );
     let svc = RecipeService::new(state.pool.clone());
     let page = params.page.unwrap_or(1).max(1);
     let page_size = params.page_size.unwrap_or(20).clamp(1, 100);
     let (data, total) = svc.search(&params).await?;
     tracing::debug!("搜索结果: total={}, page={}", total, page);
-    ApiResponse::ok(PaginatedResponse { data, total, page, page_size })
+    ApiResponse::ok(PaginatedResponse {
+        data,
+        total,
+        page,
+        page_size,
+    })
 }
 
 /// 随机推荐查询参数

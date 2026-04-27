@@ -2,22 +2,33 @@
 //!
 //! 处理收藏菜谱和烹饪记录相关接口，所有操作均需登录。
 
-use axum::{Json, extract::{Path, State}};
-use uuid::Uuid;
+use crate::model::*;
+use crate::repo::cooking_log_repo::{CookingLogRepo, PgCookingLogRepo};
+use crate::repo::favorite_repo::{FavoriteRepo, PgFavoriteRepo};
+use axum::{
+    Json,
+    extract::{Path, State},
+};
 use menu_common::auth::AuthUser;
 use menu_common::response::{ApiResponse, ApiResult};
 use menu_common::state::AppState;
+use uuid::Uuid;
 use validator::Validate;
-use crate::model::*;
-use crate::repo::favorite_repo::{FavoriteRepo, PgFavoriteRepo};
-use crate::repo::cooking_log_repo::{CookingLogRepo, PgCookingLogRepo};
 
 /// 异步记录用户行为（fire-and-forget）
-fn spawn_behavior_log(state: &AppState, user_id: Uuid, recipe_id: Uuid, action: &'static str, value: Option<serde_json::Value>) {
+fn spawn_behavior_log(
+    state: &AppState,
+    user_id: Uuid,
+    recipe_id: Uuid,
+    action: &'static str,
+    value: Option<serde_json::Value>,
+) {
     if let Some(logger) = state.behavior_logger.clone() {
         tokio::spawn(async move {
             if let Err(e) = logger.log(user_id, recipe_id, action, value).await {
-                tracing::error!("行为日志记录失败: user={user_id}, recipe={recipe_id}, action={action}, error={e}");
+                tracing::error!(
+                    "行为日志记录失败: user={user_id}, recipe={recipe_id}, action={action}, error={e}"
+                );
             }
         });
     }
@@ -49,7 +60,11 @@ pub async fn add_favorite(
     auth: AuthUser,
     Path(recipe_id): Path<Uuid>,
 ) -> ApiResult<Favorite> {
-    tracing::info!("添加收藏: user_id={}, recipe_id={}", auth.user_id, recipe_id);
+    tracing::info!(
+        "添加收藏: user_id={}, recipe_id={}",
+        auth.user_id,
+        recipe_id
+    );
     let repo = PgFavoriteRepo::new(state.pool.clone());
     let fav = repo.add(auth.user_id, recipe_id).await?;
 
@@ -69,7 +84,11 @@ pub async fn remove_favorite(
     auth: AuthUser,
     Path(recipe_id): Path<Uuid>,
 ) -> ApiResult<bool> {
-    tracing::info!("取消收藏: user_id={}, recipe_id={}", auth.user_id, recipe_id);
+    tracing::info!(
+        "取消收藏: user_id={}, recipe_id={}",
+        auth.user_id,
+        recipe_id
+    );
     let repo = PgFavoriteRepo::new(state.pool.clone());
     repo.remove(auth.user_id, recipe_id).await?;
 
@@ -104,7 +123,11 @@ pub async fn create_cooking_log(
     auth: AuthUser,
     Json(req): Json<CreateCookingLogReq>,
 ) -> ApiResult<CookingLog> {
-    tracing::info!("创建烹饪记录: user_id={}, recipe_id={}", auth.user_id, req.recipe_id);
+    tracing::info!(
+        "创建烹饪记录: user_id={}, recipe_id={}",
+        auth.user_id,
+        req.recipe_id
+    );
     req.validate()?;
     let repo = PgCookingLogRepo::new(state.pool.clone());
     let log = repo.create(auth.user_id, &req).await?;

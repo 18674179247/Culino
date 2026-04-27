@@ -3,11 +3,11 @@
 //! 定义 CookingLogRepo trait 和 PostgreSQL 实现，
 //! 管理用户的烹饪日志。所有操作都会校验用户归属权。
 
+use crate::model::*;
 use async_trait::async_trait;
+use menu_common::error::AppError;
 use sqlx::PgPool;
 use uuid::Uuid;
-use menu_common::error::AppError;
-use crate::model::*;
 
 /// 烹饪记录仓储接口
 #[async_trait]
@@ -15,9 +15,18 @@ pub trait CookingLogRepo: Send + Sync {
     /// 查询用户的烹饪记录
     async fn list_by_user(&self, user_id: Uuid) -> Result<Vec<CookingLog>, AppError>;
     /// 创建烹饪记录
-    async fn create(&self, user_id: Uuid, req: &CreateCookingLogReq) -> Result<CookingLog, AppError>;
+    async fn create(
+        &self,
+        user_id: Uuid,
+        req: &CreateCookingLogReq,
+    ) -> Result<CookingLog, AppError>;
     /// 更新烹饪记录
-    async fn update(&self, id: Uuid, user_id: Uuid, req: &UpdateCookingLogReq) -> Result<CookingLog, AppError>;
+    async fn update(
+        &self,
+        id: Uuid,
+        user_id: Uuid,
+        req: &UpdateCookingLogReq,
+    ) -> Result<CookingLog, AppError>;
     /// 删除烹饪记录
     async fn delete(&self, id: Uuid, user_id: Uuid) -> Result<(), AppError>;
 }
@@ -47,7 +56,11 @@ impl CookingLogRepo for PgCookingLogRepo {
     }
 
     /// 创建烹饪记录，若未指定烹饪日期则默认为当天
-    async fn create(&self, user_id: Uuid, req: &CreateCookingLogReq) -> Result<CookingLog, AppError> {
+    async fn create(
+        &self,
+        user_id: Uuid,
+        req: &CreateCookingLogReq,
+    ) -> Result<CookingLog, AppError> {
         let row = sqlx::query_as::<_, CookingLog>(
             "INSERT INTO cooking_logs (recipe_id, user_id, rating, note, cooked_at) VALUES ($1,$2,$3,$4,COALESCE($5, CURRENT_DATE)) RETURNING *",
         )
@@ -62,7 +75,12 @@ impl CookingLogRepo for PgCookingLogRepo {
     }
 
     /// 更新烹饪记录，仅允许修改自己的记录
-    async fn update(&self, id: Uuid, user_id: Uuid, req: &UpdateCookingLogReq) -> Result<CookingLog, AppError> {
+    async fn update(
+        &self,
+        id: Uuid,
+        user_id: Uuid,
+        req: &UpdateCookingLogReq,
+    ) -> Result<CookingLog, AppError> {
         let row = sqlx::query_as::<_, CookingLog>(
             "UPDATE cooking_logs SET rating = COALESCE($3, rating), note = COALESCE($4, note), updated_at = now() WHERE id = $1 AND user_id = $2 RETURNING *",
         )

@@ -3,10 +3,10 @@
 //! 定义 IngredientRepo trait 和 PostgreSQL 实现，
 //! 管理食材和食材分类的数据库操作。
 
-use async_trait::async_trait;
-use sqlx::PgPool;
-use menu_common::error::AppError;
 use crate::model::*;
+use async_trait::async_trait;
+use menu_common::error::AppError;
+use sqlx::PgPool;
 
 /// 食材仓储接口
 #[async_trait]

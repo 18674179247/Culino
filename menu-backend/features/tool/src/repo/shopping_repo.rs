@@ -3,11 +3,11 @@
 //! 定义 ShoppingRepo trait 和 PostgreSQL 实现，
 //! 管理购物清单及其清单项的 CRUD 操作，所有操作校验用户归属权。
 
+use crate::model::*;
 use async_trait::async_trait;
+use menu_common::error::AppError;
 use sqlx::PgPool;
 use uuid::Uuid;
-use menu_common::error::AppError;
-use crate::model::*;
 
 /// 购物清单仓储接口
 #[async_trait]
@@ -15,15 +15,32 @@ pub trait ShoppingRepo: Send + Sync {
     /// 查询用户的所有购物清单
     async fn list_by_user(&self, user_id: Uuid) -> Result<Vec<ShoppingList>, AppError>;
     /// 创建购物清单
-    async fn create(&self, user_id: Uuid, req: &CreateShoppingListReq) -> Result<ShoppingList, AppError>;
+    async fn create(
+        &self,
+        user_id: Uuid,
+        req: &CreateShoppingListReq,
+    ) -> Result<ShoppingList, AppError>;
     /// 查询购物清单详情（含清单项）
-    async fn find_by_id(&self, id: Uuid, user_id: Uuid) -> Result<Option<ShoppingListDetail>, AppError>;
+    async fn find_by_id(
+        &self,
+        id: Uuid,
+        user_id: Uuid,
+    ) -> Result<Option<ShoppingListDetail>, AppError>;
     /// 删除购物清单
     async fn delete(&self, id: Uuid, user_id: Uuid) -> Result<(), AppError>;
     /// 向购物清单添加商品项
-    async fn add_item(&self, list_id: Uuid, req: &AddShoppingItemReq) -> Result<ShoppingListItem, AppError>;
+    async fn add_item(
+        &self,
+        list_id: Uuid,
+        req: &AddShoppingItemReq,
+    ) -> Result<ShoppingListItem, AppError>;
     /// 更新购物清单项
-    async fn update_item(&self, item_id: i32, list_id: Uuid, req: &UpdateShoppingItemReq) -> Result<ShoppingListItem, AppError>;
+    async fn update_item(
+        &self,
+        item_id: i32,
+        list_id: Uuid,
+        req: &UpdateShoppingItemReq,
+    ) -> Result<ShoppingListItem, AppError>;
     /// 删除购物清单项
     async fn delete_item(&self, item_id: i32, list_id: Uuid) -> Result<(), AppError>;
 }
@@ -52,7 +69,11 @@ impl ShoppingRepo for PgShoppingRepo {
         Ok(rows)
     }
 
-    async fn create(&self, user_id: Uuid, req: &CreateShoppingListReq) -> Result<ShoppingList, AppError> {
+    async fn create(
+        &self,
+        user_id: Uuid,
+        req: &CreateShoppingListReq,
+    ) -> Result<ShoppingList, AppError> {
         let row = sqlx::query_as::<_, ShoppingList>(
             "INSERT INTO shopping_lists (user_id, title) VALUES ($1, $2) RETURNING *",
         )
@@ -64,7 +85,11 @@ impl ShoppingRepo for PgShoppingRepo {
     }
 
     /// 查询购物清单详情（含清单项），同时校验用户归属权
-    async fn find_by_id(&self, id: Uuid, user_id: Uuid) -> Result<Option<ShoppingListDetail>, AppError> {
+    async fn find_by_id(
+        &self,
+        id: Uuid,
+        user_id: Uuid,
+    ) -> Result<Option<ShoppingListDetail>, AppError> {
         let list = match sqlx::query_as::<_, ShoppingList>(
             "SELECT * FROM shopping_lists WHERE id = $1 AND user_id = $2",
         )
@@ -100,7 +125,11 @@ impl ShoppingRepo for PgShoppingRepo {
         Ok(())
     }
 
-    async fn add_item(&self, list_id: Uuid, req: &AddShoppingItemReq) -> Result<ShoppingListItem, AppError> {
+    async fn add_item(
+        &self,
+        list_id: Uuid,
+        req: &AddShoppingItemReq,
+    ) -> Result<ShoppingListItem, AppError> {
         let row = sqlx::query_as::<_, ShoppingListItem>(
             "INSERT INTO shopping_list_items (list_id, name, amount, sort_order) VALUES ($1,$2,$3,$4) RETURNING *",
         )
@@ -114,7 +143,12 @@ impl ShoppingRepo for PgShoppingRepo {
     }
 
     /// 更新购物清单项，使用 COALESCE 实现部分更新
-    async fn update_item(&self, item_id: i32, list_id: Uuid, req: &UpdateShoppingItemReq) -> Result<ShoppingListItem, AppError> {
+    async fn update_item(
+        &self,
+        item_id: i32,
+        list_id: Uuid,
+        req: &UpdateShoppingItemReq,
+    ) -> Result<ShoppingListItem, AppError> {
         let row = sqlx::query_as::<_, ShoppingListItem>(
             "UPDATE shopping_list_items SET name = COALESCE($2, name), amount = COALESCE($3, amount), is_checked = COALESCE($4, is_checked), sort_order = COALESCE($5, sort_order) WHERE id = $1 AND list_id = $6 RETURNING *",
         )

@@ -2,13 +2,16 @@
 //!
 //! 处理食材和食材分类的 CRUD 接口。
 
-use axum::{Json, extract::{Path, State}};
+use crate::model::*;
+use crate::repo::ingredient_repo::{IngredientRepo, PgIngredientRepo};
+use axum::{
+    Json,
+    extract::{Path, State},
+};
 use menu_common::auth::AuthUser;
 use menu_common::error::AppError;
 use menu_common::response::{ApiResponse, ApiResult};
 use menu_common::state::AppState;
-use crate::model::*;
-use crate::repo::ingredient_repo::{IngredientRepo, PgIngredientRepo};
 
 /// 获取所有食材列表
 #[utoipa::path(get, path = "/api/v1/ingredient/ingredients", tag = "食材",
@@ -100,9 +103,7 @@ pub async fn remove(
 #[utoipa::path(get, path = "/api/v1/ingredient/ingredient-categories", tag = "食材",
     responses((status = 200, body = Vec<IngredientCategory>))
 )]
-pub async fn list_categories(
-    State(state): State<AppState>,
-) -> ApiResult<Vec<IngredientCategory>> {
+pub async fn list_categories(State(state): State<AppState>) -> ApiResult<Vec<IngredientCategory>> {
     tracing::debug!("查询食材分类列表");
     let repo = PgIngredientRepo::new(state.pool.clone());
     let rows = repo.list_categories().await?;

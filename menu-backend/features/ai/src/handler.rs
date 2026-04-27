@@ -1,4 +1,7 @@
-use axum::{extract::{Path, Query, State}, Json};
+use axum::{
+    Json,
+    extract::{Path, Query, State},
+};
 use uuid::Uuid;
 
 use menu_common::auth::AuthUser;
@@ -27,8 +30,9 @@ pub async fn analyze_nutrition(
 ) -> ApiResult<NutritionAnalysisResp> {
     tracing::info!("Analyzing nutrition for recipe {}", recipe_id);
 
-    let api_key = state.config.deepseek_api_key.clone()
-        .ok_or_else(|| menu_common::error::AppError::Internal(anyhow::anyhow!("DeepSeek API key not configured")))?;
+    let api_key = state.config.deepseek_api_key.clone().ok_or_else(|| {
+        menu_common::error::AppError::Internal(anyhow::anyhow!("DeepSeek API key not configured"))
+    })?;
 
     let service = NutritionService::new(state.pool.clone(), api_key)
         .map_err(|e| menu_common::error::AppError::Internal(e))?;
@@ -81,7 +85,10 @@ pub async fn personalized_recommendations(
     auth: AuthUser,
     Query(query): Query<RecommendationQuery>,
 ) -> ApiResult<Vec<RecommendationItem>> {
-    tracing::info!("Getting personalized recommendations for user {}", auth.user_id);
+    tracing::info!(
+        "Getting personalized recommendations for user {}",
+        auth.user_id
+    );
 
     let service = RecommendationService::new(state.pool.clone());
     let limit = query.limit.unwrap_or(10).min(50);
@@ -212,7 +219,9 @@ pub async fn get_preference_profile(
         .get_user_preference(auth.user_id)
         .await
         .map_err(|e| menu_common::error::AppError::Internal(e))?
-        .ok_or_else(|| menu_common::error::AppError::NotFound("User preference not found".into()))?;
+        .ok_or_else(|| {
+            menu_common::error::AppError::NotFound("User preference not found".into())
+        })?;
 
     ApiResponse::ok(preference)
 }
@@ -232,8 +241,12 @@ pub async fn log_behavior(
     auth: AuthUser,
     Json(req): Json<CreateBehaviorLogReq>,
 ) -> ApiResult<bool> {
-    tracing::debug!("Logging behavior: user={}, recipe={}, action={}",
-        auth.user_id, req.recipe_id, req.action_type);
+    tracing::debug!(
+        "Logging behavior: user={}, recipe={}, action={}",
+        auth.user_id,
+        req.recipe_id,
+        req.action_type
+    );
 
     let repo = AiRepo::new(state.pool.clone());
 

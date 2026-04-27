@@ -2,16 +2,19 @@
 //!
 //! 处理购物清单和膳食计划相关接口，所有操作均需登录。
 
-use axum::{Json, extract::{Path, Query, State}};
-use uuid::Uuid;
+use crate::model::*;
+use crate::repo::meal_plan_repo::{MealPlanRepo, PgMealPlanRepo};
+use crate::repo::shopping_repo::{PgShoppingRepo, ShoppingRepo};
+use axum::{
+    Json,
+    extract::{Path, Query, State},
+};
 use menu_common::auth::AuthUser;
 use menu_common::error::AppError;
 use menu_common::response::{ApiResponse, ApiResult};
 use menu_common::state::AppState;
+use uuid::Uuid;
 use validator::Validate;
-use crate::model::*;
-use crate::repo::shopping_repo::{ShoppingRepo, PgShoppingRepo};
-use crate::repo::meal_plan_repo::{MealPlanRepo, PgMealPlanRepo};
 
 // ---- 购物清单 ----
 
@@ -41,7 +44,11 @@ pub async fn create_shopping_list(
     auth: AuthUser,
     Json(req): Json<CreateShoppingListReq>,
 ) -> ApiResult<ShoppingList> {
-    tracing::info!("创建购物清单: user_id={}, title={:?}", auth.user_id, req.title);
+    tracing::info!(
+        "创建购物清单: user_id={}, title={:?}",
+        auth.user_id,
+        req.title
+    );
     let repo = PgShoppingRepo::new(state.pool.clone());
     let list = repo.create(auth.user_id, &req).await?;
     tracing::info!("购物清单创建成功: list_id={}", list.id);
@@ -171,9 +178,16 @@ pub async fn list_meal_plans(
     auth: AuthUser,
     Query(q): Query<MealPlanQuery>,
 ) -> ApiResult<Vec<MealPlan>> {
-    tracing::debug!("查询膳食计划: user_id={}, range={:?}~{:?}", auth.user_id, q.start_date, q.end_date);
+    tracing::debug!(
+        "查询膳食计划: user_id={}, range={:?}~{:?}",
+        auth.user_id,
+        q.start_date,
+        q.end_date
+    );
     let repo = PgMealPlanRepo::new(state.pool.clone());
-    let rows = repo.list_by_user(auth.user_id, q.start_date, q.end_date).await?;
+    let rows = repo
+        .list_by_user(auth.user_id, q.start_date, q.end_date)
+        .await?;
     ApiResponse::ok(rows)
 }
 
@@ -188,7 +202,12 @@ pub async fn create_meal_plan(
     auth: AuthUser,
     Json(req): Json<CreateMealPlanReq>,
 ) -> ApiResult<MealPlan> {
-    tracing::info!("创建膳食计划: user_id={}, date={}, meal_type={}", auth.user_id, req.plan_date, req.meal_type);
+    tracing::info!(
+        "创建膳食计划: user_id={}, date={}, meal_type={}",
+        auth.user_id,
+        req.plan_date,
+        req.meal_type
+    );
     req.validate()?;
     let repo = PgMealPlanRepo::new(state.pool.clone());
     let plan = repo.create(auth.user_id, &req).await?;

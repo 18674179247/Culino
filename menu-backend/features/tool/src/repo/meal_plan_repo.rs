@@ -4,22 +4,32 @@
 //! 管理用户的膳食计划，支持按日期范围查询。
 //! 同一用户同一天同一餐次有唯一约束。
 
+use crate::model::*;
 use async_trait::async_trait;
 use chrono::NaiveDate;
+use menu_common::error::AppError;
 use sqlx::PgPool;
 use uuid::Uuid;
-use menu_common::error::AppError;
-use crate::model::*;
 
 /// 膳食计划仓储接口
 #[async_trait]
 pub trait MealPlanRepo: Send + Sync {
     /// 按日期范围查询膳食计划
-    async fn list_by_user(&self, user_id: Uuid, start: Option<NaiveDate>, end: Option<NaiveDate>) -> Result<Vec<MealPlan>, AppError>;
+    async fn list_by_user(
+        &self,
+        user_id: Uuid,
+        start: Option<NaiveDate>,
+        end: Option<NaiveDate>,
+    ) -> Result<Vec<MealPlan>, AppError>;
     /// 创建膳食计划
     async fn create(&self, user_id: Uuid, req: &CreateMealPlanReq) -> Result<MealPlan, AppError>;
     /// 更新膳食计划
-    async fn update(&self, id: Uuid, user_id: Uuid, req: &UpdateMealPlanReq) -> Result<MealPlan, AppError>;
+    async fn update(
+        &self,
+        id: Uuid,
+        user_id: Uuid,
+        req: &UpdateMealPlanReq,
+    ) -> Result<MealPlan, AppError>;
     /// 删除膳食计划
     async fn delete(&self, id: Uuid, user_id: Uuid) -> Result<(), AppError>;
 }
@@ -38,7 +48,12 @@ impl PgMealPlanRepo {
 #[async_trait]
 impl MealPlanRepo for PgMealPlanRepo {
     /// 按日期范围查询膳食计划，默认从今天起未来 7 天
-    async fn list_by_user(&self, user_id: Uuid, start: Option<NaiveDate>, end: Option<NaiveDate>) -> Result<Vec<MealPlan>, AppError> {
+    async fn list_by_user(
+        &self,
+        user_id: Uuid,
+        start: Option<NaiveDate>,
+        end: Option<NaiveDate>,
+    ) -> Result<Vec<MealPlan>, AppError> {
         let start = start.unwrap_or_else(|| chrono::Utc::now().date_naive());
         let end = end.unwrap_or_else(|| start + chrono::Duration::days(7));
         let rows = sqlx::query_as::<_, MealPlan>(
@@ -74,7 +89,12 @@ impl MealPlanRepo for PgMealPlanRepo {
     }
 
     /// 更新膳食计划，仅允许修改自己的计划
-    async fn update(&self, id: Uuid, user_id: Uuid, req: &UpdateMealPlanReq) -> Result<MealPlan, AppError> {
+    async fn update(
+        &self,
+        id: Uuid,
+        user_id: Uuid,
+        req: &UpdateMealPlanReq,
+    ) -> Result<MealPlan, AppError> {
         let row = sqlx::query_as::<_, MealPlan>(
             "UPDATE meal_plans SET recipe_id = COALESCE($3, recipe_id), note = COALESCE($4, note) WHERE id = $1 AND user_id = $2 RETURNING *",
         )

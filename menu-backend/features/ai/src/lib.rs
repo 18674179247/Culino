@@ -48,4 +48,3 @@ use utoipa::OpenApi;
     )
 )]
 pub struct AiApi;
-

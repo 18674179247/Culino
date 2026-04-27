@@ -24,20 +24,28 @@ impl RecommendationService {
         user_id: Uuid,
         limit: i64,
     ) -> Result<Vec<RecommendationItem>> {
-        tracing::info!("Generating personalized recommendations for user {}", user_id);
+        tracing::info!(
+            "Generating personalized recommendations for user {}",
+            user_id
+        );
 
         // 1. 获取用户偏好
         let preference = self.repo.get_user_preference(user_id).await?;
 
         if preference.is_none() {
-            tracing::warn!("No preference found for user {}, returning trending", user_id);
+            tracing::warn!(
+                "No preference found for user {}, returning trending",
+                user_id
+            );
             return self.trending_recommendations(limit).await;
         }
 
         let pref = preference.unwrap();
 
         // 2. 基于偏好查询菜谱
-        let recipes = self.query_recipes_by_preference(user_id, &pref, limit).await?;
+        let recipes = self
+            .query_recipes_by_preference(user_id, &pref, limit)
+            .await?;
 
         // 3. 计算推荐分数并生成推荐理由
         let mut recommendations = Vec::new();
@@ -81,7 +89,10 @@ impl RecommendationService {
         recipe_id: Uuid,
         limit: i64,
     ) -> Result<Vec<RecommendationItem>> {
-        tracing::info!("Generating similar recommendations for recipe {}", recipe_id);
+        tracing::info!(
+            "Generating similar recommendations for recipe {}",
+            recipe_id
+        );
 
         // 1. 获取目标菜谱的标签
         let tags = self.get_recipe_tags(recipe_id).await?;
@@ -101,7 +112,10 @@ impl RecommendationService {
                 title: recipe.title,
                 cover_image: recipe.cover_image,
                 score: recipe.similarity_score.unwrap_or(0.0),
-                reason: format!("与您浏览的菜谱有 {} 个相似标签", recipe.common_tags.unwrap_or(0)),
+                reason: format!(
+                    "与您浏览的菜谱有 {} 个相似标签",
+                    recipe.common_tags.unwrap_or(0)
+                ),
                 recommendation_type: "similar".to_string(),
             })
             .collect();
@@ -202,7 +216,7 @@ impl RecommendationService {
               AND rn.health_score >= 70
             ORDER BY rn.health_score DESC
             LIMIT $2
-            "#
+            "#,
         )
         .bind(&target_tags)
         .bind(limit)
@@ -266,7 +280,7 @@ impl RecommendationService {
               AND r.id NOT IN (SELECT recipe_id FROM favorites WHERE user_id = $2)
             ORDER BY RANDOM()
             LIMIT $3
-            "#
+            "#,
         )
         .bind(&favorite_tags)
         .bind(user_id)
@@ -283,9 +297,7 @@ impl RecommendationService {
         if let Some(serde_json::Value::Object(map)) = tags_json {
             let mut tags: Vec<(String, f64)> = map
                 .iter()
-                .filter_map(|(k, v)| {
-                    v.as_f64().map(|weight| (k.clone(), weight))
-                })
+                .filter_map(|(k, v)| v.as_f64().map(|weight| (k.clone(), weight)))
                 .collect();
 
             tags.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap());
@@ -304,13 +316,17 @@ impl RecommendationService {
         let mut score = 50.0; // 基础分
 
         // 难度匹配
-        if let (Some(recipe_diff), Some(pref_diff)) = (recipe.difficulty, preference.difficulty_preference) {
+        if let (Some(recipe_diff), Some(pref_diff)) =
+            (recipe.difficulty, preference.difficulty_preference)
+        {
             let diff_delta = (recipe_diff - pref_diff).abs();
             score += (5 - diff_delta).max(0) as f64 * 5.0;
         }
 
         // 烹饪时间匹配
-        if let (Some(recipe_time), Some(pref_time)) = (recipe.cooking_time, preference.avg_cooking_time) {
+        if let (Some(recipe_time), Some(pref_time)) =
+            (recipe.cooking_time, preference.avg_cooking_time)
+        {
             let time_delta = (recipe_time - pref_time).abs();
             if time_delta <= 15 {
                 score += 10.0;
@@ -362,7 +378,7 @@ impl RecommendationService {
             FROM recipe_tags rt
             JOIN tags t ON rt.tag_id = t.id
             WHERE rt.recipe_id = $1
-            "#
+            "#,
         )
         .bind(recipe_id)
         .fetch_all(self.repo.pool())
@@ -396,7 +412,7 @@ impl RecommendationService {
             GROUP BY r.id, r.title, r.cover_image
             ORDER BY common_tags DESC, r.created_at DESC
             LIMIT $4
-            "#
+            "#,
         )
         .bind(recipe_id)
         .bind(tags)

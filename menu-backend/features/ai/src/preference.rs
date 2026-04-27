@@ -71,7 +71,7 @@ impl PreferenceService {
             WHERE f.user_id = $1
             GROUP BY t.name, t.type
             ORDER BY count DESC
-            "#
+            "#,
         )
         .bind(user_id)
         .fetch_all(self.repo.pool())
@@ -122,7 +122,7 @@ impl PreferenceService {
                 AVG(rating) as avg_rating
             FROM cooking_logs
             WHERE user_id = $1
-            "#
+            "#,
         )
         .bind(user_id)
         .fetch_one(self.repo.pool())
@@ -148,7 +148,7 @@ impl PreferenceService {
             GROUP BY ri.ingredient_id, i.name
             ORDER BY count DESC
             LIMIT 20
-            "#
+            "#,
         )
         .bind(user_id)
         .fetch_all(self.repo.pool())
@@ -164,7 +164,10 @@ impl PreferenceService {
             } else {
                 0.0
             };
-            result.insert(ingredient.ingredient_id.to_string(), serde_json::json!(weight));
+            result.insert(
+                ingredient.ingredient_id.to_string(),
+                serde_json::json!(weight),
+            );
         }
 
         Ok(serde_json::Value::Object(result))
@@ -183,7 +186,7 @@ impl PreferenceService {
             FROM favorites f
             JOIN recipes r ON f.recipe_id = r.id
             WHERE f.user_id = $1 AND r.cooking_time IS NOT NULL
-            "#
+            "#,
         )
         .bind(user_id)
         .fetch_one(self.repo.pool())

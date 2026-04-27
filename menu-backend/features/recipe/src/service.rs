@@ -2,13 +2,13 @@
 //!
 //! 在 handler 和 repo 之间做参数校验和业务编排。
 
+use crate::model::*;
+use crate::repo::{PgRecipeRepo, RecipeRepo};
+use menu_common::error::AppError;
 use rust_decimal::prelude::ToPrimitive;
 use sqlx::PgPool;
 use uuid::Uuid;
 use validator::Validate;
-use menu_common::error::AppError;
-use crate::model::*;
-use crate::repo::{RecipeRepo, PgRecipeRepo};
 
 /// 营养信息数据库查询结果
 #[derive(sqlx::FromRow)]
@@ -40,14 +40,19 @@ impl RecipeService {
     }
 
     /// 创建菜谱，校验请求参数
-    pub async fn create(&self, author_id: Uuid, req: &CreateRecipeReq) -> Result<RecipeDetail, AppError> {
+    pub async fn create(
+        &self,
+        author_id: Uuid,
+        req: &CreateRecipeReq,
+    ) -> Result<RecipeDetail, AppError> {
         req.validate()?;
         self.repo.create(author_id, req).await
     }
 
     /// 获取菜谱详情（含关联的食材、调料、步骤、标签、营养信息）
     pub async fn get_detail(&self, id: Uuid) -> Result<RecipeDetail, AppError> {
-        let mut detail = self.repo
+        let mut detail = self
+            .repo
             .find_by_id(id)
             .await?
             .ok_or_else(|| AppError::NotFound("recipe not found".into()))?;
@@ -66,7 +71,7 @@ impl RecipeService {
                    health_score, health_tags, suitable_for, analysis_text
             FROM recipe_nutrition
             WHERE recipe_id = $1
-            "#
+            "#,
         )
         .bind(recipe_id)
         .fetch_optional(&self.pool)
@@ -89,7 +94,12 @@ impl RecipeService {
     }
 
     /// 更新菜谱，仅作者可操作
-    pub async fn update(&self, id: Uuid, author_id: Uuid, req: &UpdateRecipeReq) -> Result<RecipeDetail, AppError> {
+    pub async fn update(
+        &self,
+        id: Uuid,
+        author_id: Uuid,
+        req: &UpdateRecipeReq,
+    ) -> Result<RecipeDetail, AppError> {
         req.validate()?;
         self.repo.update(id, author_id, req).await
     }
@@ -100,7 +110,10 @@ impl RecipeService {
     }
 
     /// 多条件搜索菜谱，返回分页数据
-    pub async fn search(&self, params: &RecipeSearchParams) -> Result<(Vec<RecipeListItem>, i64), AppError> {
+    pub async fn search(
+        &self,
+        params: &RecipeSearchParams,
+    ) -> Result<(Vec<RecipeListItem>, i64), AppError> {
         self.repo.search(params).await
     }
 

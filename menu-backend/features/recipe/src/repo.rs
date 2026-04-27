@@ -18,15 +18,27 @@ use crate::model::*;
 #[async_trait]
 pub trait RecipeRepo: Send + Sync {
     /// 创建菜谱及其关联数据
-    async fn create(&self, author_id: Uuid, req: &CreateRecipeReq) -> Result<RecipeDetail, AppError>;
+    async fn create(
+        &self,
+        author_id: Uuid,
+        req: &CreateRecipeReq,
+    ) -> Result<RecipeDetail, AppError>;
     /// 根据 ID 查找菜谱详情
     async fn find_by_id(&self, id: Uuid) -> Result<Option<RecipeDetail>, AppError>;
     /// 更新菜谱及其关联数据
-    async fn update(&self, id: Uuid, author_id: Uuid, req: &UpdateRecipeReq) -> Result<RecipeDetail, AppError>;
+    async fn update(
+        &self,
+        id: Uuid,
+        author_id: Uuid,
+        req: &UpdateRecipeReq,
+    ) -> Result<RecipeDetail, AppError>;
     /// 删除菜谱
     async fn delete(&self, id: Uuid, author_id: Uuid) -> Result<(), AppError>;
     /// 多条件搜索菜谱
-    async fn search(&self, params: &RecipeSearchParams) -> Result<(Vec<RecipeListItem>, i64), AppError>;
+    async fn search(
+        &self,
+        params: &RecipeSearchParams,
+    ) -> Result<(Vec<RecipeListItem>, i64), AppError>;
     /// 随机获取已发布的菜谱
     async fn random(&self, count: i64) -> Result<Vec<RecipeListItem>, AppError>;
 }
@@ -45,7 +57,11 @@ impl PgRecipeRepo {
 #[async_trait]
 impl RecipeRepo for PgRecipeRepo {
     /// 在事务中创建菜谱及其关联的食材、调料、步骤、标签
-    async fn create(&self, author_id: Uuid, req: &CreateRecipeReq) -> Result<RecipeDetail, AppError> {
+    async fn create(
+        &self,
+        author_id: Uuid,
+        req: &CreateRecipeReq,
+    ) -> Result<RecipeDetail, AppError> {
         let pool = &self.pool;
         let recipe_id = with_tx(pool, |mut tx| Box::pin(async move {
             // 插入菜谱主表
@@ -124,18 +140,17 @@ impl RecipeRepo for PgRecipeRepo {
         })).await?;
 
         // 查询完整详情返回
-        Ok(self.find_by_id(recipe_id)
+        Ok(self
+            .find_by_id(recipe_id)
             .await?
             .context("recipe created but not found")?)
     }
 
     async fn find_by_id(&self, id: Uuid) -> Result<Option<RecipeDetail>, AppError> {
-        let recipe = match sqlx::query_as::<_, Recipe>(
-            "SELECT * FROM recipes WHERE id = $1",
-        )
-        .bind(id)
-        .fetch_optional(&self.pool)
-        .await?
+        let recipe = match sqlx::query_as::<_, Recipe>("SELECT * FROM recipes WHERE id = $1")
+            .bind(id)
+            .fetch_optional(&self.pool)
+            .await?
         {
             Some(r) => r,
             None => return Ok(None),
@@ -162,12 +177,10 @@ impl RecipeRepo for PgRecipeRepo {
         .fetch_all(&self.pool)
         .await?;
 
-        let tags = sqlx::query_as::<_, RecipeTag>(
-            "SELECT * FROM recipe_tags WHERE recipe_id = $1",
-        )
-        .bind(id)
-        .fetch_all(&self.pool)
-        .await?;
+        let tags = sqlx::query_as::<_, RecipeTag>("SELECT * FROM recipe_tags WHERE recipe_id = $1")
+            .bind(id)
+            .fetch_all(&self.pool)
+            .await?;
 
         Ok(Some(RecipeDetail {
             recipe,
@@ -180,7 +193,12 @@ impl RecipeRepo for PgRecipeRepo {
     }
 
     /// 更新菜谱主表 + 全量替换关联数据（先删后插）
-    async fn update(&self, id: Uuid, author_id: Uuid, req: &UpdateRecipeReq) -> Result<RecipeDetail, AppError> {
+    async fn update(
+        &self,
+        id: Uuid,
+        author_id: Uuid,
+        req: &UpdateRecipeReq,
+    ) -> Result<RecipeDetail, AppError> {
         let pool = &self.pool;
         let recipe_id = with_tx(pool, |mut tx| Box::pin(async move {
             let recipe = sqlx::query_as::<_, Recipe>(
@@ -275,7 +293,8 @@ impl RecipeRepo for PgRecipeRepo {
             Ok((recipe_id, tx))
         })).await?;
 
-        Ok(self.find_by_id(recipe_id)
+        Ok(self
+            .find_by_id(recipe_id)
             .await?
             .context("recipe updated but not found")?)
     }
@@ -287,12 +306,17 @@ impl RecipeRepo for PgRecipeRepo {
             .execute(&self.pool)
             .await?;
         if result.rows_affected() == 0 {
-            return Err(AppError::NotFound("recipe not found or not owned by you".into()));
+            return Err(AppError::NotFound(
+                "recipe not found or not owned by you".into(),
+            ));
         }
         Ok(())
     }
 
-    async fn search(&self, params: &RecipeSearchParams) -> Result<(Vec<RecipeListItem>, i64), AppError> {
+    async fn search(
+        &self,
+        params: &RecipeSearchParams,
+    ) -> Result<(Vec<RecipeListItem>, i64), AppError> {
         // 动态构建 WHERE 子句
         let mut conditions = vec!["status = 1".to_string()];
         let mut param_index = 1u32;
@@ -359,7 +383,12 @@ impl RecipeRepo for PgRecipeRepo {
         let base_sql = format!(
             "SELECT id, title, description, cover_image, difficulty, cooking_time, servings, author_id, created_at FROM recipes WHERE {where_clause}"
         );
-        let data_sql = paginate_sql(&base_sql, "_inner.created_at DESC", param_index, param_index + 1)?;
+        let data_sql = paginate_sql(
+            &base_sql,
+            "_inner.created_at DESC",
+            param_index,
+            param_index + 1,
+        )?;
 
         let mut query = sqlx::query_as::<_, RecipeListItemCounted>(&data_sql);
         if has_tags {

@@ -50,10 +50,7 @@ pub async fn upload_object(
 
 /// 删除 S3 对象
 pub async fn delete_object(bucket: &Bucket, key: &str) -> Result<(), AppError> {
-    bucket
-        .delete_object(key)
-        .await
-        .context("S3 删除失败")?;
+    bucket.delete_object(key).await.context("S3 删除失败")?;
     Ok(())
 }
 

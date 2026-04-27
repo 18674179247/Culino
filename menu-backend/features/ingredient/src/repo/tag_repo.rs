@@ -3,10 +3,10 @@
 //! 定义 TagRepo trait 和 PostgreSQL 实现，
 //! 管理标签的数据库操作，支持按类型筛选。
 
-use async_trait::async_trait;
-use sqlx::PgPool;
-use menu_common::error::AppError;
 use crate::model::*;
+use async_trait::async_trait;
+use menu_common::error::AppError;
+use sqlx::PgPool;
 
 /// 标签仓储接口
 #[async_trait]

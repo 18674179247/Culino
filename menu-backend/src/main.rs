@@ -138,10 +138,7 @@ async fn check(config: &AppConfig) -> (PgPool, MultiplexedConnection, Box<Bucket
 /// 阶段 2：执行数据库迁移
 async fn migrate(pool: &PgPool) {
     tracing::info!("正在执行数据库迁移...");
-    sqlx::migrate!()
-        .run(pool)
-        .await
-        .expect("数据库迁移失败");
+    sqlx::migrate!().run(pool).await.expect("数据库迁移失败");
     tracing::info!("数据库迁移完成");
 }
 
@@ -185,7 +182,9 @@ async fn serve(config: AppConfig, pool: PgPool, redis: MultiplexedConnection, s3
 /// 监听系统关闭信号（Ctrl+C 和 SIGTERM）
 async fn shutdown_signal() {
     let ctrl_c = async {
-        signal::ctrl_c().await.expect("failed to install Ctrl+C handler");
+        signal::ctrl_c()
+            .await
+            .expect("failed to install Ctrl+C handler");
     };
 
     #[cfg(unix)]

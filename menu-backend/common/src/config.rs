@@ -47,7 +47,10 @@ pub struct AppConfig {
 impl AppConfig {
     /// 从环境变量加载配置，DATABASE_URL 为必填项
     pub fn from_env() -> Self {
-        let run_mode = match env::var("RUN_MODE").unwrap_or_else(|_| "dev".into()).as_str() {
+        let run_mode = match env::var("RUN_MODE")
+            .unwrap_or_else(|_| "dev".into())
+            .as_str()
+        {
             "production" => RunMode::Production,
             _ => RunMode::Dev,
         };

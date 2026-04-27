@@ -3,9 +3,9 @@
 //! 提供 JWT 编解码、密码哈希/验证、以及 Axum 的 AuthUser 提取器。
 //! 受保护的接口通过 AuthUser 自动从 Authorization 头提取用户信息。
 
+use anyhow::Context;
 use axum::extract::FromRequestParts;
 use axum::http::request::Parts;
-use anyhow::Context;
 use jsonwebtoken::{DecodingKey, EncodingKey, Header, Validation, decode, encode};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
@@ -80,7 +80,10 @@ pub fn decode_jwt(secret: &str, token: &str) -> Result<Claims, AppError> {
 impl FromRequestParts<AppState> for AuthUser {
     type Rejection = AppError;
 
-    async fn from_request_parts(parts: &mut Parts, state: &AppState) -> Result<Self, Self::Rejection> {
+    async fn from_request_parts(
+        parts: &mut Parts,
+        state: &AppState,
+    ) -> Result<Self, Self::Rejection> {
         let header = parts
             .headers
             .get("Authorization")
@@ -99,7 +102,11 @@ impl FromRequestParts<AppState> for AuthUser {
             return Err(AppError::Unauthorized("token has been revoked".into()));
         }
 
-        tracing::debug!("用户认证通过: user_id={}, role={}", claims.sub, claims.role_code);
+        tracing::debug!(
+            "用户认证通过: user_id={}, role={}",
+            claims.sub,
+            claims.role_code
+        );
         Ok(AuthUser {
             user_id: claims.sub,
             role_code: claims.role_code,
@@ -119,8 +126,7 @@ pub fn hash_password(password: &str) -> Result<String, AppError> {
 
 /// 验证密码是否与哈希匹配
 pub fn verify_password(password: &str, hash: &str) -> Result<bool, AppError> {
-    let parsed = PasswordHash::new(hash)
-        .map_err(|e| anyhow::anyhow!("哈希解析失败: {e}"))?;
+    let parsed = PasswordHash::new(hash).map_err(|e| anyhow::anyhow!("哈希解析失败: {e}"))?;
     Ok(Argon2::default()
         .verify_password(password.as_bytes(), &parsed)
         .is_ok())

@@ -1,10 +1,10 @@
+use crate::model::*;
 use anyhow::{Context, Result};
 use async_trait::async_trait;
 use menu_common::behavior::BehaviorLogger;
 use menu_common::error::AppError;
 use sqlx::PgPool;
 use uuid::Uuid;
-use crate::model::*;
 
 pub struct AiRepo {
     pool: PgPool,
@@ -49,7 +49,7 @@ impl AiRepo {
     /// 获取菜谱营养分析
     pub async fn get_nutrition(&self, recipe_id: Uuid) -> Result<Option<RecipeNutrition>> {
         let nutrition = sqlx::query_as::<_, RecipeNutrition>(
-            "SELECT * FROM recipe_nutrition WHERE recipe_id = $1"
+            "SELECT * FROM recipe_nutrition WHERE recipe_id = $1",
         )
         .bind(recipe_id)
         .fetch_optional(&self.pool)
@@ -80,7 +80,7 @@ impl AiRepo {
                 suitable_for = EXCLUDED.suitable_for,
                 cautions = EXCLUDED.cautions,
                 updated_at = now()
-            "#
+            "#,
         )
         .bind(nutrition.recipe_id)
         .bind(&nutrition.calories)
@@ -108,7 +108,7 @@ impl AiRepo {
     /// 获取用户偏好
     pub async fn get_user_preference(&self, user_id: Uuid) -> Result<Option<UserPreference>> {
         let preference = sqlx::query_as::<_, UserPreference>(
-            "SELECT * FROM user_preferences WHERE user_id = $1"
+            "SELECT * FROM user_preferences WHERE user_id = $1",
         )
         .bind(user_id)
         .fetch_optional(&self.pool)
@@ -140,7 +140,7 @@ impl AiRepo {
                 total_cooking_logs = EXCLUDED.total_cooking_logs,
                 avg_rating = EXCLUDED.avg_rating,
                 last_analyzed_at = now()
-            "#
+            "#,
         )
         .bind(preference.user_id)
         .bind(&preference.favorite_cuisines)
@@ -173,7 +173,7 @@ impl AiRepo {
                 user_id, recipe_id, recommendation_type, score, reason
             ) VALUES ($1, $2, $3, $4, $5)
             RETURNING id
-            "#
+            "#,
         )
         .bind(rec.user_id)
         .bind(rec.recipe_id)
@@ -190,7 +190,7 @@ impl AiRepo {
     /// 标记推荐为已点击
     pub async fn mark_recommendation_clicked(&self, recommendation_id: Uuid) -> Result<()> {
         sqlx::query(
-            "UPDATE ai_recommendations SET clicked = true, clicked_at = now() WHERE id = $1"
+            "UPDATE ai_recommendations SET clicked = true, clicked_at = now() WHERE id = $1",
         )
         .bind(recommendation_id)
         .execute(&self.pool)
@@ -212,7 +212,7 @@ impl AiRepo {
             WHERE user_id = $1
             ORDER BY created_at DESC
             LIMIT $2
-            "#
+            "#,
         )
         .bind(user_id)
         .bind(limit)
@@ -240,7 +240,7 @@ impl AiRepo {
             INSERT INTO user_behavior_logs (user_id, recipe_id, action_type, action_value)
             VALUES ($1, $2, $3, $4)
             RETURNING id
-            "#
+            "#,
         )
         .bind(user_id)
         .bind(recipe_id)
@@ -265,7 +265,7 @@ impl AiRepo {
             )
             FROM user_behavior_logs
             WHERE user_id = $1
-            "#
+            "#,
         )
         .bind(user_id)
         .fetch_one(&self.pool)
