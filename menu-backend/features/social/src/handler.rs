@@ -41,6 +41,15 @@ pub async fn add_favorite(
     tracing::info!("添加收藏: user_id={}, recipe_id={}", auth.user_id, recipe_id);
     let repo = PgFavoriteRepo::new(state.pool.clone());
     let fav = repo.add(auth.user_id, recipe_id).await?;
+
+    // 记录收藏行为
+    let pool = state.pool.clone();
+    let user_id = auth.user_id;
+    tokio::spawn(async move {
+        let ai_repo = menu_ai::repo::AiRepo::new(pool);
+        let _ = ai_repo.log_user_behavior(user_id, recipe_id, "favorite", None).await;
+    });
+
     ApiResponse::ok(fav)
 }
 
@@ -58,6 +67,15 @@ pub async fn remove_favorite(
     tracing::info!("取消收藏: user_id={}, recipe_id={}", auth.user_id, recipe_id);
     let repo = PgFavoriteRepo::new(state.pool.clone());
     repo.remove(auth.user_id, recipe_id).await?;
+
+    // 记录取消收藏行为
+    let pool = state.pool.clone();
+    let user_id = auth.user_id;
+    tokio::spawn(async move {
+        let ai_repo = menu_ai::repo::AiRepo::new(pool);
+        let _ = ai_repo.log_user_behavior(user_id, recipe_id, "unfavorite", None).await;
+    });
+
     ApiResponse::ok(true)
 }
 
@@ -92,6 +110,18 @@ pub async fn create_cooking_log(
     let repo = PgCookingLogRepo::new(state.pool.clone());
     let log = repo.create(auth.user_id, &req).await?;
     tracing::info!("烹饪记录创建成功: log_id={}", log.id);
+
+    // 记录烹饪行为（包含评分信息）
+    let pool = state.pool.clone();
+    let user_id = auth.user_id;
+    let recipe_id = req.recipe_id;
+    let rating = req.rating;
+    tokio::spawn(async move {
+        let ai_repo = menu_ai::repo::AiRepo::new(pool);
+        let action_value = rating.map(|r| serde_json::json!({"rating": r}));
+        let _ = ai_repo.log_user_behavior(user_id, recipe_id, "cook", action_value).await;
+    });
+
     ApiResponse::ok(log)
 }
 

@@ -23,6 +23,24 @@ async fn health() -> Json<serde_json::Value> {
     Json(json!({ "status": "ok" }))
 }
 
+/// AI 模块路由
+fn ai_routes() -> Router<AppState> {
+    Router::new()
+        // 营养分析
+        .route("/nutrition/analyze/:recipe_id", axum::routing::post(menu_ai::analyze_nutrition))
+        .route("/nutrition/:recipe_id", axum::routing::get(menu_ai::get_nutrition))
+        // 推荐系统
+        .route("/recommend/personalized", axum::routing::get(menu_ai::personalized_recommendations))
+        .route("/recommend/similar/:recipe_id", axum::routing::get(menu_ai::similar_recommendations))
+        .route("/recommend/trending", axum::routing::get(menu_ai::trending_recommendations))
+        .route("/recommend/health/:goal", axum::routing::get(menu_ai::health_goal_recommendations))
+        // 用户偏好
+        .route("/preference/analyze", axum::routing::post(menu_ai::analyze_preference))
+        .route("/preference/profile", axum::routing::get(menu_ai::get_preference_profile))
+        // 行为日志
+        .route("/behavior/log", axum::routing::post(menu_ai::log_behavior))
+}
+
 /// 构建 CORS 层，根据配置决定允许的 Origin
 fn build_cors(config: &AppConfig) -> CorsLayer {
     let cors = CorsLayer::new()
@@ -73,7 +91,8 @@ pub fn build_router(state: AppState, doc: utoipa::openapi::OpenApi) -> Router {
         .nest("/recipe", menu_recipe::routes())
         .nest("/social", menu_social::routes())
         .nest("/tool", menu_tool::routes())
-        .nest("/upload", menu_upload::routes());
+        .nest("/upload", menu_upload::routes())
+        .nest("/ai", ai_routes());
 
     let mut app = Router::new()
         .route("/health", axum::routing::get(health))

@@ -40,6 +40,8 @@ pub struct AppConfig {
     pub s3_access_key: String,
     /// S3 密钥
     pub s3_secret_key: String,
+    /// DeepSeek API Key
+    pub deepseek_api_key: Option<String>,
 }
 
 impl AppConfig {
@@ -77,6 +79,7 @@ impl AppConfig {
             s3_bucket: env::var("S3_BUCKET").unwrap_or_else(|_| "menu".into()),
             s3_access_key: env::var("S3_ACCESS_KEY").unwrap_or_else(|_| "minioadmin".into()),
             s3_secret_key: env::var("S3_SECRET_KEY").unwrap_or_else(|_| "minioadmin".into()),
+            deepseek_api_key: env::var("DEEPSEEK_API_KEY").ok(),
         }
     }
 

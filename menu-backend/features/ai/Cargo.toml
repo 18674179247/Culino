@@ -1,21 +1,24 @@
 [package]
-name = "menu-recipe"
+name = "menu-ai"
 version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-menu-common.workspace = true
-menu-ai.workspace = true
 axum.workspace = true
 tokio.workspace = true
 sqlx.workspace = true
-uuid.workspace = true
-chrono.workspace = true
 serde.workspace = true
 serde_json.workspace = true
+uuid.workspace = true
+chrono.workspace = true
+thiserror.workspace = true
+anyhow.workspace = true
 async-trait.workspace = true
 tracing.workspace = true
-anyhow.workspace = true
-rust_decimal.workspace = true
-utoipa.workspace = true
 validator.workspace = true
+rust_decimal.workspace = true
+menu-common.workspace = true
+utoipa.workspace = true
+
+# HTTP 客户端
+reqwest = { version = "0.12", features = ["json"] }

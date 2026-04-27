@@ -36,6 +36,7 @@ menu-ingredient = { path = "features/ingredient" }
 menu-social = { path = "features/social" }
 menu-tool = { path = "features/tool" }
 menu-upload = { path = "features/upload" }
+menu-ai = { path = "features/ai" }
 
 [package]
 name = "menu-backend"
@@ -65,5 +66,6 @@ menu-ingredient.workspace = true
 menu-social.workspace = true
 menu-tool.workspace = true
 menu-upload.workspace = true
+menu-ai.workspace = true
 utoipa.workspace = true
 utoipa-swagger-ui.workspace = true

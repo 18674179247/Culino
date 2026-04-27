@@ -195,4 +195,22 @@ pub struct RecipeDetail {
     pub seasonings: Vec<RecipeSeasoning>,
     pub steps: Vec<RecipeStep>,
     pub tags: Vec<RecipeTag>,
+    /// 营养信息（可能为空，如果尚未分析）
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub nutrition: Option<RecipeNutritionInfo>,
+}
+
+/// 菜谱营养信息（简化版，用于详情展示）
+#[derive(Debug, Serialize, utoipa::ToSchema)]
+pub struct RecipeNutritionInfo {
+    pub calories: Option<f64>,
+    pub protein: Option<f64>,
+    pub fat: Option<f64>,
+    pub carbohydrate: Option<f64>,
+    pub fiber: Option<f64>,
+    pub sodium: Option<f64>,
+    pub health_score: Option<i16>,
+    pub health_tags: Option<Vec<String>>,
+    pub suitable_for: Option<Vec<String>>,
+    pub analysis_text: Option<String>,
 }

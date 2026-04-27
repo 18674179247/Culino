@@ -40,6 +40,11 @@ impl PgRecipeRepo {
     pub fn new(pool: PgPool) -> Self {
         Self { pool }
     }
+
+    /// 获取数据库连接池引用
+    pub(crate) fn pool(&self) -> &PgPool {
+        &self.pool
+    }
 }
 
 #[async_trait]
@@ -169,7 +174,14 @@ impl RecipeRepo for PgRecipeRepo {
         .fetch_all(&self.pool)
         .await?;
 
-        Ok(Some(RecipeDetail { recipe, ingredients, seasonings, steps, tags }))
+        Ok(Some(RecipeDetail {
+            recipe,
+            ingredients,
+            seasonings,
+            steps,
+            tags,
+            nutrition: None, // 营养信息由 service 层填充
+        }))
     }
 
     /// 更新菜谱主表 + 全量替换关联数据（先删后插）

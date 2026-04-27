@@ -27,10 +27,33 @@ pub async fn create(
     let svc = RecipeService::new(state.pool.clone());
     let detail = svc.create(auth.user_id, &req).await?;
     tracing::info!("菜谱创建成功: recipe_id={}", detail.recipe.id);
+
+    // 异步触发营养分析
+    let pool = state.pool.clone();
+    let recipe_id = detail.recipe.id;
+    let api_key = state.config.deepseek_api_key.clone();
+
+    tokio::spawn(async move {
+        if let Some(key) = api_key {
+            tracing::info!("开始异步分析菜谱营养: recipe_id={}", recipe_id);
+            match menu_ai::nutrition::NutritionService::new(pool, key) {
+                Ok(ai_svc) => {
+                    match ai_svc.analyze_recipe_nutrition(recipe_id, false).await {
+                        Ok(_) => tracing::info!("菜谱营养分析完成: recipe_id={}", recipe_id),
+                        Err(e) => tracing::error!("菜谱营养分析失败: recipe_id={}, error={}", recipe_id, e),
+                    }
+                }
+                Err(e) => tracing::error!("创建营养分析服务失败: {}", e),
+            }
+        } else {
+            tracing::debug!("未配置 DeepSeek API Key，跳过营养分析");
+        }
+    });
+
     ApiResponse::ok(detail)
 }
 
-/// 获取菜谱详情（含食材、调料、步骤、标签）
+/// 获取菜谱详情（含食材、调料、步骤、标签、营养信息）
 #[utoipa::path(get, path = "/api/v1/recipe/{id}", tag = "菜谱",
     params(("id" = Uuid, Path, description = "菜谱ID")),
     responses((status = 200, body = RecipeDetail))
@@ -42,6 +65,10 @@ pub async fn get_detail(
     tracing::debug!("查询菜谱详情: recipe_id={}", id);
     let svc = RecipeService::new(state.pool.clone());
     let detail = svc.get_detail(id).await?;
+
+    // 注意：这里不记录浏览行为，因为无法获取可选的用户信息
+    // 如果需要记录，可以创建一个单独的端点或使用前端调用行为日志 API
+
     ApiResponse::ok(detail)
 }
 

@@ -39,5 +39,6 @@ pub fn build_api_doc() -> utoipa::openapi::OpenApi {
     doc.merge(menu_social::SocialApi::openapi());
     doc.merge(menu_tool::ToolApi::openapi());
     doc.merge(menu_upload::UploadApi::openapi());
+    doc.merge(menu_ai::AiApi::openapi());
     doc
 }
