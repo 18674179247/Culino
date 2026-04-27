@@ -167,11 +167,35 @@ pub async fn create(...) -> ApiResult<RecipeDetail> {
 
 ### 3. 记录用户行为
 
-在以下操作中记录行为日志：
-- 查看菜谱详情 → `action_type: "view"`
+行为日志通过 `BehaviorLogger` trait（定义在 common）注入 `AppState`，由 `menu-ai` 实现。业务模块（如 social）通过 `state.behavior_logger` 异步记录，无需直接依赖 AI 模块：
+
+```rust
+// common/src/behavior.rs
+#[async_trait]
+pub trait BehaviorLogger: Send + Sync {
+    async fn log(&self, user_id: Uuid, recipe_id: Uuid,
+        action_type: &str, action_value: Option<serde_json::Value>) -> Result<(), AppError>;
+}
+
+// features/social/src/handler.rs
+fn spawn_behavior_log(state: &AppState, user_id: Uuid, recipe_id: Uuid,
+    action: &'static str, value: Option<serde_json::Value>,
+) {
+    if let Some(logger) = state.behavior_logger.clone() {
+        tokio::spawn(async move {
+            if let Err(e) = logger.log(user_id, recipe_id, action, value).await {
+                tracing::error!("行为日志记录失败: ...");
+            }
+        });
+    }
+}
+```
+
+自动记录的行为：
 - 收藏菜谱 → `action_type: "favorite"`
-- 创建烹饪记录 → `action_type: "cook"`
-- 评分 → `action_type: "rate"`
+- 取消收藏 → `action_type: "unfavorite"`
+- 创建烹饪记录 → `action_type: "cook"`（含评分）
+- 前端也可主动调用 `POST /api/v1/ai/behavior/log` 记录浏览/搜索等行为
 
 ## 📱 前端集成建议
 
@@ -259,8 +283,8 @@ HealthTags(tags = nutrition.healthTags)
    - 减少数据库查询
 
 3. **推荐算法优化**
+   - ✅ 时间衰减因子（已实现：新菜谱 30 天内有曝光加分）
    - 引入协同过滤
-   - 添加时间衰减因子
    - 考虑季节性因素
 
 4. **A/B 测试**

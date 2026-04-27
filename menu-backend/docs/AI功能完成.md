@@ -44,13 +44,10 @@
   - 不影响原有功能
 
 #### 3. 用户行为日志记录 ✅
-- **收藏菜谱：** `features/social/src/handler.rs::add_favorite()`
-  - 记录 `action_type: "favorite"`
-- **取消收藏：** `features/social/src/handler.rs::remove_favorite()`
-  - 记录 `action_type: "unfavorite"`
-- **创建烹饪记录：** `features/social/src/handler.rs::create_cooking_log()`
-  - 记录 `action_type: "cook"`
-  - 包含评分信息
+- **解耦方式：** 通过 `BehaviorLogger` trait（common）+ `AppState` 注入，social 模块不再直接依赖 ai 模块
+- **收藏菜谱：** `features/social/src/handler.rs::add_favorite()` → `action_type: "favorite"`
+- **取消收藏：** `features/social/src/handler.rs::remove_favorite()` → `action_type: "unfavorite"`
+- **创建烹饪记录：** `features/social/src/handler.rs::create_cooking_log()` → `action_type: "cook"`（含评分）
 
 ## 📊 API 端点总览
 
@@ -297,8 +294,8 @@ curl http://localhost:3000/api/v1/ai/recommend/trending?limit=10
    - 减少数据库查询
 
 3. **推荐算法优化**
+   - ✅ 时间衰减因子（已实现：热门推荐中新菜谱 30 天内有额外曝光）
    - 引入协同过滤
-   - 添加时间衰减因子
    - 考虑季节性因素
 
 4. **A/B 测试**
@@ -322,7 +319,7 @@ curl http://localhost:3000/api/v1/ai/recommend/trending?limit=10
 如有问题，请查看：
 - API 文档：http://localhost:3000/swagger-ui/
 - 日志文件：`logs/menu-backend.log`
-- 集成文档：`AI_INTEGRATION.md`
+- 集成文档：`docs/AI集成方案.md`
 
 ---
 

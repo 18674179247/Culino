@@ -7,10 +7,11 @@
 - Axum 0.8 — Web 框架
 - SQLx 0.8 — 类型安全的异步 PostgreSQL 驱动
 - Tokio — 异步运行时
-- Utoipa — OpenAPI 文档自动生成
-- JWT — 用户认证
-- Argon2 — 密码哈希
-- rust-s3 — S3 兼容对象存储客户端（对接 RustFS/MinIO）
+- Redis 7 — 缓存与 Token 管理
+- JWT + Argon2 — 用户认证
+- DeepSeek API — AI 营养分析与智能推荐
+- rust-s3 — S3 兼容对象存储（MinIO / RustFS）
+- Utoipa + Swagger UI — API 文档
 
 ## 项目结构
 
@@ -20,7 +21,7 @@ src/                        # 应用入口
 ├── openapi.rs              # OpenAPI 文档构建
 └── router.rs               # 路由构建
 
-common/                     # 公共基础设施（认证、配置、错误处理、分页）
+common/                     # 公共基础设施（认证、配置、错误处理、分页、行为日志 trait）
 
 features/
 ├── user/                   # 用户模块（注册、登录、个人信息）
@@ -28,7 +29,8 @@ features/
 ├── ingredient/             # 食材模块（食材、调料、标签管理）
 ├── social/                 # 社交模块（收藏、烹饪记录）
 ├── tool/                   # 工具模块（购物清单、膳食计划）
-└── upload/                 # 上传模块（图片上传到 S3 兼容存储）
+├── upload/                 # 上传模块（图片上传到 S3 兼容存储）
+└── ai/                     # AI 模块（营养分析、智能推荐、偏好分析）
 ```
 
 ## 快速开始
@@ -55,7 +57,11 @@ open http://localhost:3000/swagger-ui/
 | 社交 | `/api/v1/social` | 收藏、烹饪记录 |
 | 工具 | `/api/v1/tool` | 购物清单、膳食计划 |
 | 上传 | `/api/v1/upload` | 图片上传与删除（S3 兼容存储） |
+| AI | `/api/v1/ai` | 营养分析、智能推荐、偏好分析、行为日志 |
 
-## 架构规范
+## 文档
 
-详见 [ARCHITECTURE.md](./ARCHITECTURE.md)。
+- [功能文档](./docs/功能文档.md)
+- [架构规范](./docs/架构设计.md)
+- [AI 集成方案](./docs/AI集成方案.md)
+- [AI 完成总结](./docs/AI功能完成.md)
