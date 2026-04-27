@@ -40,11 +40,6 @@ impl PgRecipeRepo {
     pub fn new(pool: PgPool) -> Self {
         Self { pool }
     }
-
-    /// 获取数据库连接池引用
-    pub(crate) fn pool(&self) -> &PgPool {
-        &self.pool
-    }
 }
 
 #[async_trait]
@@ -364,7 +359,7 @@ impl RecipeRepo for PgRecipeRepo {
         let base_sql = format!(
             "SELECT id, title, description, cover_image, difficulty, cooking_time, servings, author_id, created_at FROM recipes WHERE {where_clause}"
         );
-        let data_sql = paginate_sql(&base_sql, "_inner.created_at DESC", param_index, param_index + 1);
+        let data_sql = paginate_sql(&base_sql, "_inner.created_at DESC", param_index, param_index + 1)?;
 
         let mut query = sqlx::query_as::<_, RecipeListItemCounted>(&data_sql);
         if has_tags {
@@ -392,8 +387,14 @@ impl RecipeRepo for PgRecipeRepo {
     }
 
     async fn random(&self, count: i64) -> Result<Vec<RecipeListItem>, AppError> {
+        // 先通过 random() 阈值筛选约 10% 的行，再从中随机排序取 N 条。
+        // 避免 ORDER BY random() 扫描全表，在大数据量下显著减少排序开销。
         let items = sqlx::query_as::<_, RecipeListItem>(
-            "SELECT id, title, description, cover_image, difficulty, cooking_time, servings, author_id, created_at FROM recipes WHERE status = 1 ORDER BY random() LIMIT $1"
+            "SELECT id, title, description, cover_image, difficulty, cooking_time, servings, author_id, created_at \
+             FROM recipes \
+             WHERE status = 1 AND random() < 0.1 \
+             ORDER BY random() \
+             LIMIT $1"
         )
         .bind(count)
         .fetch_all(&self.pool)

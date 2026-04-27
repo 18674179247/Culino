@@ -1720,6 +1720,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "argon2",
+ "async-trait",
  "axum",
  "chrono",
  "dotenvy",
@@ -1780,7 +1781,6 @@ dependencies = [
  "async-trait",
  "axum",
  "chrono",
- "menu-ai",
  "menu-common",
  "serde",
  "serde_json",

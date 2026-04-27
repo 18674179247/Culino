@@ -2,6 +2,9 @@
 //!
 //! 在 Axum 路由间共享数据库连接池、Redis 连接和配置。
 
+use std::sync::Arc;
+
+use crate::behavior::BehaviorLogger;
 use crate::config::AppConfig;
 use redis::aio::MultiplexedConnection;
 use s3::Bucket;
@@ -18,4 +21,6 @@ pub struct AppState {
     pub redis: MultiplexedConnection,
     /// S3 兼容对象存储客户端
     pub s3: Box<Bucket>,
+    /// 用户行为日志记录器（AI 模块提供，未配置 DeepSeek 时为 None）
+    pub behavior_logger: Option<Arc<dyn BehaviorLogger>>,
 }

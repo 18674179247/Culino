@@ -23,7 +23,7 @@ async fn health() -> Json<serde_json::Value> {
     Json(json!({ "status": "ok" }))
 }
 
-/// AI 模块路由
+/// AI 模块路由（独立 120s 超时，因为 AI API 调用耗时较长）
 fn ai_routes() -> Router<AppState> {
     Router::new()
         // 营养分析
@@ -39,6 +39,7 @@ fn ai_routes() -> Router<AppState> {
         .route("/preference/profile", axum::routing::get(menu_ai::get_preference_profile))
         // 行为日志
         .route("/behavior/log", axum::routing::post(menu_ai::log_behavior))
+        .layer(TimeoutLayer::with_status_code(StatusCode::REQUEST_TIMEOUT, Duration::from_secs(120)))
 }
 
 /// 构建 CORS 层，根据配置决定允许的 Origin

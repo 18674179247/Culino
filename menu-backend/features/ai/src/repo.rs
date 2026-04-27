@@ -1,4 +1,7 @@
 use anyhow::{Context, Result};
+use async_trait::async_trait;
+use menu_common::behavior::BehaviorLogger;
+use menu_common::error::AppError;
 use sqlx::PgPool;
 use uuid::Uuid;
 use crate::model::*;
@@ -12,6 +15,28 @@ impl AiRepo {
         Self { pool }
     }
 
+    pub fn into_behavior_logger(self) -> std::sync::Arc<dyn BehaviorLogger> {
+        std::sync::Arc::new(self)
+    }
+}
+
+#[async_trait]
+impl BehaviorLogger for AiRepo {
+    async fn log(
+        &self,
+        user_id: Uuid,
+        recipe_id: Uuid,
+        action_type: &str,
+        action_value: Option<serde_json::Value>,
+    ) -> Result<(), AppError> {
+        self.log_user_behavior(user_id, recipe_id, action_type, action_value)
+            .await
+            .map(|_| ())
+            .map_err(|e| AppError::Internal(e.into()))
+    }
+}
+
+impl AiRepo {
     /// 获取 pool 的引用（用于其他服务）
     pub(crate) fn pool(&self) -> &PgPool {
         &self.pool

@@ -216,6 +216,7 @@ struct CookingStats {
 }
 
 #[derive(sqlx::FromRow)]
+#[allow(dead_code)]
 struct IngredientCount {
     ingredient_id: i32,
     name: String,

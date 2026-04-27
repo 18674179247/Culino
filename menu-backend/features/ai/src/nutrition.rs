@@ -1,7 +1,6 @@
 use anyhow::{Context, Result};
 use rust_decimal::Decimal;
 use sqlx::PgPool;
-use std::str::FromStr;
 use uuid::Uuid;
 
 use crate::deepseek::DeepSeekClient;
@@ -169,28 +168,22 @@ impl NutritionService {
             recipe_id,
             calories: parsed["calories"]
                 .as_f64()
-                .map(|v| Decimal::from_str(&v.to_string()).ok())
-                .flatten(),
+                .and_then(Decimal::from_f64_retain),
             protein: parsed["protein"]
                 .as_f64()
-                .map(|v| Decimal::from_str(&v.to_string()).ok())
-                .flatten(),
+                .and_then(Decimal::from_f64_retain),
             fat: parsed["fat"]
                 .as_f64()
-                .map(|v| Decimal::from_str(&v.to_string()).ok())
-                .flatten(),
+                .and_then(Decimal::from_f64_retain),
             carbohydrate: parsed["carbohydrate"]
                 .as_f64()
-                .map(|v| Decimal::from_str(&v.to_string()).ok())
-                .flatten(),
+                .and_then(Decimal::from_f64_retain),
             fiber: parsed["fiber"]
                 .as_f64()
-                .map(|v| Decimal::from_str(&v.to_string()).ok())
-                .flatten(),
+                .and_then(Decimal::from_f64_retain),
             sodium: parsed["sodium"]
                 .as_f64()
-                .map(|v| Decimal::from_str(&v.to_string()).ok())
-                .flatten(),
+                .and_then(Decimal::from_f64_retain),
             analysis_text: parsed["analysis_text"].as_str().map(String::from),
             health_score: parsed["health_score"].as_i64().map(|v| v as i16),
             health_tags: parsed["health_tags"]
@@ -222,6 +215,7 @@ impl NutritionService {
 
 // 辅助结构体
 #[derive(sqlx::FromRow)]
+#[allow(dead_code)]
 struct RecipeRow {
     id: Uuid,
     title: String,
@@ -229,6 +223,7 @@ struct RecipeRow {
 }
 
 #[derive(sqlx::FromRow)]
+#[allow(dead_code)]
 struct IngredientRow {
     name: String,
     amount: Option<Decimal>,
@@ -236,6 +231,7 @@ struct IngredientRow {
 }
 
 #[derive(sqlx::FromRow)]
+#[allow(dead_code)]
 struct SeasoningRow {
     name: String,
     amount: Option<Decimal>,

@@ -1,4 +1,5 @@
 use anyhow::{Context, Result};
+use chrono::{DateTime, Utc};
 use rust_decimal::Decimal;
 use sqlx::PgPool;
 use uuid::Uuid;
@@ -108,7 +109,7 @@ impl RecommendationService {
         Ok(recommendations)
     }
 
-    /// 热门推荐（基于收藏和评分）
+    /// 热门推荐（基于收藏、评分和发布时间衰减）
     pub async fn trending_recommendations(&self, limit: i64) -> Result<Vec<RecommendationItem>> {
         tracing::info!("Generating trending recommendations");
 
@@ -118,15 +119,19 @@ impl RecommendationService {
                 r.id,
                 r.title,
                 r.cover_image,
+                r.created_at,
                 COUNT(DISTINCT f.user_id) as favorite_count,
                 COALESCE(AVG(cl.rating), 0) as avg_rating,
-                (COUNT(DISTINCT f.user_id) * 0.7 + COALESCE(AVG(cl.rating), 0) * 0.3) as score
+                (
+                    COUNT(DISTINCT f.user_id) * 0.7
+                    + COALESCE(AVG(cl.rating), 0) * 0.3
+                    + GREATEST(0, 1.0 - EXTRACT(EPOCH FROM (now() - r.created_at)) / (30 * 86400)) * 2.0
+                ) as score
             FROM recipes r
             LEFT JOIN favorites f ON r.id = f.recipe_id
             LEFT JOIN cooking_logs cl ON r.id = cl.recipe_id
             WHERE r.status = 1
-            GROUP BY r.id, r.title, r.cover_image
-            HAVING COUNT(DISTINCT f.user_id) > 0
+            GROUP BY r.id, r.title, r.cover_image, r.created_at
             ORDER BY score DESC
             LIMIT $1
             "#
@@ -138,17 +143,22 @@ impl RecommendationService {
 
         let recommendations = recipes
             .into_iter()
-            .map(|recipe| RecommendationItem {
-                recipe_id: recipe.id,
-                title: recipe.title,
-                cover_image: recipe.cover_image,
-                score: recipe.score.unwrap_or(0.0),
-                reason: format!(
-                    "已有 {} 人收藏，平均评分 {:.1}",
-                    recipe.favorite_count.unwrap_or(0),
-                    recipe.avg_rating.unwrap_or_default()
-                ),
-                recommendation_type: "trending".to_string(),
+            .map(|recipe| {
+                let fav_count = recipe.favorite_count.unwrap_or(0);
+                let avg_r = recipe.avg_rating.unwrap_or_default();
+                let reason = if fav_count > 0 || avg_r > rust_decimal::Decimal::ZERO {
+                    format!("已有 {fav_count} 人收藏，平均评分 {avg_r:.1}")
+                } else {
+                    "新发布的菜谱，快来尝尝鲜".into()
+                };
+                RecommendationItem {
+                    recipe_id: recipe.id,
+                    title: recipe.title,
+                    cover_image: recipe.cover_image,
+                    score: recipe.score.unwrap_or(0.0),
+                    reason,
+                    recommendation_type: "trending".to_string(),
+                }
             })
             .collect();
 
@@ -158,7 +168,7 @@ impl RecommendationService {
     /// 基于健康目标的推荐
     pub async fn health_goal_recommendations(
         &self,
-        user_id: Uuid,
+        _user_id: Uuid,
         health_goal: &str,
         limit: i64,
     ) -> Result<Vec<RecommendationItem>> {
@@ -310,20 +320,38 @@ impl RecommendationService {
         score.min(100.0)
     }
 
-    /// 生成推荐理由
+    /// 基于偏好数据生成有实际意义的推荐理由
     fn generate_recommendation_reason(
         &self,
         recipe: &RecipeForRecommendation,
         preference: &crate::model::UserPreference,
     ) -> String {
-        let reasons = vec![
-            "符合您的口味偏好",
-            "与您收藏的菜谱风格相似",
-            "烹饪难度适中",
-            "制作时间合适",
-        ];
+        let mut reasons: Vec<String> = Vec::new();
 
-        reasons[recipe.id.as_bytes()[0] as usize % reasons.len()].to_string()
+        // 难度匹配
+        if let (Some(recipe_diff), Some(pref_diff)) =
+            (recipe.difficulty, preference.difficulty_preference)
+        {
+            if (recipe_diff - pref_diff).abs() <= 1 {
+                reasons.push("烹饪难度适合您".into());
+            }
+        }
+
+        // 烹饪时间匹配
+        if let (Some(recipe_time), Some(pref_time)) =
+            (recipe.cooking_time, preference.avg_cooking_time)
+        {
+            if (recipe_time - pref_time).abs() <= 15 {
+                reasons.push("制作时间符合您的习惯".into());
+            }
+        }
+
+        // 兜底
+        if reasons.is_empty() {
+            reasons.push("为您精心挑选".into());
+        }
+
+        reasons.join("，")
     }
 
     /// 获取菜谱标签
@@ -393,10 +421,12 @@ struct RecipeForRecommendation {
 }
 
 #[derive(sqlx::FromRow)]
+#[allow(dead_code)]
 struct TrendingRecipe {
     id: Uuid,
     title: String,
     cover_image: Option<String>,
+    created_at: Option<DateTime<Utc>>,
     favorite_count: Option<i64>,
     avg_rating: Option<Decimal>,
     score: Option<f64>,

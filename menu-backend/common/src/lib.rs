@@ -4,6 +4,7 @@
 //! 被所有业务 crate 共享使用。
 
 pub mod auth;
+pub mod behavior;
 pub mod config;
 pub mod error;
 pub mod pagination;

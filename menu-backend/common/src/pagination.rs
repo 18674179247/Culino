@@ -45,10 +45,10 @@ pub struct PaginatedResponse<T: serde::Serialize> {
 
 /// 将基础 SQL 包装为带 `COUNT(*) OVER() AS total_count` 的单次分页查询
 ///
-/// # Safety
-///
 /// `order_by` 参数会直接拼接到 SQL 中，调用方必须传入硬编码字符串，
 /// 绝对不能传入用户输入，否则会导致 SQL 注入。
+///
+/// 为防范误用，此函数运行时检查 `order_by` 是否包含 `;` 或 `--`。
 ///
 /// 生成形如：
 /// ```sql
@@ -57,13 +57,18 @@ pub struct PaginatedResponse<T: serde::Serialize> {
 /// ORDER BY _inner.created_at DESC
 /// LIMIT $N OFFSET $M
 /// ```
-pub fn paginate_sql(base_sql: &str, order_by: &str, limit_param: u32, offset_param: u32) -> String {
-    // order_by 必须使用 _inner. 前缀引用子查询中的列
-    assert!(
-        !order_by.contains(';') && !order_by.contains("--"),
-        "order_by 参数疑似包含 SQL 注入"
-    );
-    format!(
+pub fn paginate_sql(
+    base_sql: &str,
+    order_by: &str,
+    limit_param: u32,
+    offset_param: u32,
+) -> Result<String, crate::error::AppError> {
+    if order_by.contains(';') || order_by.contains("--") {
+        return Err(crate::error::AppError::Internal(anyhow::anyhow!(
+            "order_by 参数包含非法字符"
+        )));
+    }
+    Ok(format!(
         "SELECT *, COUNT(*) OVER() AS total_count FROM ({base_sql}) AS _inner ORDER BY {order_by} LIMIT ${limit_param} OFFSET ${offset_param}"
-    )
+    ))
 }

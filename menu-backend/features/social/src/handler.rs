@@ -12,6 +12,17 @@ use crate::model::*;
 use crate::repo::favorite_repo::{FavoriteRepo, PgFavoriteRepo};
 use crate::repo::cooking_log_repo::{CookingLogRepo, PgCookingLogRepo};
 
+/// 异步记录用户行为（fire-and-forget）
+fn spawn_behavior_log(state: &AppState, user_id: Uuid, recipe_id: Uuid, action: &'static str, value: Option<serde_json::Value>) {
+    if let Some(logger) = state.behavior_logger.clone() {
+        tokio::spawn(async move {
+            if let Err(e) = logger.log(user_id, recipe_id, action, value).await {
+                tracing::error!("行为日志记录失败: user={user_id}, recipe={recipe_id}, action={action}, error={e}");
+            }
+        });
+    }
+}
+
 /// 获取当前用户的收藏列表
 #[utoipa::path(get, path = "/api/v1/social/favorites", tag = "收藏",
     security(("bearer" = [])),
@@ -42,13 +53,7 @@ pub async fn add_favorite(
     let repo = PgFavoriteRepo::new(state.pool.clone());
     let fav = repo.add(auth.user_id, recipe_id).await?;
 
-    // 记录收藏行为
-    let pool = state.pool.clone();
-    let user_id = auth.user_id;
-    tokio::spawn(async move {
-        let ai_repo = menu_ai::repo::AiRepo::new(pool);
-        let _ = ai_repo.log_user_behavior(user_id, recipe_id, "favorite", None).await;
-    });
+    spawn_behavior_log(&state, auth.user_id, recipe_id, "favorite", None);
 
     ApiResponse::ok(fav)
 }
@@ -68,13 +73,7 @@ pub async fn remove_favorite(
     let repo = PgFavoriteRepo::new(state.pool.clone());
     repo.remove(auth.user_id, recipe_id).await?;
 
-    // 记录取消收藏行为
-    let pool = state.pool.clone();
-    let user_id = auth.user_id;
-    tokio::spawn(async move {
-        let ai_repo = menu_ai::repo::AiRepo::new(pool);
-        let _ = ai_repo.log_user_behavior(user_id, recipe_id, "unfavorite", None).await;
-    });
+    spawn_behavior_log(&state, auth.user_id, recipe_id, "unfavorite", None);
 
     ApiResponse::ok(true)
 }
@@ -111,16 +110,8 @@ pub async fn create_cooking_log(
     let log = repo.create(auth.user_id, &req).await?;
     tracing::info!("烹饪记录创建成功: log_id={}", log.id);
 
-    // 记录烹饪行为（包含评分信息）
-    let pool = state.pool.clone();
-    let user_id = auth.user_id;
-    let recipe_id = req.recipe_id;
-    let rating = req.rating;
-    tokio::spawn(async move {
-        let ai_repo = menu_ai::repo::AiRepo::new(pool);
-        let action_value = rating.map(|r| serde_json::json!({"rating": r}));
-        let _ = ai_repo.log_user_behavior(user_id, recipe_id, "cook", action_value).await;
-    });
+    let action_value = req.rating.map(|r| serde_json::json!({"rating": r}));
+    spawn_behavior_log(&state, auth.user_id, req.recipe_id, "cook", action_value);
 
     ApiResponse::ok(log)
 }

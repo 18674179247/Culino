@@ -148,7 +148,22 @@ async fn migrate(pool: &PgPool) {
 /// 阶段 3：启动 HTTP 服务
 async fn serve(config: AppConfig, pool: PgPool, redis: MultiplexedConnection, s3: Box<Bucket>) {
     let addr = config.server_addr.clone();
-    let state = AppState { pool, config, redis, s3 };
+
+    // 若配置了 DeepSeek API Key，则初始化行为日志记录器
+    let behavior_logger = if config.deepseek_api_key.is_some() {
+        let ai_repo = menu_ai::repo::AiRepo::new(pool.clone());
+        Some(ai_repo.into_behavior_logger())
+    } else {
+        None
+    };
+
+    let state = AppState {
+        pool,
+        config,
+        redis,
+        s3,
+        behavior_logger,
+    };
 
     let doc = openapi::build_api_doc();
     let app = router::build_router(state, doc);

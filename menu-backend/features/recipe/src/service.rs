@@ -2,6 +2,7 @@
 //!
 //! 在 handler 和 repo 之间做参数校验和业务编排。
 
+use rust_decimal::prelude::ToPrimitive;
 use sqlx::PgPool;
 use uuid::Uuid;
 use validator::Validate;
@@ -26,13 +27,15 @@ struct NutritionRow {
 
 /// 菜谱服务，封装业务逻辑
 pub struct RecipeService {
-    repo: PgRecipeRepo,
+    repo: Box<dyn RecipeRepo>,
+    pool: PgPool,
 }
 
 impl RecipeService {
     pub fn new(pool: PgPool) -> Self {
         Self {
-            repo: PgRecipeRepo::new(pool),
+            repo: Box::new(PgRecipeRepo::new(pool.clone())),
+            pool,
         }
     }
 
@@ -66,18 +69,18 @@ impl RecipeService {
             "#
         )
         .bind(recipe_id)
-        .fetch_optional(self.repo.pool())
+        .fetch_optional(&self.pool)
         .await
         .map_err(|e| AppError::Internal(e.into()))?
         .ok_or_else(|| AppError::NotFound("nutrition not found".into()))?;
 
         Ok(RecipeNutritionInfo {
-            calories: nutrition.calories.map(|d| d.to_string().parse().unwrap_or(0.0)),
-            protein: nutrition.protein.map(|d| d.to_string().parse().unwrap_or(0.0)),
-            fat: nutrition.fat.map(|d| d.to_string().parse().unwrap_or(0.0)),
-            carbohydrate: nutrition.carbohydrate.map(|d| d.to_string().parse().unwrap_or(0.0)),
-            fiber: nutrition.fiber.map(|d| d.to_string().parse().unwrap_or(0.0)),
-            sodium: nutrition.sodium.map(|d| d.to_string().parse().unwrap_or(0.0)),
+            calories: nutrition.calories.and_then(|d| d.to_f64()),
+            protein: nutrition.protein.and_then(|d| d.to_f64()),
+            fat: nutrition.fat.and_then(|d| d.to_f64()),
+            carbohydrate: nutrition.carbohydrate.and_then(|d| d.to_f64()),
+            fiber: nutrition.fiber.and_then(|d| d.to_f64()),
+            sodium: nutrition.sodium.and_then(|d| d.to_f64()),
             health_score: nutrition.health_score,
             health_tags: nutrition.health_tags,
             suitable_for: nutrition.suitable_for,
