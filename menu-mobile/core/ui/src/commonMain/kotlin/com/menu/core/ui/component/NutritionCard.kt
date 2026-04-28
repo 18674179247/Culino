@@ -10,10 +10,12 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.menu.core.model.RecipeNutrition
+import kotlin.math.roundToInt
 
 /**
  * 营养信息卡片
  */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun NutritionCard(
     nutrition: RecipeNutrition,
@@ -51,7 +53,7 @@ fun NutritionCard(
                     NutritionItem("热量", "${it.toInt()} 千卡")
                 }
                 nutrition.protein?.let {
-                    NutritionItem("蛋白质", "${String.format("%.1f", it)} 克")
+                    NutritionItem("蛋白质", "${(it * 10).roundToInt() / 10.0} 克")
                 }
             }
 
@@ -60,10 +62,10 @@ fun NutritionCard(
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 nutrition.fat?.let {
-                    NutritionItem("脂肪", "${String.format("%.1f", it)} 克")
+                    NutritionItem("脂肪", "${(it * 10).roundToInt() / 10.0} 克")
                 }
                 nutrition.carbohydrate?.let {
-                    NutritionItem("碳水", "${String.format("%.1f", it)} 克")
+                    NutritionItem("碳水", "${(it * 10).roundToInt() / 10.0} 克")
                 }
             }
 
