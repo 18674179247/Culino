@@ -3,7 +3,7 @@
 //! 定义 FavoriteRepo trait 和 PostgreSQL 实现，
 //! 管理用户与菜谱的收藏关系，使用 ON CONFLICT 处理重复收藏。
 
-use crate::model::Favorite;
+use crate::model::{Favorite, FavoriteWithTitle};
 use async_trait::async_trait;
 use menu_common::error::AppError;
 use sqlx::PgPool;
@@ -12,8 +12,8 @@ use uuid::Uuid;
 /// 收藏仓储接口
 #[async_trait]
 pub trait FavoriteRepo: Send + Sync {
-    /// 查询用户的所有收藏
-    async fn list_by_user(&self, user_id: Uuid) -> Result<Vec<Favorite>, AppError>;
+    /// 查询用户的所有收藏（含菜谱标题）
+    async fn list_by_user(&self, user_id: Uuid) -> Result<Vec<FavoriteWithTitle>, AppError>;
     /// 添加收藏（幂等操作）
     async fn add(&self, user_id: Uuid, recipe_id: Uuid) -> Result<Favorite, AppError>;
     /// 取消收藏
@@ -33,10 +33,12 @@ impl PgFavoriteRepo {
 
 #[async_trait]
 impl FavoriteRepo for PgFavoriteRepo {
-    /// 查询用户的所有收藏，按时间倒序
-    async fn list_by_user(&self, user_id: Uuid) -> Result<Vec<Favorite>, AppError> {
-        let rows = sqlx::query_as::<_, Favorite>(
-            "SELECT * FROM favorites WHERE user_id = $1 ORDER BY created_at DESC",
+    /// 查询用户的所有收藏，按时间倒序，JOIN 菜谱表获取标题
+    async fn list_by_user(&self, user_id: Uuid) -> Result<Vec<FavoriteWithTitle>, AppError> {
+        let rows = sqlx::query_as::<_, FavoriteWithTitle>(
+            "SELECT f.user_id, f.recipe_id, f.created_at, r.title as recipe_title \
+             FROM favorites f LEFT JOIN recipes r ON f.recipe_id = r.id \
+             WHERE f.user_id = $1 ORDER BY f.created_at DESC",
         )
         .bind(user_id)
         .fetch_all(&self.pool)

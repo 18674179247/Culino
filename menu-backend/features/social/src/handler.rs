@@ -37,15 +37,15 @@ fn spawn_behavior_log(
 /// 获取当前用户的收藏列表
 #[utoipa::path(get, path = "/api/v1/social/favorites", tag = "收藏",
     security(("bearer" = [])),
-    responses((status = 200, body = Vec<Favorite>))
+    responses((status = 200, body = Vec<FavoriteWithTitle>))
 )]
 pub async fn list_favorites(
     State(state): State<AppState>,
     auth: AuthUser,
-) -> ApiResult<Vec<Favorite>> {
+) -> ApiResult<Vec<FavoriteWithTitle>> {
     tracing::debug!("查询收藏列表: user_id={}", auth.user_id);
     let repo = PgFavoriteRepo::new(state.pool.clone());
-    let rows = repo.list_by_user(auth.user_id).await?;
+    let rows: Vec<FavoriteWithTitle> = repo.list_by_user(auth.user_id).await?;
     ApiResponse::ok(rows)
 }
 

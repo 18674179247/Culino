@@ -26,6 +26,7 @@ use utoipa::OpenApi;
     ),
     components(schemas(
         model::Favorite,
+        model::FavoriteWithTitle,
         model::CookingLog,
         model::CreateCookingLogReq,
         model::UpdateCookingLogReq,
