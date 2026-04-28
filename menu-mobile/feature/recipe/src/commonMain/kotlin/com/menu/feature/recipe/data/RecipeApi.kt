@@ -35,29 +35,29 @@ class RecipeApiImpl(private val client: ApiClient) : RecipeApi {
             put("page", page.toString())
             put("page_size", pageSize.toString())
         }
-        return client.get("/recipe/search", params)
+        return client.get("recipe/search", params)
     }
 
     override suspend fun getRecipeDetail(id: String): ApiResponse<RecipeDetail> {
-        return client.get("/recipe/$id")
+        return client.get("recipe/$id")
     }
 
     override suspend fun createRecipe(request: CreateRecipeRequest): ApiResponse<RecipeDetail> {
-        return client.post("/recipe", request)
+        return client.post("recipe", request)
     }
 
     override suspend fun updateRecipe(
         id: String,
         request: CreateRecipeRequest
     ): ApiResponse<RecipeDetail> {
-        return client.put("/recipe/$id", request)
+        return client.put("recipe/$id", request)
     }
 
     override suspend fun deleteRecipe(id: String): ApiResponse<Boolean> {
-        return client.delete("/recipe/$id")
+        return client.delete("recipe/$id")
     }
 
     override suspend fun getRandomRecipes(count: Int): ApiResponse<List<RecipeListItem>> {
-        return client.get("/recipe/random", mapOf("count" to count.toString()))
+        return client.get("recipe/random", mapOf("count" to count.toString()))
     }
 }

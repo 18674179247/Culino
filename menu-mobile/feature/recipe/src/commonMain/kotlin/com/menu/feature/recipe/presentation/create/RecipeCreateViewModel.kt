@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.menu.core.common.AppResult
 import com.menu.feature.recipe.data.CreateRecipeRequest
+import com.menu.feature.recipe.data.CreateRecipeStep
 import com.menu.feature.recipe.data.RecipeRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -139,24 +140,33 @@ class RecipeCreateViewModel(
         viewModelScope.launch {
             _uiState.value = RecipeCreateUiState.Loading
 
+            // 映射难度：简单=1, 中等=3, 困难=5
+            val difficultyInt = when (form.difficulty) {
+                "简单" -> 1
+                "中等" -> 3
+                "困难" -> 5
+                else -> 3
+            }
+
             val request = CreateRecipeRequest(
                 title = form.name,
                 description = form.description.ifBlank { null },
                 coverImage = null,
-                difficulty = form.difficulty,
+                difficulty = difficultyInt,
                 cookingTime = cookingTimeInt,
+                prepTime = null,
                 servings = 2, // 默认2人份
-                ingredients = emptyList(), // 暂时跳过食材
-                seasonings = emptyList(), // 暂时跳过调料
+                ingredients = null, // 暂时跳过食材
+                seasonings = null, // 暂时跳过调料
                 steps = validSteps.mapIndexed { index, description ->
                     CreateRecipeStep(
                         stepNumber = index + 1,
-                        description = description,
+                        content = description,
                         image = null,
-                        durationMinutes = null
+                        duration = null
                     )
                 },
-                tagIds = emptyList()
+                tagIds = null
             )
 
             when (val result = repository.createRecipe(request)) {

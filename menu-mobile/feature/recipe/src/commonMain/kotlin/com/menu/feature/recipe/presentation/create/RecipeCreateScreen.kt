@@ -121,34 +121,21 @@ private fun RecipeForm(viewModel: RecipeCreateViewModel) {
         )
 
         // 难度选择
-        var expandedDifficulty by remember { mutableStateOf(false) }
-        ExposedDropdownMenuBox(
-            expanded = expandedDifficulty,
-            onExpandedChange = { expandedDifficulty = it }
+        Text(
+            text = "难度 *",
+            style = MaterialTheme.typography.labelMedium
+        )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            OutlinedTextField(
-                value = formState.difficulty,
-                onValueChange = {},
-                readOnly = true,
-                label = { Text("难度 *") },
-                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedDifficulty) },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .menuAnchor()
-            )
-            ExposedDropdownMenu(
-                expanded = expandedDifficulty,
-                onDismissRequest = { expandedDifficulty = false }
-            ) {
-                listOf("简单", "中等", "困难").forEach { difficulty ->
-                    DropdownMenuItem(
-                        text = { Text(difficulty) },
-                        onClick = {
-                            viewModel.updateDifficulty(difficulty)
-                            expandedDifficulty = false
-                        }
-                    )
-                }
+            listOf("简单", "中等", "困难").forEach { difficulty ->
+                FilterChip(
+                    selected = formState.difficulty == difficulty,
+                    onClick = { viewModel.updateDifficulty(difficulty) },
+                    label = { Text(difficulty) },
+                    modifier = Modifier.weight(1f)
+                )
             }
         }
 

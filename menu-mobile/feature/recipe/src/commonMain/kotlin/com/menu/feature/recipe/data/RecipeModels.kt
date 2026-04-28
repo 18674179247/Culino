@@ -10,11 +10,10 @@ data class RecipeListItem(
     val title: String,
     val description: String?,
     @SerialName("cover_image") val coverImage: String?,
-    val difficulty: String,
+    val difficulty: Int,
     @SerialName("cooking_time") val cookingTime: Int,
     @SerialName("servings") val servings: Int,
     @SerialName("author_id") val authorId: String,
-    @SerialName("author_name") val authorName: String?,
     @SerialName("created_at") val createdAt: Instant
 )
 
@@ -25,7 +24,7 @@ data class RecipeDetail(
     val seasonings: List<RecipeSeasoning>,
     val steps: List<RecipeStep>,
     val tags: List<RecipeTag>,
-    val nutrition: RecipeNutrition?
+    val nutrition: RecipeNutrition? = null
 )
 
 @Serializable
@@ -34,13 +33,12 @@ data class Recipe(
     val title: String,
     val description: String?,
     @SerialName("cover_image") val coverImage: String?,
-    val difficulty: String,
-    @SerialName("cooking_time") val cookingTime: Int,
-    val servings: Int,
-    @SerialName("author_id") val authorId: String,
-    @SerialName("author_name") val authorName: String?,
-    @SerialName("created_at") val createdAt: Instant,
-    @SerialName("updated_at") val updatedAt: Instant
+    val difficulty: Int?,
+    @SerialName("cooking_time") val cookingTime: Int?,
+    val servings: Int?,
+    @SerialName("author_id") val authorId: String?,
+    @SerialName("created_at") val createdAt: Instant?,
+    @SerialName("updated_at") val updatedAt: Instant?
 )
 
 @Serializable
@@ -65,9 +63,9 @@ data class RecipeSeasoning(
 data class RecipeStep(
     val id: Int,
     @SerialName("step_number") val stepNumber: Int,
-    val description: String,
+    val content: String,
     val image: String?,
-    @SerialName("duration_minutes") val durationMinutes: Int?
+    val duration: Int?
 )
 
 @Serializable
@@ -79,15 +77,16 @@ data class RecipeTag(
 
 @Serializable
 data class RecipeNutrition(
-    @SerialName("recipe_id") val recipeId: String,
-    val calories: Double,
-    val protein: Double,
-    val fat: Double,
-    val carbohydrates: Double,
+    val calories: Double?,
+    val protein: Double?,
+    val fat: Double?,
+    val carbohydrate: Double?,
     val fiber: Double?,
     val sodium: Double?,
-    @SerialName("per_serving") val perServing: Boolean,
-    @SerialName("analyzed_at") val analyzedAt: Instant
+    @SerialName("health_score") val healthScore: Int?,
+    @SerialName("health_tags") val healthTags: List<String>?,
+    @SerialName("suitable_for") val suitableFor: List<String>?,
+    @SerialName("analysis_text") val analysisText: String?
 )
 
 @Serializable
@@ -95,13 +94,14 @@ data class CreateRecipeRequest(
     val title: String,
     val description: String?,
     @SerialName("cover_image") val coverImage: String?,
-    val difficulty: String,
-    @SerialName("cooking_time") val cookingTime: Int,
-    val servings: Int,
-    val ingredients: List<CreateRecipeIngredient>,
-    val seasonings: List<CreateRecipeSeasoning>,
-    val steps: List<CreateRecipeStep>,
-    @SerialName("tag_ids") val tagIds: List<Int>
+    val difficulty: Int?,
+    @SerialName("cooking_time") val cookingTime: Int?,
+    @SerialName("prep_time") val prepTime: Int?,
+    val servings: Int?,
+    val ingredients: List<CreateRecipeIngredient>?,
+    val seasonings: List<CreateRecipeSeasoning>?,
+    val steps: List<CreateRecipeStep>?,
+    @SerialName("tag_ids") val tagIds: List<Int>?
 )
 
 @Serializable
@@ -121,9 +121,9 @@ data class CreateRecipeSeasoning(
 @Serializable
 data class CreateRecipeStep(
     @SerialName("step_number") val stepNumber: Int,
-    val description: String,
+    val content: String,
     val image: String?,
-    @SerialName("duration_minutes") val durationMinutes: Int?
+    val duration: Int?
 )
 
 @Serializable

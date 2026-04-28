@@ -1,12 +1,12 @@
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
-    alias(libs.plugins.androidLibrary)
-    alias(libs.plugins.compose.compiler)
-    alias(libs.plugins.jetbrainsCompose)
+    alias(libs.plugins.composeMultiplatform)
+    alias(libs.plugins.composeCompiler)
+    alias(libs.plugins.kotlinSerialization)
 }
 
 kotlin {
-    androidTarget()
+    jvm()
     iosX64()
     iosArm64()
     iosSimulatorArm64()
@@ -24,20 +24,8 @@ kotlin {
 
             implementation(libs.kotlinx.coroutines.core)
             implementation(libs.kotlinx.datetime)
-            implementation(libs.koin.core)
-            implementation(libs.koin.compose)
+            implementation(libs.kotlinx.serialization.json)
+            implementation(libs.androidx.lifecycle.viewmodel)
         }
-    }
-}
-
-android {
-    namespace = "com.menu.feature.social"
-    compileSdk = libs.versions.android.compileSdk.get().toInt()
-    defaultConfig {
-        minSdk = libs.versions.android.minSdk.get().toInt()
-    }
-    compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_17
-        targetCompatibility = JavaVersion.VERSION_17
     }
 }

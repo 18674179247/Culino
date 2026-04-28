@@ -25,6 +25,8 @@ kotlin {
             implementation(project(":core:data"))
             implementation(project(":core:ui"))
             implementation(project(":feature:user"))
+            implementation(project(":feature:recipe"))
+            implementation(project(":feature:social"))
             implementation(compose.runtime)
             implementation(compose.foundation)
             implementation(compose.material3)

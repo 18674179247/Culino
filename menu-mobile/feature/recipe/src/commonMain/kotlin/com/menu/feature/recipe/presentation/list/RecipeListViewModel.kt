@@ -2,7 +2,7 @@ package com.menu.feature.recipe.presentation.list
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.menu.core.common.Result
+import com.menu.core.common.AppResult
 import com.menu.feature.recipe.domain.GetRandomRecipesUseCase
 import com.menu.feature.recipe.domain.SearchRecipesUseCase
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -27,7 +27,7 @@ class RecipeListViewModel(
         viewModelScope.launch {
             _uiState.update { it.copy(state = RecipeListState.Loading) }
             when (val result = getRandomRecipesUseCase()) {
-                is Result.Success -> {
+                is AppResult.Success -> {
                     _uiState.update {
                         it.copy(
                             state = RecipeListState.Success(
@@ -38,9 +38,9 @@ class RecipeListViewModel(
                         )
                     }
                 }
-                is Result.Error -> {
+                is AppResult.Error -> {
                     _uiState.update {
-                        it.copy(state = RecipeListState.Error(result.exception.message ?: "加载失败"))
+                        it.copy(state = RecipeListState.Error(result.message))
                     }
                 }
             }
@@ -54,7 +54,7 @@ class RecipeListViewModel(
             }
 
             when (val result = searchRecipesUseCase(keyword.ifBlank { null }, difficulty, page)) {
-                is Result.Success -> {
+                is AppResult.Success -> {
                     val response = result.data
                     val currentRecipes = if (page == 1) {
                         emptyList()
@@ -74,9 +74,9 @@ class RecipeListViewModel(
                         )
                     }
                 }
-                is Result.Error -> {
+                is AppResult.Error -> {
                     _uiState.update {
-                        it.copy(state = RecipeListState.Error(result.exception.message ?: "搜索失败"))
+                        it.copy(state = RecipeListState.Error(result.message))
                     }
                 }
             }

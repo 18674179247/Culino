@@ -1,6 +1,6 @@
 package com.menu.feature.recipe.domain
 
-import com.menu.core.common.Result
+import com.menu.core.common.AppResult
 import com.menu.feature.recipe.data.RecipeListItem
 import com.menu.feature.recipe.data.RecipeRepository
 
@@ -18,4 +18,8 @@ class GetRecipeDetailUseCase(private val repository: RecipeRepository) {
 
 class GetRandomRecipesUseCase(private val repository: RecipeRepository) {
     suspend operator fun invoke(count: Int = 5) = repository.getRandomRecipes(count)
+}
+
+class DeleteRecipeUseCase(private val repository: RecipeRepository) {
+    suspend operator fun invoke(id: String) = repository.deleteRecipe(id)
 }

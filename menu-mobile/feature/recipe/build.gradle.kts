@@ -1,13 +1,12 @@
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
-    alias(libs.plugins.androidLibrary)
-    alias(libs.plugins.compose.compiler)
-    alias(libs.plugins.jetbrainsCompose)
+    alias(libs.plugins.composeMultiplatform)
+    alias(libs.plugins.composeCompiler)
+    alias(libs.plugins.kotlinSerialization)
 }
 
 kotlin {
-    androidTarget()
-
+    jvm()
     iosX64()
     iosArm64()
     iosSimulatorArm64()
@@ -17,6 +16,7 @@ kotlin {
             implementation(projects.core.common)
             implementation(projects.core.network)
             implementation(projects.core.ui)
+            implementation(projects.feature.social)
 
             implementation(compose.runtime)
             implementation(compose.foundation)
@@ -26,27 +26,13 @@ kotlin {
 
             implementation(libs.kotlinx.coroutines.core)
             implementation(libs.kotlinx.datetime)
-            implementation(libs.koin.core)
-            implementation(libs.koin.compose)
+            implementation(libs.kotlinx.serialization.json)
+            implementation(libs.androidx.lifecycle.viewmodel)
         }
 
         commonTest.dependencies {
             implementation(libs.kotlin.test)
             implementation(libs.kotlinx.coroutines.test)
         }
-    }
-}
-
-android {
-    namespace = "com.menu.feature.recipe"
-    compileSdk = libs.versions.android.compileSdk.get().toInt()
-
-    defaultConfig {
-        minSdk = libs.versions.android.minSdk.get().toInt()
-    }
-
-    compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_17
-        targetCompatibility = JavaVersion.VERSION_17
     }
 }

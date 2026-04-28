@@ -6,6 +6,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -15,13 +16,13 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.menu.feature.recipe.data.RecipeListItem
-import org.koin.compose.viewmodel.koinViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RecipeListScreen(
     onRecipeClick: (String) -> Unit,
-    viewModel: RecipeListViewModel = koinViewModel()
+    onCreateClick: () -> Unit,
+    viewModel: RecipeListViewModel
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val listState = rememberLazyListState()
@@ -36,6 +37,11 @@ fun RecipeListScreen(
                     }
                 }
             )
+        },
+        floatingActionButton = {
+            FloatingActionButton(onClick = onCreateClick) {
+                Icon(Icons.Default.Add, contentDescription = "创建菜谱")
+            }
         }
     ) { padding ->
         when (val state = uiState.state) {
@@ -130,7 +136,14 @@ fun RecipeListItem(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = recipe.difficulty,
+                        text = when (recipe.difficulty) {
+                            1 -> "简单"
+                            2 -> "较简单"
+                            3 -> "中等"
+                            4 -> "较难"
+                            5 -> "困难"
+                            else -> "未知"
+                        },
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.primary
                     )

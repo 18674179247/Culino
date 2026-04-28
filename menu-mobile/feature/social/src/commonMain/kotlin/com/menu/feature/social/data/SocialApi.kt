@@ -16,33 +16,33 @@ interface SocialApi {
 
 class SocialApiImpl(private val client: ApiClient) : SocialApi {
     override suspend fun getFavorites(): ApiResponse<List<Favorite>> {
-        return client.get("/social/favorites")
+        return client.get("social/favorites")
     }
 
     override suspend fun addFavorite(recipeId: String): ApiResponse<Favorite> {
-        return client.post("/social/favorites/$recipeId", Unit)
+        return client.post("social/favorites/$recipeId", Unit)
     }
 
     override suspend fun removeFavorite(recipeId: String): ApiResponse<Boolean> {
-        return client.delete("/social/favorites/$recipeId")
+        return client.delete("social/favorites/$recipeId")
     }
 
     override suspend fun getCookingLogs(): ApiResponse<List<CookingLog>> {
-        return client.get("/social/cooking-logs")
+        return client.get("social/cooking-logs")
     }
 
     override suspend fun createCookingLog(request: CreateCookingLogRequest): ApiResponse<CookingLog> {
-        return client.post("/social/cooking-logs", request)
+        return client.post("social/cooking-logs", request)
     }
 
     override suspend fun updateCookingLog(
         id: String,
         request: UpdateCookingLogRequest
     ): ApiResponse<CookingLog> {
-        return client.put("/social/cooking-logs/$id", request)
+        return client.put("social/cooking-logs/$id", request)
     }
 
     override suspend fun deleteCookingLog(id: String): ApiResponse<Boolean> {
-        return client.delete("/social/cooking-logs/$id")
+        return client.delete("social/cooking-logs/$id")
     }
 }

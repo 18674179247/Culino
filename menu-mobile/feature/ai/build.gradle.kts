@@ -1,12 +1,11 @@
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
-    alias(libs.plugins.androidLibrary)
-    alias(libs.plugins.compose.compiler)
-    alias(libs.plugins.jetbrainsCompose)
+    alias(libs.plugins.composeCompiler)
+    alias(libs.plugins.composeMultiplatform)
 }
 
 kotlin {
-    androidTarget()
+    jvm()
     iosX64()
     iosArm64()
     iosSimulatorArm64()
@@ -20,18 +19,7 @@ kotlin {
             implementation(compose.foundation)
             implementation(compose.material3)
             implementation(libs.kotlinx.coroutines.core)
-            implementation(libs.koin.core)
-            implementation(libs.koin.compose)
+            implementation(libs.androidx.lifecycle.viewmodel)
         }
-    }
-}
-
-android {
-    namespace = "com.menu.feature.ai"
-    compileSdk = libs.versions.android.compileSdk.get().toInt()
-    defaultConfig { minSdk = libs.versions.android.minSdk.get().toInt() }
-    compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_17
-        targetCompatibility = JavaVersion.VERSION_17
     }
 }
