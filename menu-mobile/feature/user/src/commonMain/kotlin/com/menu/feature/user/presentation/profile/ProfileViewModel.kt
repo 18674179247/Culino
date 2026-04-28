@@ -17,7 +17,8 @@ class ProfileViewModel(
     private val _state = MutableStateFlow(ProfileState())
     val state: StateFlow<ProfileState> = _state.asStateFlow()
 
-    init { onIntent(ProfileIntent.LoadProfile) }
+    // 移除 init 块中的自动加载，改为在 UI 首次显示时手动触发
+    // init { onIntent(ProfileIntent.LoadProfile) }
 
     fun onIntent(intent: ProfileIntent) {
         when (intent) {

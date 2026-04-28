@@ -20,6 +20,11 @@ fun ProfileScreen(
 ) {
     val state by viewModel.state.collectAsState()
 
+    // 在首次显示时加载个人资料，确保 token 已经保存
+    LaunchedEffect(Unit) {
+        viewModel.onIntent(ProfileIntent.LoadProfile)
+    }
+
     LaunchedEffect(state.loggedOut) {
         if (state.loggedOut) onLoggedOut()
     }
