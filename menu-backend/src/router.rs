@@ -14,7 +14,7 @@ use tower_http::cors::{AllowOrigin, CorsLayer};
 use tower_http::request_id::{MakeRequestUuid, PropagateRequestIdLayer, SetRequestIdLayer};
 use tower_http::timeout::TimeoutLayer;
 use tower_http::trace::TraceLayer;
-use tower_governor::{governor::GovernorConfigBuilder, GovernorLayer};
+// use tower_governor::{governor::GovernorConfigBuilder, GovernorLayer}; // 暂时禁用限流
 use utoipa_swagger_ui::SwaggerUi;
 
 /// 健康检查
@@ -101,22 +101,24 @@ pub fn build_router(state: AppState, doc: utoipa::openapi::OpenApi) -> Router {
 
     // 限流配置：认证接口每个 IP 每秒 10 次请求，突发最多 20 次
     // 这个配置足够宽松，不会影响正常登录，但能防止暴力破解
-    let rate_limit_config = GovernorConfigBuilder::default()
-        .per_second(10)
-        .burst_size(20)
-        .finish()
-        .unwrap();
+    // 暂时注释掉以调试
+    // let rate_limit_config = GovernorConfigBuilder::default()
+    //     .per_second(10)
+    //     .burst_size(20)
+    //     .finish()
+    //     .unwrap();
 
-    // 用户认证路由（应用限流防止暴力破解）
+    // 用户认证路由（暂时禁用限流以调试）
     let user_auth = Router::new()
         .route(
             "/register",
             axum::routing::post(menu_user::handler::register),
         )
-        .route("/login", axum::routing::post(menu_user::handler::login))
-        .layer(GovernorLayer {
-            config: rate_limit_config.into(),
-        });
+        .route("/login", axum::routing::post(menu_user::handler::login));
+        // 暂时注释掉限流
+        // .layer(GovernorLayer {
+        //     config: rate_limit_config.into(),
+        // });
 
     // 用户其他路由（不限流）
     let user_other = Router::new()
