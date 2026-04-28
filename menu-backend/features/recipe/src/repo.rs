@@ -416,18 +416,37 @@ impl RecipeRepo for PgRecipeRepo {
     }
 
     async fn random(&self, count: i64) -> Result<Vec<RecipeListItem>, AppError> {
-        // 先通过 random() 阈值筛选约 10% 的行，再从中随机排序取 N 条。
-        // 避免 ORDER BY random() 扫描全表，在大数据量下显著减少排序开销。
-        let items = sqlx::query_as::<_, RecipeListItem>(
-            "SELECT id, title, description, cover_image, difficulty, cooking_time, servings, author_id, created_at \
-             FROM recipes \
-             WHERE status = 1 AND random() < 0.1 \
-             ORDER BY random() \
-             LIMIT $1"
-        )
-        .bind(count)
-        .fetch_all(&self.pool)
-        .await?;
+        // 先查询总数
+        let total: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM recipes WHERE status = 1")
+            .fetch_one(&self.pool)
+            .await?;
+
+        // 如果总数较少(< 100),直接使用 ORDER BY random()
+        // 如果总数较多,使用两阶段随机以提高性能
+        let items = if total < 100 {
+            sqlx::query_as::<_, RecipeListItem>(
+                "SELECT id, title, description, cover_image, difficulty, cooking_time, servings, author_id, created_at \
+                 FROM recipes \
+                 WHERE status = 1 \
+                 ORDER BY random() \
+                 LIMIT $1"
+            )
+            .bind(count)
+            .fetch_all(&self.pool)
+            .await?
+        } else {
+            // 大数据量时,先通过 random() 阈值筛选约 10% 的行,再从中随机排序取 N 条
+            sqlx::query_as::<_, RecipeListItem>(
+                "SELECT id, title, description, cover_image, difficulty, cooking_time, servings, author_id, created_at \
+                 FROM recipes \
+                 WHERE status = 1 AND random() < 0.1 \
+                 ORDER BY random() \
+                 LIMIT $1"
+            )
+            .bind(count)
+            .fetch_all(&self.pool)
+            .await?
+        };
         Ok(items)
     }
 }
