@@ -96,7 +96,7 @@ async fn check(config: &AppConfig) -> (PgPool, MultiplexedConnection, Box<Bucket
             std::process::exit(1);
         });
 
-    let row: (i64,) = sqlx::query_as("SELECT 1")
+    let row: (i32,) = sqlx::query_as("SELECT 1")
         .fetch_one(&pool)
         .await
         .expect("数据库查询失败");

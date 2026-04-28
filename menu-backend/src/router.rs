@@ -10,12 +10,11 @@ use menu_common::config::{AppConfig, RunMode};
 use menu_common::state::AppState;
 use serde_json::json;
 use std::time::Duration;
-use tower_governor::GovernorLayer;
-use tower_governor::governor::GovernorConfigBuilder;
 use tower_http::cors::{AllowOrigin, CorsLayer};
 use tower_http::request_id::{MakeRequestUuid, PropagateRequestIdLayer, SetRequestIdLayer};
 use tower_http::timeout::TimeoutLayer;
 use tower_http::trace::TraceLayer;
+use tower_governor::{governor::GovernorConfigBuilder, GovernorLayer};
 use utoipa_swagger_ui::SwaggerUi;
 
 /// 健康检查
@@ -28,11 +27,11 @@ fn ai_routes() -> Router<AppState> {
     Router::new()
         // 营养分析
         .route(
-            "/nutrition/analyze/:recipe_id",
+            "/nutrition/analyze/{recipe_id}",
             axum::routing::post(menu_ai::analyze_nutrition),
         )
         .route(
-            "/nutrition/:recipe_id",
+            "/nutrition/{recipe_id}",
             axum::routing::get(menu_ai::get_nutrition),
         )
         // 推荐系统
@@ -41,7 +40,7 @@ fn ai_routes() -> Router<AppState> {
             axum::routing::get(menu_ai::personalized_recommendations),
         )
         .route(
-            "/recommend/similar/:recipe_id",
+            "/recommend/similar/{recipe_id}",
             axum::routing::get(menu_ai::similar_recommendations),
         )
         .route(
@@ -49,7 +48,7 @@ fn ai_routes() -> Router<AppState> {
             axum::routing::get(menu_ai::trending_recommendations),
         )
         .route(
-            "/recommend/health/:goal",
+            "/recommend/health/{goal}",
             axum::routing::get(menu_ai::health_goal_recommendations),
         )
         // 用户偏好
@@ -100,14 +99,15 @@ fn build_cors(config: &AppConfig) -> CorsLayer {
 pub fn build_router(state: AppState, doc: utoipa::openapi::OpenApi) -> Router {
     let x_request_id = HeaderName::from_static("x-request-id");
 
-    // 限流配置：每个 IP 每秒 5 次请求，突发最多 10 次
+    // 限流配置：认证接口每个 IP 每秒 10 次请求，突发最多 20 次
+    // 这个配置足够宽松，不会影响正常登录，但能防止暴力破解
     let rate_limit_config = GovernorConfigBuilder::default()
-        .per_second(5)
-        .burst_size(10)
+        .per_second(10)
+        .burst_size(20)
         .finish()
         .unwrap();
 
-    // 用户认证路由单独挂限流
+    // 用户认证路由（应用限流防止暴力破解）
     let user_auth = Router::new()
         .route(
             "/register",
