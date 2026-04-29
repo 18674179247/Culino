@@ -1,7 +1,13 @@
 package com.menu.feature.user.presentation.login
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -13,6 +19,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.menu.core.ui.component.ErrorMessage
 import com.menu.core.ui.component.LoadingButton
@@ -31,53 +38,98 @@ fun LoginScreen(
     }
 
     Column(
-        modifier = Modifier.fillMaxSize().padding(24.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
+            .verticalScroll(rememberScrollState())
     ) {
-        Text(
-            text = "欢迎回来",
-            style = MaterialTheme.typography.headlineLarge
-        )
-        Spacer(Modifier.height(32.dp))
-
-        MenuTextField(
-            value = state.username,
-            onValueChange = { viewModel.onIntent(LoginIntent.UpdateUsername(it)) },
-            label = "用户名"
-        )
-        Spacer(Modifier.height(16.dp))
-
-        MenuTextField(
-            value = state.password,
-            onValueChange = { viewModel.onIntent(LoginIntent.UpdatePassword(it)) },
-            label = "密码",
-            visualTransformation = PasswordVisualTransformation(),
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password)
-        )
-        Spacer(Modifier.height(8.dp))
-
-        state.error?.let { error ->
-            ErrorMessage(
-                message = error,
-                onRetry = { viewModel.onIntent(LoginIntent.ClearError) }
-            )
-            Spacer(Modifier.height(8.dp))
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(220.dp)
+                .background(MaterialTheme.colorScheme.primary),
+            contentAlignment = Alignment.Center
+        ) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Text(
+                    text = "Menu",
+                    style = MaterialTheme.typography.headlineLarge,
+                    color = MaterialTheme.colorScheme.onPrimary
+                )
+                Spacer(Modifier.height(8.dp))
+                Text(
+                    text = "发现美食，分享生活",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.8f)
+                )
+            }
         }
 
-        Spacer(Modifier.height(16.dp))
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .offset(y = (-24).dp)
+                .padding(horizontal = 20.dp),
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surface
+            ),
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        ) {
+            Column(
+                modifier = Modifier.padding(24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    text = "欢迎回来",
+                    style = MaterialTheme.typography.headlineMedium,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Spacer(Modifier.height(24.dp))
 
-        LoadingButton(
-            text = "登录",
-            isLoading = state.isLoading,
-            onClick = { viewModel.onIntent(LoginIntent.Submit) },
-            modifier = Modifier.fillMaxWidth()
-        )
+                MenuTextField(
+                    value = state.username,
+                    onValueChange = { viewModel.onIntent(LoginIntent.UpdateUsername(it)) },
+                    label = "用户名"
+                )
+                Spacer(Modifier.height(16.dp))
 
-        Spacer(Modifier.height(16.dp))
+                MenuTextField(
+                    value = state.password,
+                    onValueChange = { viewModel.onIntent(LoginIntent.UpdatePassword(it)) },
+                    label = "密码",
+                    visualTransformation = PasswordVisualTransformation(),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password)
+                )
 
-        TextButton(onClick = onNavigateToRegister) {
-            Text("没有账号？去注册")
+                state.error?.let { error ->
+                    Spacer(Modifier.height(12.dp))
+                    ErrorMessage(
+                        message = error,
+                        onRetry = { viewModel.onIntent(LoginIntent.ClearError) }
+                    )
+                }
+
+                Spacer(Modifier.height(24.dp))
+
+                LoadingButton(
+                    text = "登录",
+                    isLoading = state.isLoading,
+                    onClick = { viewModel.onIntent(LoginIntent.Submit) },
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+        }
+
+        TextButton(
+            onClick = onNavigateToRegister,
+            modifier = Modifier.align(Alignment.CenterHorizontally)
+        ) {
+            Text(
+                text = "没有账号？立即注册",
+                color = MaterialTheme.colorScheme.secondary,
+                style = MaterialTheme.typography.bodyMedium
+            )
         }
     }
 }

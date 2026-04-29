@@ -1,8 +1,11 @@
 package com.menu.feature.recipe.presentation.detail
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
@@ -12,6 +15,8 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.menu.feature.recipe.data.RecipeDetail
 
@@ -33,7 +38,6 @@ fun RecipeDetailScreen(
         viewModel.loadRecipeDetail(recipeId)
     }
 
-    // 监听删除状态
     LaunchedEffect(deleteState) {
         when (deleteState) {
             is DeleteState.Success -> {
@@ -44,7 +48,6 @@ fun RecipeDetailScreen(
         }
     }
 
-    // 监听收藏状态
     LaunchedEffect(favoriteState) {
         when (favoriteState) {
             is FavoriteState.Success -> {
@@ -56,7 +59,6 @@ fun RecipeDetailScreen(
 
     val snackbarHostState = remember { SnackbarHostState() }
 
-    // 错误提示
     LaunchedEffect(deleteState) {
         when (deleteState) {
             is DeleteState.Error -> {
@@ -87,7 +89,6 @@ fun RecipeDetailScreen(
                     }
                 },
                 actions = {
-                    // 收藏按钮
                     if (state is RecipeDetailState.Success) {
                         IconButton(
                             onClick = { viewModel.toggleFavorite(recipeId) },
@@ -96,12 +97,10 @@ fun RecipeDetailScreen(
                             Icon(
                                 imageVector = if (isFavorited) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
                                 contentDescription = if (isFavorited) "取消收藏" else "收藏",
-                                tint = if (isFavorited) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface
+                                tint = if (isFavorited) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
                     }
-
-                    // 删除按钮（只对自己创建的菜谱显示）
                     val detail = (state as? RecipeDetailState.Success)?.detail
                     if (detail != null && currentUserId != null && detail.recipe.authorId == currentUserId) {
                         if (deleteState is DeleteState.Loading) {
@@ -110,7 +109,6 @@ fun RecipeDetailScreen(
                                 strokeWidth = 2.dp
                             )
                         } else if (showDeleteDialog) {
-                            // 确认状态：显示红色文字按钮
                             TextButton(onClick = {
                                 showDeleteDialog = false
                                 viewModel.deleteRecipe(recipeId)
@@ -126,9 +124,13 @@ fun RecipeDetailScreen(
                             }
                         }
                     }
-                }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.surface
+                )
             )
-        }
+        },
+        containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
         when (val currentState = state) {
             is RecipeDetailState.Loading -> {
@@ -136,26 +138,33 @@ fun RecipeDetailScreen(
                     modifier = Modifier.fillMaxSize().padding(padding),
                     contentAlignment = Alignment.Center
                 ) {
-                    CircularProgressIndicator()
+                    CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
                 }
             }
-
             is RecipeDetailState.Success -> {
                 RecipeDetailContent(
                     detail = currentState.detail,
                     modifier = Modifier.padding(padding)
                 )
             }
-
             is RecipeDetailState.Error -> {
                 Box(
                     modifier = Modifier.fillMaxSize().padding(padding),
                     contentAlignment = Alignment.Center
                 ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(currentState.message)
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Button(onClick = { viewModel.loadRecipeDetail(recipeId) }) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Text(
+                            currentState.message,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Button(
+                            onClick = { viewModel.loadRecipeDetail(recipeId) },
+                            shape = RoundedCornerShape(20.dp)
+                        ) {
                             Text("重试")
                         }
                     }
@@ -164,6 +173,8 @@ fun RecipeDetailScreen(
         }
     }
 }
+
+// PLACEHOLDER_DETAIL_CONTENT
 
 @Composable
 fun RecipeDetailContent(
@@ -175,98 +186,51 @@ fun RecipeDetailContent(
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
+        // 标题区域
         item {
-            Text(
-                text = detail.recipe.title,
-                style = MaterialTheme.typography.headlineMedium
-            )
-        }
-
-        detail.recipe.description?.let { desc ->
-            item {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(
-                    text = desc,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    text = detail.recipe.title,
+                    style = MaterialTheme.typography.headlineMedium,
+                    color = MaterialTheme.colorScheme.onSurface
                 )
+                detail.recipe.description?.let { desc ->
+                    Text(
+                        text = desc,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    InfoChip("难度: ${detail.recipe.difficulty}")
+                    InfoChip("${detail.recipe.cookingTime}分钟")
+                    InfoChip("${detail.recipe.servings}人份")
+                }
             }
         }
 
-        item {
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(16.dp),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                InfoChip("难度: ${detail.recipe.difficulty}")
-                InfoChip("${detail.recipe.cookingTime}分钟")
-                InfoChip("${detail.recipe.servings}人份")
-            }
-        }
-
+        // 食材区域
         if (detail.ingredients.isNotEmpty()) {
             item {
-                Text(
-                    text = "食材",
-                    style = MaterialTheme.typography.titleLarge
-                )
-            }
-            items(detail.ingredients) { ingredient ->
-                Row(
-                    modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Text(ingredient.ingredientName)
-                    Text(ingredient.amount, color = MaterialTheme.colorScheme.primary)
-                }
-            }
-        }
-
-        if (detail.seasonings.isNotEmpty()) {
-            item {
-                Text(
-                    text = "调料",
-                    style = MaterialTheme.typography.titleLarge
-                )
-            }
-            items(detail.seasonings) { seasoning ->
-                Row(
-                    modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Text(seasoning.seasoningName)
-                    Text(seasoning.amount, color = MaterialTheme.colorScheme.primary)
-                }
-            }
-        }
-
-        if (detail.steps.isNotEmpty()) {
-            item {
-                Text(
-                    text = "步骤",
-                    style = MaterialTheme.typography.titleLarge
-                )
-            }
-            items(detail.steps) { step ->
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceVariant
-                    )
-                ) {
-                    Column(modifier = Modifier.padding(12.dp)) {
-                        Text(
-                            text = "步骤 ${step.stepNumber}",
-                            style = MaterialTheme.typography.titleSmall,
-                            color = MaterialTheme.colorScheme.primary
-                        )
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(step.content)
-                        step.duration?.let {
-                            Spacer(modifier = Modifier.height(4.dp))
+                SectionCard(title = "食材") {
+                    detail.ingredients.forEach { ingredient ->
+                        Row(
+                            modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
                             Text(
-                                text = "约 $it 分钟",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                ingredient.ingredientName,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            Text(
+                                ingredient.amount,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.primary,
+                                fontWeight = FontWeight.Medium
                             )
                         }
                     }
@@ -274,23 +238,119 @@ fun RecipeDetailContent(
             }
         }
 
-        detail.nutrition?.let { nutrition ->
+        // 调料区域
+        if (detail.seasonings.isNotEmpty()) {
+            item {
+                SectionCard(title = "调料") {
+                    detail.seasonings.forEach { seasoning ->
+                        Row(
+                            modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text(
+                                seasoning.seasoningName,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            Text(
+                                seasoning.amount,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.primary,
+                                fontWeight = FontWeight.Medium
+                            )
+                        }
+                    }
+                }
+            }
+        }
+
+        // 步骤区域 - 时间线样式
+        if (detail.steps.isNotEmpty()) {
             item {
                 Text(
-                    text = "营养信息",
-                    style = MaterialTheme.typography.titleLarge
+                    text = "制作步骤",
+                    style = MaterialTheme.typography.titleLarge,
+                    color = MaterialTheme.colorScheme.onSurface
                 )
             }
-            item {
-                Card(modifier = Modifier.fillMaxWidth()) {
-                    Column(modifier = Modifier.padding(12.dp)) {
-                        NutritionRow("热量", "${nutrition.calories} kcal")
-                        NutritionRow("蛋白质", "${nutrition.protein}g")
-                        NutritionRow("脂肪", "${nutrition.fat}g")
-                        NutritionRow("碳水化合物", "${nutrition.carbohydrate}g")
-                        nutrition.fiber?.let { NutritionRow("膳食纤维", "${it}g") }
-                        nutrition.sodium?.let { NutritionRow("钠", "${it}mg") }
+            items(detail.steps) { step ->
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    // 时间线
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier.width(32.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(32.dp)
+                                .clip(CircleShape)
+                                .background(MaterialTheme.colorScheme.primary),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = "${step.stepNumber}",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.onPrimary,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                        if (step != detail.steps.last()) {
+                            Box(
+                                modifier = Modifier
+                                    .width(2.dp)
+                                    .height(40.dp)
+                                    .background(MaterialTheme.colorScheme.outline)
+                            )
+                        }
                     }
+                    // 步骤内容
+                    Card(
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.surface
+                        ),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+                    ) {
+                        Column(modifier = Modifier.padding(12.dp)) {
+                            Text(
+                                step.content,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            step.duration?.let {
+                                Spacer(modifier = Modifier.height(6.dp))
+                                Surface(
+                                    shape = RoundedCornerShape(6.dp),
+                                    color = MaterialTheme.colorScheme.secondaryContainer
+                                ) {
+                                    Text(
+                                        text = "约 $it 分钟",
+                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.secondary
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // 营养信息
+        detail.nutrition?.let { nutrition ->
+            item {
+                SectionCard(title = "营养信息") {
+                    NutritionRow("热量", "${nutrition.calories} kcal")
+                    NutritionRow("蛋白质", "${nutrition.protein}g")
+                    NutritionRow("脂肪", "${nutrition.fat}g")
+                    NutritionRow("碳水化合物", "${nutrition.carbohydrate}g")
+                    nutrition.fiber?.let { NutritionRow("膳食纤维", "${it}g") }
+                    nutrition.sodium?.let { NutritionRow("钠", "${it}mg") }
                 }
             }
         }
@@ -298,15 +358,41 @@ fun RecipeDetailContent(
 }
 
 @Composable
+fun SectionCard(
+    title: String,
+    content: @Composable ColumnScope.() -> Unit
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleLarge,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            Spacer(Modifier.height(8.dp))
+            content()
+        }
+    }
+}
+
+@Composable
 fun InfoChip(text: String) {
     Surface(
-        color = MaterialTheme.colorScheme.secondaryContainer,
-        shape = MaterialTheme.shapes.small
+        color = MaterialTheme.colorScheme.primaryContainer,
+        shape = RoundedCornerShape(8.dp)
     ) {
         Text(
             text = text,
             modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-            style = MaterialTheme.typography.labelMedium
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onPrimaryContainer
         )
     }
 }
@@ -317,7 +403,16 @@ fun NutritionRow(label: String, value: String) {
         modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
-        Text(label)
-        Text(value, color = MaterialTheme.colorScheme.primary)
+        Text(
+            label,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Text(
+            value,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.primary,
+            fontWeight = FontWeight.Medium
+        )
     }
 }

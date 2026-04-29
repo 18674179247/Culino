@@ -1,9 +1,13 @@
 package com.menu.core.ui.component
 
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -21,8 +25,14 @@ fun LoadingButton(
 ) {
     Button(
         onClick = onClick,
-        modifier = modifier,
-        enabled = enabled && !isLoading
+        modifier = modifier.height(48.dp),
+        enabled = enabled && !isLoading,
+        shape = RoundedCornerShape(24.dp),
+        contentPadding = PaddingValues(horizontal = 32.dp, vertical = 12.dp),
+        colors = ButtonDefaults.buttonColors(
+            containerColor = MaterialTheme.colorScheme.primary,
+            disabledContainerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.4f),
+        )
     ) {
         if (isLoading) {
             CircularProgressIndicator(
@@ -32,6 +42,6 @@ fun LoadingButton(
             )
             Spacer(Modifier.width(8.dp))
         }
-        Text(text)
+        Text(text, style = MaterialTheme.typography.labelLarge)
     }
 }

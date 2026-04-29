@@ -6,15 +6,11 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.menu.core.model.RecipeNutrition
 import kotlin.math.roundToInt
 
-/**
- * 营养信息卡片
- */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun NutritionCard(
@@ -25,26 +21,25 @@ fun NutritionCard(
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant
-        )
+            containerColor = MaterialTheme.colorScheme.surface
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {
         Column(
             modifier = Modifier.padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            // 标题
             Text(
                 text = "营养信息",
                 style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface
             )
 
-            // 健康评分
             nutrition.healthScore?.let { score ->
                 HealthScoreBadge(score = score)
             }
 
-            // 营养成分
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
@@ -69,7 +64,6 @@ fun NutritionCard(
                 }
             }
 
-            // 健康标签
             nutrition.healthTags?.takeIf { it.isNotEmpty() }?.let { tags ->
                 FlowRow(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -81,7 +75,6 @@ fun NutritionCard(
                 }
             }
 
-            // 分析文本
             nutrition.analysisText?.let { text ->
                 Text(
                     text = text,
@@ -90,18 +83,18 @@ fun NutritionCard(
                 )
             }
 
-            // 适合人群
             nutrition.suitableFor?.takeIf { it.isNotEmpty() }?.let { suitable ->
                 Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     Text(
                         text = "适合人群",
                         style = MaterialTheme.typography.labelMedium,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface
                     )
                     Text(
                         text = suitable.joinToString("、"),
                         style = MaterialTheme.typography.bodySmall,
-                        color = Color(0xFF4CAF50)
+                        color = MaterialTheme.colorScheme.tertiary
                     )
                 }
             }
@@ -109,15 +102,12 @@ fun NutritionCard(
     }
 }
 
-/**
- * 健康评分徽章
- */
 @Composable
 fun HealthScoreBadge(score: Int, modifier: Modifier = Modifier) {
     val color = when {
-        score >= 80 -> Color(0xFF4CAF50) // 绿色
-        score >= 60 -> Color(0xFFFFC107) // 黄色
-        else -> Color(0xFFFF5722) // 橙色
+        score >= 80 -> MaterialTheme.colorScheme.tertiary
+        score >= 60 -> MaterialTheme.colorScheme.secondary
+        else -> MaterialTheme.colorScheme.primary
     }
 
     Surface(
@@ -145,9 +135,6 @@ fun HealthScoreBadge(score: Int, modifier: Modifier = Modifier) {
     }
 }
 
-/**
- * 营养项
- */
 @Composable
 fun RowScope.NutritionItem(label: String, value: String) {
     Column(
@@ -157,7 +144,8 @@ fun RowScope.NutritionItem(label: String, value: String) {
         Text(
             text = value,
             style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Bold
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onSurface
         )
         Text(
             text = label,
@@ -167,42 +155,40 @@ fun RowScope.NutritionItem(label: String, value: String) {
     }
 }
 
-/**
- * 健康标签
- */
 @Composable
 fun HealthTag(tag: String) {
     Surface(
         shape = RoundedCornerShape(16.dp),
-        color = Color(0xFF4CAF50).copy(alpha = 0.1f)
+        color = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.1f)
     ) {
         Text(
             text = tag,
             modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
             style = MaterialTheme.typography.labelSmall,
-            color = Color(0xFF4CAF50)
+            color = MaterialTheme.colorScheme.tertiary
         )
     }
 }
 
-/**
- * 营养分析加载中占位符
- */
 @Composable
 fun NutritionLoadingPlaceholder(modifier: Modifier = Modifier) {
     Card(
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant
-        )
+            containerColor = MaterialTheme.colorScheme.surface
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {
         Column(
             modifier = Modifier.padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            CircularProgressIndicator(modifier = Modifier.size(24.dp))
+            CircularProgressIndicator(
+                modifier = Modifier.size(24.dp),
+                color = MaterialTheme.colorScheme.primary
+            )
             Text(
                 text = "AI 正在分析营养成分...",
                 style = MaterialTheme.typography.bodyMedium,

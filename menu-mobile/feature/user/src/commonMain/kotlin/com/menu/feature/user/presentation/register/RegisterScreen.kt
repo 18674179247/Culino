@@ -1,7 +1,13 @@
 package com.menu.feature.user.presentation.register
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -31,54 +37,105 @@ fun RegisterScreen(
     }
 
     Column(
-        modifier = Modifier.fillMaxSize().padding(24.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
+            .verticalScroll(rememberScrollState())
     ) {
-        Text(text = "创建账号", style = MaterialTheme.typography.headlineLarge)
-        Spacer(Modifier.height(32.dp))
-
-        MenuTextField(
-            value = state.username,
-            onValueChange = { viewModel.onIntent(RegisterIntent.UpdateUsername(it)) },
-            label = "用户名"
-        )
-        Spacer(Modifier.height(16.dp))
-
-        MenuTextField(
-            value = state.password,
-            onValueChange = { viewModel.onIntent(RegisterIntent.UpdatePassword(it)) },
-            label = "密码（至少6位）",
-            visualTransformation = PasswordVisualTransformation(),
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password)
-        )
-        Spacer(Modifier.height(16.dp))
-
-        MenuTextField(
-            value = state.nickname,
-            onValueChange = { viewModel.onIntent(RegisterIntent.UpdateNickname(it)) },
-            label = "昵称（可选）"
-        )
-        Spacer(Modifier.height(8.dp))
-
-        state.error?.let { error ->
-            ErrorMessage(message = error, onRetry = { viewModel.onIntent(RegisterIntent.ClearError) })
-            Spacer(Modifier.height(8.dp))
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(200.dp)
+                .background(MaterialTheme.colorScheme.secondary),
+            contentAlignment = Alignment.Center
+        ) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Text(
+                    text = "加入 Menu",
+                    style = MaterialTheme.typography.headlineLarge,
+                    color = MaterialTheme.colorScheme.onSecondary
+                )
+                Spacer(Modifier.height(8.dp))
+                Text(
+                    text = "开启你的美食之旅",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSecondary.copy(alpha = 0.8f)
+                )
+            }
         }
 
-        Spacer(Modifier.height(16.dp))
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .offset(y = (-24).dp)
+                .padding(horizontal = 20.dp),
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surface
+            ),
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        ) {
+            Column(
+                modifier = Modifier.padding(24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    text = "创建账号",
+                    style = MaterialTheme.typography.headlineMedium,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Spacer(Modifier.height(24.dp))
 
-        LoadingButton(
-            text = "注册",
-            isLoading = state.isLoading,
-            onClick = { viewModel.onIntent(RegisterIntent.Submit) },
-            modifier = Modifier.fillMaxWidth()
-        )
+                MenuTextField(
+                    value = state.username,
+                    onValueChange = { viewModel.onIntent(RegisterIntent.UpdateUsername(it)) },
+                    label = "用户名"
+                )
+                Spacer(Modifier.height(16.dp))
 
-        Spacer(Modifier.height(16.dp))
+                MenuTextField(
+                    value = state.password,
+                    onValueChange = { viewModel.onIntent(RegisterIntent.UpdatePassword(it)) },
+                    label = "密码（至少6位）",
+                    visualTransformation = PasswordVisualTransformation(),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password)
+                )
+                Spacer(Modifier.height(16.dp))
 
-        TextButton(onClick = onNavigateToLogin) {
-            Text("已有账号？去登录")
+                MenuTextField(
+                    value = state.nickname,
+                    onValueChange = { viewModel.onIntent(RegisterIntent.UpdateNickname(it)) },
+                    label = "昵称（可选）"
+                )
+
+                state.error?.let { error ->
+                    Spacer(Modifier.height(12.dp))
+                    ErrorMessage(
+                        message = error,
+                        onRetry = { viewModel.onIntent(RegisterIntent.ClearError) }
+                    )
+                }
+
+                Spacer(Modifier.height(24.dp))
+
+                LoadingButton(
+                    text = "注册",
+                    isLoading = state.isLoading,
+                    onClick = { viewModel.onIntent(RegisterIntent.Submit) },
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+        }
+
+        TextButton(
+            onClick = onNavigateToLogin,
+            modifier = Modifier.align(Alignment.CenterHorizontally)
+        ) {
+            Text(
+                text = "已有账号？去登录",
+                color = MaterialTheme.colorScheme.primary,
+                style = MaterialTheme.typography.bodyMedium
+            )
         }
     }
 }

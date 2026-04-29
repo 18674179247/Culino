@@ -20,9 +20,6 @@ import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import com.menu.core.model.RecommendationItem
 
-/**
- * 推荐菜谱列表
- */
 @Composable
 fun RecommendationList(
     recommendations: List<RecommendationItem>,
@@ -43,9 +40,6 @@ fun RecommendationList(
     }
 }
 
-/**
- * 推荐菜谱卡片
- */
 @Composable
 fun RecommendationCard(
     item: RecommendationItem,
@@ -57,13 +51,15 @@ fun RecommendationCard(
             .fillMaxWidth()
             .clickable(onClick = onClick),
         shape = RoundedCornerShape(12.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {
         Row(
             modifier = Modifier.padding(12.dp),
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            // 封面图
             AsyncImage(
                 model = item.coverImage,
                 contentDescription = item.title,
@@ -73,21 +69,19 @@ fun RecommendationCard(
                 contentScale = ContentScale.Crop
             )
 
-            // 内容
             Column(
                 modifier = Modifier.weight(1f),
                 verticalArrangement = Arrangement.spacedBy(4.dp)
             ) {
-                // 标题
                 Text(
                     text = item.title,
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis
                 )
 
-                // 推荐理由
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(4.dp)
@@ -107,16 +101,12 @@ fun RecommendationCard(
                     )
                 }
 
-                // 推荐分数
                 RecommendationScoreBadge(score = item.score)
             }
         }
     }
 }
 
-/**
- * 推荐分数徽章
- */
 @Composable
 fun RecommendationScoreBadge(score: Double, modifier: Modifier = Modifier) {
     Surface(
@@ -133,9 +123,6 @@ fun RecommendationScoreBadge(score: Double, modifier: Modifier = Modifier) {
     }
 }
 
-/**
- * 推荐类型标签
- */
 @Composable
 fun RecommendationTypeChip(
     type: String,
@@ -155,13 +142,14 @@ fun RecommendationTypeChip(
         selected = isSelected,
         onClick = onClick,
         label = { Text(label) },
-        modifier = modifier
+        modifier = modifier,
+        colors = FilterChipDefaults.filterChipColors(
+            selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+            selectedLabelColor = MaterialTheme.colorScheme.primary
+        )
     )
 }
 
-/**
- * 推荐页面顶部标签栏
- */
 @Composable
 fun RecommendationTypeSelector(
     selectedType: String,
