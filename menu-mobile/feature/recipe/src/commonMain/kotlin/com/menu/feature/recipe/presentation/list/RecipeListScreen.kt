@@ -1,5 +1,7 @@
 package com.menu.feature.recipe.presentation.list
 
+import androidx.compose.animation.*
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -20,6 +22,8 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
+import com.menu.core.ui.component.LocalNavAnimatedVisibilityScope
+import com.menu.core.ui.component.LocalSharedTransitionScope
 import com.menu.feature.recipe.data.RecipeListItem
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -88,7 +92,12 @@ fun RecipeListScreen(
                     items(state.recipes, key = { it.id }) { recipe ->
                         RecipeCard(
                             recipe = recipe,
-                            onClick = { onRecipeClick(recipe.id) }
+                            onClick = { onRecipeClick(recipe.id) },
+                            modifier = Modifier.animateItem(
+                                fadeInSpec = tween(300),
+                                fadeOutSpec = tween(300),
+                                placementSpec = tween(300)
+                            )
                         )
                     }
 
@@ -142,12 +151,16 @@ fun RecipeListScreen(
     }
 }
 
+@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 fun RecipeCard(
     recipe: RecipeListItem,
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val sharedTransitionScope = LocalSharedTransitionScope.current
+    val animatedVisibilityScope = LocalNavAnimatedVisibilityScope.current
+
     Card(
         modifier = modifier.fillMaxWidth().clickable(onClick = onClick),
         shape = RoundedCornerShape(12.dp),
@@ -158,12 +171,23 @@ fun RecipeCard(
     ) {
         Row(modifier = Modifier.padding(12.dp)) {
             if (recipe.coverImage != null) {
+                val imageModifier = if (sharedTransitionScope != null && animatedVisibilityScope != null) {
+                    with(sharedTransitionScope) {
+                        Modifier
+                            .sharedElement(
+                                rememberSharedContentState(key = "recipe_image_${recipe.id}"),
+                                animatedVisibilityScope = animatedVisibilityScope
+                            )
+                            .size(80.dp)
+                            .clip(RoundedCornerShape(8.dp))
+                    }
+                } else {
+                    Modifier.size(80.dp).clip(RoundedCornerShape(8.dp))
+                }
                 AsyncImage(
                     model = recipe.coverImage,
                     contentDescription = recipe.title,
-                    modifier = Modifier
-                        .size(80.dp)
-                        .clip(RoundedCornerShape(8.dp)),
+                    modifier = imageModifier,
                     contentScale = ContentScale.Crop
                 )
                 Spacer(Modifier.width(12.dp))

@@ -1,5 +1,7 @@
 package com.menu.app
 
+import androidx.compose.animation.*
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Favorite
@@ -10,6 +12,7 @@ import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -27,6 +30,8 @@ import androidx.navigation.compose.rememberNavController
 import com.menu.app.di.AppComponent
 import com.menu.app.picker.rememberImagePickerLauncher
 import com.menu.core.network.parseUserIdFromToken
+import com.menu.core.ui.component.LocalNavAnimatedVisibilityScope
+import com.menu.core.ui.component.LocalSharedTransitionScope
 import com.menu.feature.user.presentation.profile.ProfileIntent
 import com.menu.feature.recipe.presentation.create.RecipeCreateScreen
 import com.menu.feature.recipe.presentation.detail.RecipeDetailScreen
@@ -60,12 +65,22 @@ sealed class BottomNavItem(
     object Profile : BottomNavItem(Routes.PROFILE, Icons.Filled.Person, Icons.Outlined.Person, "我的")
 }
 
+private const val ANIM_DURATION = 300
+private const val FADE_DURATION = 200
+
+private val slideInFromRight = slideInHorizontally(tween(ANIM_DURATION)) { it }
+private val slideOutToLeft = slideOutHorizontally(tween(ANIM_DURATION)) { -it / 3 } + fadeOut(tween(FADE_DURATION))
+private val slideInFromLeft = slideInHorizontally(tween(ANIM_DURATION)) { -it / 3 } + fadeIn(tween(FADE_DURATION))
+private val slideOutToRight = slideOutHorizontally(tween(ANIM_DURATION)) { it }
+
+private val tabFadeIn = fadeIn(tween(FADE_DURATION))
+private val tabFadeOut = fadeOut(tween(FADE_DURATION))
+
 @Composable
 fun MenuNavHost(
     appComponent: AppComponent,
     navController: NavHostController = rememberNavController()
 ) {
-    // 检查是否已登录
     var startDestination by remember { mutableStateOf<String?>(null) }
 
     LaunchedEffect(Unit) {
@@ -73,13 +88,18 @@ fun MenuNavHost(
         startDestination = if (token != null) Routes.MAIN else Routes.LOGIN
     }
 
-    // 等待检查完成
     if (startDestination == null) {
         return
     }
 
-    NavHost(navController = navController, startDestination = startDestination!!) {
-        // 登录流程
+    NavHost(
+        navController = navController,
+        startDestination = startDestination!!,
+        enterTransition = { fadeIn(tween(ANIM_DURATION)) },
+        exitTransition = { fadeOut(tween(ANIM_DURATION)) },
+        popEnterTransition = { fadeIn(tween(ANIM_DURATION)) },
+        popExitTransition = { fadeOut(tween(ANIM_DURATION)) }
+    ) {
         composable(Routes.LOGIN) {
             val viewModel = remember { appComponent.loginViewModel() }
             LoginScreen(
@@ -107,7 +127,11 @@ fun MenuNavHost(
         }
 
         // 主界面（带底部导航栏）
-        composable(Routes.MAIN) {
+        composable(
+            Routes.MAIN,
+            enterTransition = { fadeIn(tween(ANIM_DURATION)) },
+            exitTransition = { fadeOut(tween(ANIM_DURATION)) }
+        ) {
             MainScreen(
                 appComponent = appComponent,
                 onLoggedOut = {
@@ -120,6 +144,7 @@ fun MenuNavHost(
     }
 }
 
+@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 fun MainScreen(
     appComponent: AppComponent,
@@ -148,7 +173,11 @@ fun MainScreen(
 
     Scaffold(
         bottomBar = {
-            if (showBottomNav) {
+            AnimatedVisibility(
+                visible = showBottomNav,
+                enter = slideInVertically(tween(ANIM_DURATION)) { it } + fadeIn(tween(FADE_DURATION)),
+                exit = slideOutVertically(tween(ANIM_DURATION)) { it } + fadeOut(tween(FADE_DURATION))
+            ) {
             NavigationBar(
                 containerColor = MaterialTheme.colorScheme.surface,
                 tonalElevation = 0.dp
@@ -186,12 +215,19 @@ fun MainScreen(
             }
         }
     ) { innerPadding ->
+        SharedTransitionLayout {
+            CompositionLocalProvider(LocalSharedTransitionScope provides this) {
         NavHost(
             navController = navController,
             startDestination = Routes.RECIPES,
-            modifier = Modifier.padding(innerPadding)
+            modifier = Modifier.padding(innerPadding),
+            enterTransition = { tabFadeIn },
+            exitTransition = { tabFadeOut },
+            popEnterTransition = { tabFadeIn },
+            popExitTransition = { tabFadeOut }
         ) {
             composable(Routes.RECIPES) {
+                CompositionLocalProvider(LocalNavAnimatedVisibilityScope provides this@composable) {
                 val viewModel = remember { appComponent.recipeListViewModel() }
                 RecipeListScreen(
                     viewModel = viewModel,
@@ -202,6 +238,7 @@ fun MainScreen(
                         navController.navigate(Routes.RECIPE_CREATE)
                     }
                 )
+                }
             }
 
             composable(Routes.FAVORITES) {
@@ -231,8 +268,15 @@ fun MainScreen(
                 )
             }
 
-            composable(Routes.RECIPE_DETAIL) { backStackEntry ->
-                val recipeId = backStackEntry.arguments?.getString("recipeId") ?: return@composable
+            composable(
+                Routes.RECIPE_DETAIL,
+                enterTransition = { slideInFromRight },
+                exitTransition = { slideOutToLeft },
+                popEnterTransition = { slideInFromLeft },
+                popExitTransition = { slideOutToRight }
+            ) { backStackEntry ->
+                CompositionLocalProvider(LocalNavAnimatedVisibilityScope provides this@composable) {
+                val recipeId = backStackEntry.arguments?.getString("recipeId") ?: return@CompositionLocalProvider
                 val viewModel = remember { appComponent.recipeDetailViewModel() }
                 RecipeDetailScreen(
                     recipeId = recipeId,
@@ -240,9 +284,16 @@ fun MainScreen(
                     onBack = { navController.popBackStack() },
                     currentUserId = currentUserId
                 )
+                }
             }
 
-            composable(Routes.RECIPE_CREATE) {
+            composable(
+                Routes.RECIPE_CREATE,
+                enterTransition = { slideInFromRight },
+                exitTransition = { slideOutToLeft },
+                popEnterTransition = { slideInFromLeft },
+                popExitTransition = { slideOutToRight }
+            ) {
                 val viewModel = remember { appComponent.recipeCreateViewModel() }
                 val coverPicker = rememberImagePickerLauncher(
                     onSingleResult = { image ->
@@ -269,6 +320,8 @@ fun MainScreen(
                     onPickCoverImage = { coverPicker.pickSingle() },
                     onPickRecipeImages = { imagesPicker.pickMultiple() }
                 )
+            }
+        }
             }
         }
     }

@@ -1,5 +1,7 @@
 package com.menu.feature.recipe.presentation.detail
 
+import androidx.compose.animation.*
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
@@ -30,14 +32,17 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
+import com.menu.core.ui.component.LocalNavAnimatedVisibilityScope
+import com.menu.core.ui.component.LocalSharedTransitionScope
 import com.menu.core.ui.component.MenuBottomSheetHost
 import com.menu.core.ui.component.rememberMenuBottomSheetState
 import com.menu.core.ui.component.showConfirm
 import com.menu.core.ui.component.showError
 import com.menu.feature.recipe.data.RecipeDetail
 import com.menu.feature.social.data.RecipeComment
+import kotlinx.coroutines.delay
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalSharedTransitionApi::class)
 @Composable
 fun RecipeDetailScreen(
     recipeId: String,
@@ -88,6 +93,12 @@ fun RecipeDetailScreen(
                 val detail = currentState.detail
                 val errorColor = MaterialTheme.colorScheme.error
 
+                var contentVisible by remember { mutableStateOf(false) }
+                LaunchedEffect(Unit) {
+                    delay(50)
+                    contentVisible = true
+                }
+
                 Column(Modifier.fillMaxSize()) {
                     LazyColumn(
                         modifier = Modifier.weight(1f),
@@ -100,37 +111,59 @@ fun RecipeDetailScreen(
                         }
 
                         if (allImages.isNotEmpty()) {
-                            item { ImageCarousel(images = allImages) }
+                            item { ImageCarousel(images = allImages, recipeId = recipeId) }
                         }
 
                         detail.author?.let { author ->
-                            item { AuthorInfoRow(author = author, createdAt = detail.recipe.createdAt) }
-                        }
-
-                        item {
-                            Column(Modifier.padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                                Text(detail.recipe.title, style = MaterialTheme.typography.headlineMedium, color = MaterialTheme.colorScheme.onSurface)
-                                detail.recipe.description?.let {
-                                    Text(it, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            item {
+                                AnimatedVisibility(
+                                    visible = contentVisible,
+                                    enter = fadeIn(tween(300, delayMillis = 100)) + slideInVertically(tween(300, delayMillis = 100)) { 30 }
+                                ) {
+                                    AuthorInfoRow(author = author, createdAt = detail.recipe.createdAt)
                                 }
                             }
                         }
 
                         item {
-                            Row(Modifier.padding(horizontal = 16.dp).horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                detail.recipe.difficulty?.let { InfoChip("难度: $it") }
-                                detail.recipe.cookingTime?.let { InfoChip("${it}分钟") }
-                                detail.recipe.servings?.let { InfoChip("${it}人份") }
+                            AnimatedVisibility(
+                                visible = contentVisible,
+                                enter = fadeIn(tween(300, delayMillis = 150)) + slideInVertically(tween(300, delayMillis = 150)) { 30 }
+                            ) {
+                                Column(Modifier.padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    Text(detail.recipe.title, style = MaterialTheme.typography.headlineMedium, color = MaterialTheme.colorScheme.onSurface)
+                                    detail.recipe.description?.let {
+                                        Text(it, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    }
+                                }
+                            }
+                        }
+
+                        item {
+                            AnimatedVisibility(
+                                visible = contentVisible,
+                                enter = fadeIn(tween(300, delayMillis = 200)) + slideInVertically(tween(300, delayMillis = 200)) { 30 }
+                            ) {
+                                Row(Modifier.padding(horizontal = 16.dp).horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    detail.recipe.difficulty?.let { InfoChip("难度: $it") }
+                                    detail.recipe.cookingTime?.let { InfoChip("${it}分钟") }
+                                    detail.recipe.servings?.let { InfoChip("${it}人份") }
+                                }
                             }
                         }
 
                         if (detail.ingredients.isNotEmpty()) {
                             item {
-                                SectionCard(title = "食材", modifier = Modifier.padding(horizontal = 16.dp)) {
-                                    detail.ingredients.forEach { ing ->
-                                        Row(Modifier.fillMaxWidth().padding(vertical = 6.dp), horizontalArrangement = Arrangement.SpaceBetween) {
-                                            Text(ing.ingredientName, style = MaterialTheme.typography.bodyMedium)
-                                            Text(ing.amount, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Medium)
+                                AnimatedVisibility(
+                                    visible = contentVisible,
+                                    enter = fadeIn(tween(300, delayMillis = 250)) + slideInVertically(tween(300, delayMillis = 250)) { 30 }
+                                ) {
+                                    SectionCard(title = "食材", modifier = Modifier.padding(horizontal = 16.dp)) {
+                                        detail.ingredients.forEach { ing ->
+                                            Row(Modifier.fillMaxWidth().padding(vertical = 6.dp), horizontalArrangement = Arrangement.SpaceBetween) {
+                                                Text(ing.ingredientName, style = MaterialTheme.typography.bodyMedium)
+                                                Text(ing.amount, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Medium)
+                                            }
                                         }
                                     }
                                 }
@@ -139,11 +172,16 @@ fun RecipeDetailScreen(
 
                         if (detail.seasonings.isNotEmpty()) {
                             item {
-                                SectionCard(title = "调料", modifier = Modifier.padding(horizontal = 16.dp)) {
-                                    detail.seasonings.forEach { s ->
-                                        Row(Modifier.fillMaxWidth().padding(vertical = 6.dp), horizontalArrangement = Arrangement.SpaceBetween) {
-                                            Text(s.seasoningName, style = MaterialTheme.typography.bodyMedium)
-                                            Text(s.amount, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Medium)
+                                AnimatedVisibility(
+                                    visible = contentVisible,
+                                    enter = fadeIn(tween(300, delayMillis = 300)) + slideInVertically(tween(300, delayMillis = 300)) { 30 }
+                                ) {
+                                    SectionCard(title = "调料", modifier = Modifier.padding(horizontal = 16.dp)) {
+                                        detail.seasonings.forEach { s ->
+                                            Row(Modifier.fillMaxWidth().padding(vertical = 6.dp), horizontalArrangement = Arrangement.SpaceBetween) {
+                                                Text(s.seasoningName, style = MaterialTheme.typography.bodyMedium)
+                                                Text(s.amount, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Medium)
+                                            }
                                         }
                                     }
                                 }
@@ -151,7 +189,14 @@ fun RecipeDetailScreen(
                         }
 
                         if (detail.steps.isNotEmpty()) {
-                            item { Text("制作步骤", style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(horizontal = 16.dp)) }
+                            item {
+                                AnimatedVisibility(
+                                    visible = contentVisible,
+                                    enter = fadeIn(tween(300, delayMillis = 350)) + slideInVertically(tween(300, delayMillis = 350)) { 30 }
+                                ) {
+                                    Text("制作步骤", style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(horizontal = 16.dp))
+                                }
+                            }
                             items(detail.steps) { step ->
                                 StepTimelineItem(step = step, isLast = step == detail.steps.last())
                             }
@@ -159,53 +204,64 @@ fun RecipeDetailScreen(
 
                         detail.nutrition?.let { n ->
                             item {
-                                com.menu.core.ui.component.NutritionCard(
-                                    nutrition = com.menu.core.model.RecipeNutrition(
-                                        calories = n.calories, protein = n.protein, fat = n.fat,
-                                        carbohydrate = n.carbohydrate, fiber = n.fiber, sodium = n.sodium,
-                                        healthScore = n.healthScore, healthTags = n.healthTags,
-                                        suitableFor = n.suitableFor, analysisText = n.analysisText,
-                                        servingSize = n.servingSize, trafficLight = n.trafficLight,
-                                        overallRating = n.overallRating, summary = n.summary, cautions = n.cautions
-                                    ),
-                                    modifier = Modifier.padding(horizontal = 16.dp)
-                                )
+                                AnimatedVisibility(
+                                    visible = contentVisible,
+                                    enter = fadeIn(tween(300, delayMillis = 400)) + slideInVertically(tween(300, delayMillis = 400)) { 30 }
+                                ) {
+                                    com.menu.core.ui.component.NutritionCard(
+                                        nutrition = com.menu.core.model.RecipeNutrition(
+                                            calories = n.calories, protein = n.protein, fat = n.fat,
+                                            carbohydrate = n.carbohydrate, fiber = n.fiber, sodium = n.sodium,
+                                            healthScore = n.healthScore, healthTags = n.healthTags,
+                                            suitableFor = n.suitableFor, analysisText = n.analysisText,
+                                            servingSize = n.servingSize, trafficLight = n.trafficLight,
+                                            overallRating = n.overallRating, summary = n.summary, cautions = n.cautions
+                                        ),
+                                        modifier = Modifier.padding(horizontal = 16.dp)
+                                    )
+                                }
                             }
                         }
                     }
 
-                    BottomActionBar(
-                        isLiked = isLiked,
-                        likeCount = likeCount,
-                        isFavorited = isFavorited,
-                        commentCount = commentCount,
-                        isAuthor = currentUserId != null && detail.recipe.authorId == currentUserId,
-                        onLike = { viewModel.toggleLike(recipeId) },
-                        onFavorite = { viewModel.toggleFavorite(recipeId) },
-                        onComment = {
-                            sheetState.show { dismiss ->
-                                CommentSheet(
-                                    comments = comments,
-                                    commentCount = commentCount,
-                                    currentUserId = currentUserId,
-                                    onPost = { content ->
-                                        viewModel.postComment(recipeId, content)
-                                    },
-                                    onDelete = { id -> viewModel.deleteComment(id) }
+                    AnimatedVisibility(
+                        visible = contentVisible,
+                        enter = slideInVertically(tween(300, delayMillis = 200)) { it } + fadeIn(tween(300, delayMillis = 200)),
+                        exit = slideOutVertically(tween(200)) { it } + fadeOut(tween(150))
+                    ) {
+                        BottomActionBar(
+                            isLiked = isLiked,
+                            likeCount = likeCount,
+                            isFavorited = isFavorited,
+                            commentCount = commentCount,
+                            isAuthor = currentUserId != null && detail.recipe.authorId == currentUserId,
+                            onLike = { viewModel.toggleLike(recipeId) },
+                            onFavorite = { viewModel.toggleFavorite(recipeId) },
+                            onComment = {
+                                sheetState.show { dismiss ->
+                                    CommentSheet(
+                                        comments = comments,
+                                        commentCount = commentCount,
+                                        currentUserId = currentUserId,
+                                        onPost = { content ->
+                                            viewModel.postComment(recipeId, content)
+                                        },
+                                        onDelete = { id -> viewModel.deleteComment(id) }
+                                    )
+                                }
+                            },
+                            onDelete = {
+                                sheetState.showConfirm(
+                                    title = "删除菜谱",
+                                    message = "确认删除「${detail.recipe.title}」？删除后无法恢复。",
+                                    confirmText = "删除",
+                                    confirmColor = errorColor,
+                                    icon = Icons.Outlined.Warning,
+                                    onConfirm = { viewModel.deleteRecipe(recipeId) }
                                 )
                             }
-                        },
-                        onDelete = {
-                            sheetState.showConfirm(
-                                title = "删除菜谱",
-                                message = "确认删除「${detail.recipe.title}」？删除后无法恢复。",
-                                confirmText = "删除",
-                                confirmColor = errorColor,
-                                icon = Icons.Outlined.Warning,
-                                onConfirm = { viewModel.deleteRecipe(recipeId) }
-                            )
-                        }
-                    )
+                        )
+                    }
                 }
             }
             is RecipeDetailState.Error -> {
@@ -218,25 +274,51 @@ fun RecipeDetailScreen(
             }
         }
 
-        // Floating back button over content
-        IconButton(
-            onClick = onBack,
-            modifier = Modifier
-                .padding(start = 4.dp, top = 4.dp)
-                .size(40.dp)
-                .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.7f), CircleShape)
+        // Floating back button with entrance animation
+        var backButtonVisible by remember { mutableStateOf(false) }
+        LaunchedEffect(Unit) {
+            delay(100)
+            backButtonVisible = true
+        }
+        AnimatedVisibility(
+            visible = backButtonVisible,
+            enter = fadeIn(tween(250)) + scaleIn(tween(250), initialScale = 0.8f),
+            modifier = Modifier.padding(start = 4.dp, top = 4.dp)
         ) {
-            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "返回", modifier = Modifier.size(22.dp))
+            IconButton(
+                onClick = onBack,
+                modifier = Modifier
+                    .size(40.dp)
+                    .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.7f), CircleShape)
+            ) {
+                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "返回", modifier = Modifier.size(22.dp))
+            }
         }
     }
 }
 
+@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
-private fun ImageCarousel(images: List<String>) {
+private fun ImageCarousel(images: List<String>, recipeId: String) {
     val pagerState = rememberPagerState(pageCount = { images.size })
+    val sharedTransitionScope = LocalSharedTransitionScope.current
+    val animatedVisibilityScope = LocalNavAnimatedVisibilityScope.current
+
     Column {
         HorizontalPager(state = pagerState, modifier = Modifier.fillMaxWidth().height(260.dp)) { page ->
-            AsyncImage(model = images[page], contentDescription = null, modifier = Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
+            val imageModifier = if (page == 0 && sharedTransitionScope != null && animatedVisibilityScope != null) {
+                with(sharedTransitionScope) {
+                    Modifier
+                        .sharedElement(
+                            rememberSharedContentState(key = "recipe_image_$recipeId"),
+                            animatedVisibilityScope = animatedVisibilityScope
+                        )
+                        .fillMaxSize()
+                }
+            } else {
+                Modifier.fillMaxSize()
+            }
+            AsyncImage(model = images[page], contentDescription = null, modifier = imageModifier, contentScale = ContentScale.Crop)
         }
         if (images.size > 1) {
             Row(Modifier.fillMaxWidth().padding(top = 8.dp), horizontalArrangement = Arrangement.Center) {
