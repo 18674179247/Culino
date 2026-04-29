@@ -198,6 +198,15 @@ pub struct RecipeDetail {
     /// 营养信息（可能为空，如果尚未分析）
     #[serde(skip_serializing_if = "Option::is_none")]
     pub nutrition: Option<RecipeNutritionInfo>,
+    /// 作者信息
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub author: Option<AuthorInfo>,
+    /// 点赞数
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub like_count: Option<i64>,
+    /// 评论数
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub comment_count: Option<i64>,
 }
 
 /// 菜谱营养信息（简化版，用于详情展示）
@@ -213,4 +222,18 @@ pub struct RecipeNutritionInfo {
     pub health_tags: Option<Vec<String>>,
     pub suitable_for: Option<Vec<String>>,
     pub analysis_text: Option<String>,
+    pub serving_size: Option<String>,
+    pub traffic_light: Option<serde_json::Value>,
+    pub overall_rating: Option<String>,
+    pub summary: Option<String>,
+    pub cautions: Option<Vec<String>>,
+}
+
+/// 菜谱作者信息
+#[derive(Debug, Serialize, utoipa::ToSchema)]
+pub struct AuthorInfo {
+    pub id: Uuid,
+    pub username: String,
+    pub nickname: Option<String>,
+    pub avatar: Option<String>,
 }

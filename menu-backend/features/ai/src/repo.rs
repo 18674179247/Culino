@@ -65,8 +65,9 @@ impl AiRepo {
             r#"
             INSERT INTO recipe_nutrition (
                 recipe_id, calories, protein, fat, carbohydrate, fiber, sodium,
-                analysis_text, health_score, health_tags, suitable_for, cautions
-            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+                analysis_text, health_score, health_tags, suitable_for, cautions,
+                serving_size, traffic_light, overall_rating, summary
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
             ON CONFLICT (recipe_id) DO UPDATE SET
                 calories = EXCLUDED.calories,
                 protein = EXCLUDED.protein,
@@ -79,6 +80,10 @@ impl AiRepo {
                 health_tags = EXCLUDED.health_tags,
                 suitable_for = EXCLUDED.suitable_for,
                 cautions = EXCLUDED.cautions,
+                serving_size = EXCLUDED.serving_size,
+                traffic_light = EXCLUDED.traffic_light,
+                overall_rating = EXCLUDED.overall_rating,
+                summary = EXCLUDED.summary,
                 updated_at = now()
             "#,
         )
@@ -94,6 +99,10 @@ impl AiRepo {
         .bind(&nutrition.health_tags)
         .bind(&nutrition.suitable_for)
         .bind(&nutrition.cautions)
+        .bind(&nutrition.serving_size)
+        .bind(&nutrition.traffic_light)
+        .bind(&nutrition.overall_rating)
+        .bind(&nutrition.summary)
         .execute(&self.pool)
         .await
         .context("Failed to upsert nutrition")?;

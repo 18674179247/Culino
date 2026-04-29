@@ -132,7 +132,16 @@ impl DeepSeekClient {
   "health_score": 健康评分（1-100的整数）,
   "health_tags": ["健康标签1", "健康标签2"],
   "suitable_for": ["适合人群1", "适合人群2"],
-  "cautions": ["注意事项1", "注意事项2"]
+  "cautions": ["注意事项1", "注意事项2"],
+  "serving_size": "每份的份量描述（如：每份（约350g））",
+  "traffic_light": {{
+    "fat": "green/amber/red",
+    "saturated_fat": "green/amber/red",
+    "sugar": "green/amber/red",
+    "sodium": "green/amber/red"
+  }},
+  "overall_rating": "green/amber/red（整体健康评级）",
+  "summary": "2-3句话的整体营养评价总结"
 }}
 
 注意：
@@ -140,9 +149,67 @@ impl DeepSeekClient {
 2. health_tags 例如：低脂、高蛋白、低钠、高纤维等
 3. suitable_for 例如：减脂人群、健身人群、儿童、老人、孕妇等
 4. cautions 例如：高盐、高糖、高热量、高胆固醇等（如果没有就返回空数组）
+5. traffic_light 红绿灯标识：green=低含量，amber=中等含量，red=高含量
+6. overall_rating 综合红绿灯评级：green=健康，amber=适量食用，red=需注意
+7. serving_size 格式示例："每份（约350g）"
+8. summary 用2-3句话概括这道菜的营养特点和建议
 "#,
             recipe_title, ingredients, seasonings, servings
         );
+
+        self.chat_completion(prompt).await
+    }
+
+    /// 识别菜谱（根据菜名或图片生成完整菜谱）
+    pub async fn recognize_recipe(
+        &self,
+        _image_url: &str,
+        existing_title: Option<&str>,
+    ) -> Result<String> {
+        // Since DeepSeek chat model doesn't support vision, use the title or ask AI to generate
+        // a complete recipe based on the dish name (which user confirms after upload)
+        let prompt = if let Some(title) = existing_title {
+            format!(
+                r#"请根据菜名「{}」生成一份完整的菜谱。
+
+请以 JSON 格式返回（只返回 JSON，不要其他文字）：
+{{
+  "title": "菜名",
+  "description": "菜品简介（50-100字）",
+  "difficulty": 难度（1-5的整数，1最简单），
+  "cooking_time": 烹饪时间（分钟，整数），
+  "servings": 建议份数（整数），
+  "ingredients": [
+    {{"name": "食材名", "amount": "用量（如500g、2个）"}}
+  ],
+  "seasonings": [
+    {{"name": "调料名", "amount": "用量（如2勺、适量）"}}
+  ],
+  "steps": [
+    "步骤1描述",
+    "步骤2描述"
+  ],
+  "confidence": 0.9
+}}"#,
+                title
+            )
+        } else {
+            r#"用户上传了一张菜品图片但未提供菜名。请返回一个空的菜谱模板。
+
+请以 JSON 格式返回（只返回 JSON，不要其他文字）：
+{
+  "title": "",
+  "description": "",
+  "difficulty": 3,
+  "cooking_time": 30,
+  "servings": 2,
+  "ingredients": [],
+  "seasonings": [],
+  "steps": [],
+  "confidence": 0.0
+}"#
+            .to_string()
+        };
 
         self.chat_completion(prompt).await
     }

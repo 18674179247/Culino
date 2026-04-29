@@ -49,3 +49,48 @@ pub struct UpdateCookingLogReq {
     #[validate(length(max = 2000, message = "备注最长 2000 个字符"))]
     pub note: Option<String>,
 }
+
+/// 点赞记录
+#[derive(Debug, FromRow, Serialize, utoipa::ToSchema)]
+pub struct RecipeLike {
+    pub user_id: Uuid,
+    pub recipe_id: Uuid,
+    pub created_at: Option<DateTime<Utc>>,
+}
+
+/// 评论（含用户信息）
+#[derive(Debug, FromRow, Serialize, utoipa::ToSchema)]
+pub struct RecipeComment {
+    pub id: Uuid,
+    pub recipe_id: Uuid,
+    pub user_id: Uuid,
+    pub username: String,
+    pub nickname: Option<String>,
+    pub avatar: Option<String>,
+    pub content: String,
+    pub created_at: Option<DateTime<Utc>>,
+}
+
+/// 创建评论请求
+#[derive(Debug, Deserialize, Validate, utoipa::ToSchema)]
+pub struct CreateCommentReq {
+    pub recipe_id: Uuid,
+    #[validate(length(min = 1, max = 1000))]
+    pub content: String,
+}
+
+/// 评论列表查询参数
+#[derive(Debug, Deserialize, utoipa::IntoParams)]
+pub struct CommentListQuery {
+    pub page: Option<i64>,
+    pub page_size: Option<i64>,
+}
+
+/// 评论列表响应
+#[derive(Debug, Serialize, utoipa::ToSchema)]
+pub struct CommentListResp {
+    pub data: Vec<RecipeComment>,
+    pub total: i64,
+    pub page: i64,
+    pub page_size: i64,
+}

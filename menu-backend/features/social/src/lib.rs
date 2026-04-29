@@ -1,6 +1,6 @@
 //! 社交模块
 //!
-//! 提供菜谱收藏和烹饪记录功能。
+//! 提供菜谱收藏、烹饪记录、点赞和评论功能。
 
 pub mod handler;
 pub mod model;
@@ -8,7 +8,7 @@ pub mod repo;
 
 use axum::{
     Router,
-    routing::{get, post, put},
+    routing::{delete, get, post, put},
 };
 use menu_common::state::AppState;
 use utoipa::OpenApi;
@@ -23,6 +23,10 @@ use utoipa::OpenApi;
         handler::create_cooking_log,
         handler::update_cooking_log,
         handler::delete_cooking_log,
+        handler::toggle_like,
+        handler::list_comments,
+        handler::create_comment,
+        handler::delete_comment,
     ),
     components(schemas(
         model::Favorite,
@@ -30,6 +34,10 @@ use utoipa::OpenApi;
         model::CookingLog,
         model::CreateCookingLogReq,
         model::UpdateCookingLogReq,
+        model::RecipeLike,
+        model::RecipeComment,
+        model::CreateCommentReq,
+        model::CommentListResp,
     ))
 )]
 pub struct SocialApi;
@@ -51,4 +59,10 @@ pub fn routes() -> Router<AppState> {
             "/cooking-logs/{id}",
             put(handler::update_cooking_log).delete(handler::delete_cooking_log),
         )
+        // likes
+        .route("/likes/{recipe_id}", post(handler::toggle_like))
+        // comments
+        .route("/comments/recipe/{recipe_id}", get(handler::list_comments))
+        .route("/comments", post(handler::create_comment))
+        .route("/comments/{id}", delete(handler::delete_comment))
 }

@@ -190,6 +190,10 @@ impl NutritionService {
                     .filter_map(|v| v.as_str().map(String::from))
                     .collect()
             }),
+            serving_size: parsed["serving_size"].as_str().map(String::from),
+            traffic_light: parsed.get("traffic_light").cloned(),
+            overall_rating: parsed["overall_rating"].as_str().map(String::from),
+            summary: parsed["summary"].as_str().map(String::from),
             generated_at: None,
             updated_at: None,
         })

@@ -62,6 +62,11 @@ fn ai_routes() -> Router<AppState> {
         )
         // 行为日志
         .route("/behavior/log", axum::routing::post(menu_ai::log_behavior))
+        // AI 菜谱识别
+        .route(
+            "/recipe/recognize",
+            axum::routing::post(menu_ai::recognize_recipe),
+        )
         .layer(TimeoutLayer::with_status_code(
             StatusCode::REQUEST_TIMEOUT,
             Duration::from_secs(120),

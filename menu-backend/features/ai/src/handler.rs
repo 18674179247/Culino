@@ -261,3 +261,34 @@ pub async fn log_behavior(
 
     ApiResponse::ok(true)
 }
+
+// ============================================
+// AI 菜谱识别相关
+// ============================================
+
+/// AI 识别菜谱
+#[utoipa::path(post, path = "/api/v1/ai/recipe/recognize", tag = "AI",
+    security(("bearer" = [])),
+    request_body = RecognizeRecipeReq,
+    responses((status = 200, body = RecognizeRecipeResp))
+)]
+pub async fn recognize_recipe(
+    State(state): State<AppState>,
+    Json(req): Json<RecognizeRecipeReq>,
+) -> ApiResult<RecognizeRecipeResp> {
+    tracing::info!("Recognizing recipe from image: {}", req.image_url);
+
+    let api_key = state.config.deepseek_api_key.clone().ok_or_else(|| {
+        menu_common::error::AppError::Internal(anyhow::anyhow!("DeepSeek API key not configured"))
+    })?;
+
+    let service = crate::recognition::RecognitionService::new(api_key)
+        .map_err(|e| menu_common::error::AppError::Internal(e))?;
+
+    let result = service
+        .recognize_from_image(&req.image_url, req.existing_title.as_deref())
+        .await
+        .map_err(|e| menu_common::error::AppError::Internal(e))?;
+
+    ApiResponse::ok(result)
+}

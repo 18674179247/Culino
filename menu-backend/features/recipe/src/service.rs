@@ -23,6 +23,20 @@ struct NutritionRow {
     health_tags: Option<Vec<String>>,
     suitable_for: Option<Vec<String>>,
     analysis_text: Option<String>,
+    serving_size: Option<String>,
+    traffic_light: Option<serde_json::Value>,
+    overall_rating: Option<String>,
+    summary: Option<String>,
+    cautions: Option<Vec<String>>,
+}
+
+/// 作者信息数据库查询结果
+#[derive(sqlx::FromRow)]
+struct AuthorRow {
+    id: Uuid,
+    username: String,
+    nickname: Option<String>,
+    avatar: Option<String>,
 }
 
 /// 菜谱服务，封装业务逻辑
@@ -49,7 +63,7 @@ impl RecipeService {
         self.repo.create(author_id, req).await
     }
 
-    /// 获取菜谱详情（含关联的食材、调料、步骤、标签、营养信息）
+    /// 获取菜谱详情（含关联的食材、调料、步骤、标签、营养信息、作者信息、点赞数、评论数）
     pub async fn get_detail(&self, id: Uuid) -> Result<RecipeDetail, AppError> {
         let mut detail = self
             .repo
@@ -60,6 +74,44 @@ impl RecipeService {
         // 尝试获取营养信息
         detail.nutrition = self.get_nutrition_info(id).await.ok();
 
+        // 获取作者信息
+        let author = sqlx::query_as::<_, AuthorRow>(
+            "SELECT id, username, nickname, avatar FROM users WHERE id = $1",
+        )
+        .bind(detail.recipe.author_id)
+        .fetch_optional(&self.pool)
+        .await
+        .ok()
+        .flatten();
+
+        detail.author = author.map(|a| AuthorInfo {
+            id: a.id,
+            username: a.username,
+            nickname: a.nickname,
+            avatar: a.avatar,
+        });
+
+        // 获取点赞数
+        let like_count = sqlx::query_scalar::<_, i64>(
+            "SELECT COUNT(*) FROM recipe_likes WHERE recipe_id = $1",
+        )
+        .bind(id)
+        .fetch_one(&self.pool)
+        .await
+        .unwrap_or(0);
+
+        // 获取评论数
+        let comment_count = sqlx::query_scalar::<_, i64>(
+            "SELECT COUNT(*) FROM recipe_comments WHERE recipe_id = $1",
+        )
+        .bind(id)
+        .fetch_one(&self.pool)
+        .await
+        .unwrap_or(0);
+
+        detail.like_count = Some(like_count);
+        detail.comment_count = Some(comment_count);
+
         Ok(detail)
     }
 
@@ -68,7 +120,8 @@ impl RecipeService {
         let nutrition = sqlx::query_as::<_, NutritionRow>(
             r#"
             SELECT calories, protein, fat, carbohydrate, fiber, sodium,
-                   health_score, health_tags, suitable_for, analysis_text
+                   health_score, health_tags, suitable_for, analysis_text,
+                   serving_size, traffic_light, overall_rating, summary, cautions
             FROM recipe_nutrition
             WHERE recipe_id = $1
             "#,
@@ -90,6 +143,11 @@ impl RecipeService {
             health_tags: nutrition.health_tags,
             suitable_for: nutrition.suitable_for,
             analysis_text: nutrition.analysis_text,
+            serving_size: nutrition.serving_size,
+            traffic_light: nutrition.traffic_light,
+            overall_rating: nutrition.overall_rating,
+            summary: nutrition.summary,
+            cautions: nutrition.cautions,
         })
     }
 

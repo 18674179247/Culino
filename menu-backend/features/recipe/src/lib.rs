@@ -38,6 +38,7 @@ use utoipa::OpenApi;
         model::RecipeStepInput,
         model::RecipeListItem,
         model::RecipeDetail,
+        model::AuthorInfo,
     ))
 )]
 pub struct RecipeApi;

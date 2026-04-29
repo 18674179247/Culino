@@ -30,6 +30,10 @@ pub struct RecipeNutrition {
     pub health_tags: Option<Vec<String>>,
     pub suitable_for: Option<Vec<String>>,
     pub cautions: Option<Vec<String>>,
+    pub serving_size: Option<String>,
+    pub traffic_light: Option<serde_json::Value>,
+    pub overall_rating: Option<String>,
+    pub summary: Option<String>,
     pub generated_at: Option<DateTime<Utc>>,
     pub updated_at: Option<DateTime<Utc>>,
 }
@@ -142,4 +146,32 @@ pub struct CreateBehaviorLogReq {
     pub recipe_id: Uuid,
     pub action_type: String,
     pub action_value: Option<serde_json::Value>,
+}
+
+/// AI 菜谱识别请求
+#[derive(Debug, Deserialize, utoipa::ToSchema)]
+pub struct RecognizeRecipeReq {
+    pub image_url: String,
+    pub existing_title: Option<String>,
+}
+
+/// AI 菜谱识别 - 食材项
+#[derive(Debug, Serialize, Deserialize, utoipa::ToSchema)]
+pub struct RecognizedIngredient {
+    pub name: String,
+    pub amount: String,
+}
+
+/// AI 菜谱识别响应
+#[derive(Debug, Serialize, utoipa::ToSchema)]
+pub struct RecognizeRecipeResp {
+    pub title: String,
+    pub description: Option<String>,
+    pub difficulty: Option<i16>,
+    pub cooking_time: Option<i32>,
+    pub servings: Option<i16>,
+    pub ingredients: Vec<RecognizedIngredient>,
+    pub seasonings: Vec<RecognizedIngredient>,
+    pub steps: Vec<String>,
+    pub confidence: f64,
 }

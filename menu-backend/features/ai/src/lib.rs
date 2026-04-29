@@ -11,6 +11,7 @@ pub mod handler;
 pub mod model;
 pub mod nutrition;
 pub mod preference;
+pub mod recognition;
 pub mod recommendation;
 pub mod repo;
 
@@ -32,6 +33,7 @@ use utoipa::OpenApi;
         handler::analyze_preference,
         handler::get_preference_profile,
         handler::log_behavior,
+        handler::recognize_recipe,
     ),
     components(schemas(
         RecipeNutrition,
@@ -42,6 +44,9 @@ use utoipa::OpenApi;
         UserPreferenceResp,
         PreferenceItem,
         CreateBehaviorLogReq,
+        RecognizeRecipeReq,
+        RecognizeRecipeResp,
+        RecognizedIngredient,
     )),
     tags(
         (name = "AI", description = "AI 功能接口")

@@ -189,6 +189,9 @@ impl RecipeRepo for PgRecipeRepo {
             steps,
             tags,
             nutrition: None, // 营养信息由 service 层填充
+            author: None,    // 作者信息由 service 层填充
+            like_count: None,
+            comment_count: None,
         }))
     }
 

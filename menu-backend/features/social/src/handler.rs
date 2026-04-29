@@ -7,7 +7,7 @@ use crate::repo::cooking_log_repo::{CookingLogRepo, PgCookingLogRepo};
 use crate::repo::favorite_repo::{FavoriteRepo, PgFavoriteRepo};
 use axum::{
     Json,
-    extract::{Path, State},
+    extract::{Path, Query, State},
 };
 use menu_common::auth::AuthUser;
 use menu_common::response::{ApiResponse, ApiResult};
@@ -174,4 +174,89 @@ pub async fn delete_cooking_log(
     let repo = PgCookingLogRepo::new(state.pool.clone());
     repo.delete(id, auth.user_id).await?;
     ApiResponse::ok(true)
+}
+
+/// 点赞/取消点赞
+#[utoipa::path(post, path = "/api/v1/social/likes/{recipe_id}", tag = "社交",
+    security(("bearer" = [])),
+    params(("recipe_id" = Uuid, Path, description = "菜谱ID")),
+    responses((status = 200, body = bool, description = "true=已点赞, false=已取消"))
+)]
+pub async fn toggle_like(
+    State(state): State<AppState>,
+    auth: AuthUser,
+    Path(recipe_id): Path<Uuid>,
+) -> ApiResult<bool> {
+    let liked = crate::repo::like_repo::LikeRepo::toggle(&state.pool, auth.user_id, recipe_id)
+        .await
+        .map_err(|e| menu_common::error::AppError::Internal(e))?;
+    ApiResponse::ok(liked)
+}
+
+/// 获取评论列表
+#[utoipa::path(get, path = "/api/v1/social/comments/recipe/{recipe_id}", tag = "社交",
+    params(
+        ("recipe_id" = Uuid, Path, description = "菜谱ID"),
+        CommentListQuery
+    ),
+    responses((status = 200, body = CommentListResp))
+)]
+pub async fn list_comments(
+    State(state): State<AppState>,
+    Path(recipe_id): Path<Uuid>,
+    Query(query): Query<CommentListQuery>,
+) -> ApiResult<CommentListResp> {
+    let page = query.page.unwrap_or(1).max(1);
+    let page_size = query.page_size.unwrap_or(20).min(50);
+    let (comments, total) =
+        crate::repo::comment_repo::CommentRepo::list(&state.pool, recipe_id, page, page_size)
+            .await
+            .map_err(|e| menu_common::error::AppError::Internal(e))?;
+    ApiResponse::ok(CommentListResp {
+        data: comments,
+        total,
+        page,
+        page_size,
+    })
+}
+
+/// 发表评论
+#[utoipa::path(post, path = "/api/v1/social/comments", tag = "社交",
+    security(("bearer" = [])),
+    request_body = CreateCommentReq,
+    responses((status = 200, body = RecipeComment))
+)]
+pub async fn create_comment(
+    State(state): State<AppState>,
+    auth: AuthUser,
+    Json(req): Json<CreateCommentReq>,
+) -> ApiResult<RecipeComment> {
+    req.validate()?;
+    let comment = crate::repo::comment_repo::CommentRepo::create(
+        &state.pool,
+        auth.user_id,
+        req.recipe_id,
+        &req.content,
+    )
+    .await
+    .map_err(|e| menu_common::error::AppError::Internal(e))?;
+    ApiResponse::ok(comment)
+}
+
+/// 删除评论（仅评论作者可删除）
+#[utoipa::path(delete, path = "/api/v1/social/comments/{id}", tag = "社交",
+    security(("bearer" = [])),
+    params(("id" = Uuid, Path, description = "评论ID")),
+    responses((status = 200, body = bool))
+)]
+pub async fn delete_comment(
+    State(state): State<AppState>,
+    auth: AuthUser,
+    Path(id): Path<Uuid>,
+) -> ApiResult<bool> {
+    let deleted =
+        crate::repo::comment_repo::CommentRepo::delete(&state.pool, id, auth.user_id)
+            .await
+            .map_err(|e| menu_common::error::AppError::Internal(e))?;
+    ApiResponse::ok(deleted)
 }
