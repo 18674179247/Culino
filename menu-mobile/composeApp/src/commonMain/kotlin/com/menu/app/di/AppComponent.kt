@@ -3,6 +3,7 @@ package com.menu.app.di
 import com.menu.core.data.TokenStorage
 import com.menu.core.data.createDataStore
 import com.menu.core.network.ApiClient
+import com.menu.core.network.ImageUploadApi
 import com.menu.core.network.TokenProvider
 import com.menu.core.network.createHttpClient
 import com.menu.feature.user.data.UserApi
@@ -26,6 +27,7 @@ class AppComponent(dataStorePath: String) {
     val tokenProvider: TokenProvider get() = tokenStorage
     private val httpClient by lazy { createHttpClient(tokenProvider) }
     private val apiClient by lazy { ApiClient(httpClient) }
+    val imageUploadApi by lazy { ImageUploadApi(httpClient) }
 
     // User feature
     private val userApi by lazy { UserApi(apiClient) }
@@ -47,11 +49,11 @@ class AppComponent(dataStorePath: String) {
 
     fun loginViewModel() = LoginViewModel(loginUseCase)
     fun registerViewModel() = RegisterViewModel(registerUseCase)
-    fun profileViewModel() = ProfileViewModel(getProfileUseCase)
+    fun profileViewModel() = ProfileViewModel(getProfileUseCase, imageUploadApi)
 
     fun recipeListViewModel() = RecipeListViewModel(searchRecipesUseCase, getRandomRecipesUseCase)
     fun recipeDetailViewModel() = RecipeDetailViewModel(getRecipeDetailUseCase, recipeRepository, socialRepository)
-    fun recipeCreateViewModel() = RecipeCreateViewModel(recipeRepository)
+    fun recipeCreateViewModel() = RecipeCreateViewModel(recipeRepository, imageUploadApi)
 
     fun favoritesViewModel() = FavoritesViewModel(socialRepository)
 }

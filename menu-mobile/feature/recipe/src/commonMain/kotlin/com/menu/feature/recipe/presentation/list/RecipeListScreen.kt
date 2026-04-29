@@ -16,8 +16,10 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import coil3.compose.AsyncImage
 import com.menu.feature.recipe.data.RecipeListItem
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -154,8 +156,19 @@ fun RecipeCard(
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {
-        Row(modifier = Modifier.padding(16.dp)) {
-            // PLACEHOLDER_CONTINUE
+        Row(modifier = Modifier.padding(12.dp)) {
+            if (recipe.coverImage != null) {
+                AsyncImage(
+                    model = recipe.coverImage,
+                    contentDescription = recipe.title,
+                    modifier = Modifier
+                        .size(80.dp)
+                        .clip(RoundedCornerShape(8.dp)),
+                    contentScale = ContentScale.Crop
+                )
+                Spacer(Modifier.width(12.dp))
+            }
+
             val difficultyColor = when (recipe.difficulty) {
                 1 -> MaterialTheme.colorScheme.tertiary
                 2 -> MaterialTheme.colorScheme.secondary
@@ -165,15 +178,16 @@ fun RecipeCard(
                 else -> MaterialTheme.colorScheme.onSurfaceVariant
             }
 
-            Box(
-                modifier = Modifier
-                    .width(4.dp)
-                    .height(60.dp)
-                    .clip(RoundedCornerShape(2.dp))
-                    .background(difficultyColor)
-            )
-
-            Spacer(Modifier.width(12.dp))
+            if (recipe.coverImage == null) {
+                Box(
+                    modifier = Modifier
+                        .width(4.dp)
+                        .height(60.dp)
+                        .clip(RoundedCornerShape(2.dp))
+                        .background(difficultyColor)
+                )
+                Spacer(Modifier.width(12.dp))
+            }
 
             Column(modifier = Modifier.weight(1f)) {
                 Text(

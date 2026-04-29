@@ -3,6 +3,7 @@ package com.menu.feature.recipe.presentation.create
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.menu.core.common.AppResult
+import com.menu.core.network.ImageUploadApi
 import com.menu.feature.recipe.data.CreateRecipeRequest
 import com.menu.feature.recipe.data.CreateRecipeStep
 import com.menu.feature.recipe.data.RecipeRepository
@@ -28,12 +29,17 @@ data class RecipeFormState(
     val description: String = "",
     val difficulty: String = "简单",
     val cookingTime: String = "",
+    val coverImageUrl: String? = null,
+    val recipeImages: List<String> = emptyList(),
+    val isUploadingCover: Boolean = false,
+    val isUploadingImages: Boolean = false,
     val ingredients: List<IngredientInput> = listOf(IngredientInput()),
     val steps: List<String> = listOf("")
 )
 
 class RecipeCreateViewModel(
-    private val repository: RecipeRepository
+    private val repository: RecipeRepository,
+    private val imageUploadApi: ImageUploadApi
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<RecipeCreateUiState>(RecipeCreateUiState.Idle)
@@ -56,6 +62,55 @@ class RecipeCreateViewModel(
 
     fun updateCookingTime(time: String) {
         _formState.value = _formState.value.copy(cookingTime = time)
+    }
+
+    fun uploadCoverImage(bytes: ByteArray, fileName: String, contentType: String) {
+        _formState.value = _formState.value.copy(isUploadingCover = true)
+        viewModelScope.launch {
+            when (val result = imageUploadApi.uploadImage(bytes, fileName, contentType)) {
+                is AppResult.Success -> _formState.value = _formState.value.copy(
+                    coverImageUrl = result.data,
+                    isUploadingCover = false
+                )
+                is AppResult.Error -> {
+                    _formState.value = _formState.value.copy(isUploadingCover = false)
+                    _uiState.value = RecipeCreateUiState.Error(result.message)
+                }
+            }
+        }
+    }
+
+    fun removeCoverImage() {
+        _formState.value = _formState.value.copy(coverImageUrl = null)
+    }
+
+    fun uploadRecipeImages(images: List<Triple<ByteArray, String, String>>) {
+        _formState.value = _formState.value.copy(isUploadingImages = true)
+        viewModelScope.launch {
+            val urls = mutableListOf<String>()
+            for ((bytes, fileName, contentType) in images) {
+                when (val result = imageUploadApi.uploadImage(bytes, fileName, contentType)) {
+                    is AppResult.Success -> urls.add(result.data)
+                    is AppResult.Error -> {
+                        _formState.value = _formState.value.copy(isUploadingImages = false)
+                        _uiState.value = RecipeCreateUiState.Error(result.message)
+                        return@launch
+                    }
+                }
+            }
+            _formState.value = _formState.value.copy(
+                recipeImages = _formState.value.recipeImages + urls,
+                isUploadingImages = false
+            )
+        }
+    }
+
+    fun removeRecipeImage(index: Int) {
+        val current = _formState.value.recipeImages.toMutableList()
+        if (index in current.indices) {
+            current.removeAt(index)
+            _formState.value = _formState.value.copy(recipeImages = current)
+        }
     }
 
     fun addIngredient() {
@@ -113,7 +168,6 @@ class RecipeCreateViewModel(
     fun createRecipe() {
         val form = _formState.value
 
-        // 验证
         if (form.name.isBlank()) {
             _uiState.value = RecipeCreateUiState.Error("请输入菜谱名称")
             return
@@ -140,7 +194,6 @@ class RecipeCreateViewModel(
         viewModelScope.launch {
             _uiState.value = RecipeCreateUiState.Loading
 
-            // 映射难度：简单=1, 中等=3, 困难=5
             val difficultyInt = when (form.difficulty) {
                 "简单" -> 1
                 "中等" -> 3
@@ -151,18 +204,18 @@ class RecipeCreateViewModel(
             val request = CreateRecipeRequest(
                 title = form.name,
                 description = form.description.ifBlank { null },
-                coverImage = null,
+                coverImage = form.coverImageUrl,
                 difficulty = difficultyInt,
                 cookingTime = cookingTimeInt,
                 prepTime = null,
-                servings = 2, // 默认2人份
-                ingredients = null, // 暂时跳过食材
-                seasonings = null, // 暂时跳过调料
+                servings = 2,
+                ingredients = null,
+                seasonings = null,
                 steps = validSteps.mapIndexed { index, description ->
                     CreateRecipeStep(
                         stepNumber = index + 1,
                         content = description,
-                        image = null,
+                        image = form.recipeImages.getOrNull(index),
                         duration = null
                     )
                 },

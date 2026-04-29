@@ -25,7 +25,9 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.menu.app.di.AppComponent
+import com.menu.app.picker.rememberImagePickerLauncher
 import com.menu.core.network.parseUserIdFromToken
+import com.menu.feature.user.presentation.profile.ProfileIntent
 import com.menu.feature.recipe.presentation.create.RecipeCreateScreen
 import com.menu.feature.recipe.presentation.detail.RecipeDetailScreen
 import com.menu.feature.recipe.presentation.list.RecipeListScreen
@@ -208,9 +210,18 @@ fun MainScreen(
 
             composable(Routes.PROFILE) {
                 val viewModel = remember { appComponent.profileViewModel() }
+                val avatarPicker = rememberImagePickerLauncher(
+                    onSingleResult = { image ->
+                        image?.let {
+                            viewModel.onIntent(ProfileIntent.UploadAvatar(it.bytes, it.fileName, it.contentType))
+                        }
+                    },
+                    onMultipleResult = {}
+                )
                 ProfileScreen(
                     viewModel = viewModel,
-                    onLoggedOut = onLoggedOut
+                    onLoggedOut = onLoggedOut,
+                    onPickAvatar = { avatarPicker.pickSingle() }
                 )
             }
 
@@ -227,6 +238,20 @@ fun MainScreen(
 
             composable(Routes.RECIPE_CREATE) {
                 val viewModel = remember { appComponent.recipeCreateViewModel() }
+                val coverPicker = rememberImagePickerLauncher(
+                    onSingleResult = { image ->
+                        image?.let { viewModel.uploadCoverImage(it.bytes, it.fileName, it.contentType) }
+                    },
+                    onMultipleResult = {}
+                )
+                val imagesPicker = rememberImagePickerLauncher(
+                    onSingleResult = {},
+                    onMultipleResult = { images ->
+                        if (images.isNotEmpty()) {
+                            viewModel.uploadRecipeImages(images.map { Triple(it.bytes, it.fileName, it.contentType) })
+                        }
+                    }
+                )
                 RecipeCreateScreen(
                     viewModel = viewModel,
                     onNavigateBack = { navController.popBackStack() },
@@ -234,7 +259,9 @@ fun MainScreen(
                         navController.navigate(Routes.recipeDetail(recipeId)) {
                             popUpTo(Routes.RECIPES)
                         }
-                    }
+                    },
+                    onPickCoverImage = { coverPicker.pickSingle() },
+                    onPickRecipeImages = { imagesPicker.pickMultiple() }
                 )
             }
         }

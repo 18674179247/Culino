@@ -1,6 +1,7 @@
 package com.menu.feature.user.presentation.profile
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -18,8 +19,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import coil3.compose.AsyncImage
 import com.menu.core.ui.component.ErrorMessage
 import com.menu.core.ui.component.LoadingButton
 import com.menu.core.ui.component.MenuTextField
@@ -27,7 +30,8 @@ import com.menu.core.ui.component.MenuTextField
 @Composable
 fun ProfileScreen(
     viewModel: ProfileViewModel,
-    onLoggedOut: () -> Unit
+    onLoggedOut: () -> Unit,
+    onPickAvatar: () -> Unit = {}
 ) {
     val state by viewModel.state.collectAsState()
 
@@ -45,7 +49,6 @@ fun ProfileScreen(
             .background(MaterialTheme.colorScheme.background)
             .verticalScroll(rememberScrollState())
     ) {
-        // 顶部渐变区域
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -61,20 +64,63 @@ fun ProfileScreen(
             contentAlignment = Alignment.Center
         ) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                // 头像占位
                 Box(
-                    modifier = Modifier
-                        .size(72.dp)
-                        .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.2f)),
+                    modifier = Modifier.size(72.dp),
                     contentAlignment = Alignment.Center
                 ) {
-                    Icon(
-                        Icons.Outlined.Person,
-                        contentDescription = null,
-                        modifier = Modifier.size(40.dp),
-                        tint = MaterialTheme.colorScheme.onPrimary
-                    )
+                    val avatarUrl = state.user?.avatar
+                    if (avatarUrl != null) {
+                        AsyncImage(
+                            model = avatarUrl,
+                            contentDescription = "头像",
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .clip(CircleShape)
+                                .clickable { onPickAvatar() },
+                            contentScale = ContentScale.Crop,
+                            onError = { io.github.aakira.napier.Napier.e("Coil load error: ${it.result.throwable}", tag = "Avatar") },
+                            onSuccess = { io.github.aakira.napier.Napier.d("Coil load success", tag = "Avatar") }
+                        )
+                    } else {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .clip(CircleShape)
+                                .background(MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.2f))
+                                .clickable { onPickAvatar() },
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                Icons.Outlined.Person,
+                                contentDescription = null,
+                                modifier = Modifier.size(40.dp),
+                                tint = MaterialTheme.colorScheme.onPrimary
+                            )
+                        }
+                    }
+                    if (state.isUploadingAvatar) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(72.dp),
+                            color = MaterialTheme.colorScheme.onPrimary,
+                            strokeWidth = 3.dp
+                        )
+                    } else {
+                        Box(
+                            modifier = Modifier
+                                .align(Alignment.BottomEnd)
+                                .size(24.dp)
+                                .clip(CircleShape)
+                                .background(MaterialTheme.colorScheme.surface),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                Icons.Outlined.Edit,
+                                contentDescription = "更换头像",
+                                modifier = Modifier.size(14.dp),
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                    }
                 }
                 Spacer(Modifier.height(12.dp))
                 state.user?.let { user ->
@@ -100,6 +146,8 @@ fun ProfileScreen(
             }
         }
 
+        // PLACEHOLDER_CONTENT
+
         if (state.isLoading && state.user == null) {
             Box(
                 modifier = Modifier.fillMaxWidth().padding(48.dp),
@@ -108,7 +156,6 @@ fun ProfileScreen(
                 CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
             }
         } else {
-            // 内容区域
             Column(
                 modifier = Modifier.padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
@@ -121,7 +168,6 @@ fun ProfileScreen(
                 }
 
                 state.user?.let { user ->
-                    // 信息卡片
                     Card(
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(12.dp),
@@ -131,7 +177,6 @@ fun ProfileScreen(
                         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
                     ) {
                         Column(modifier = Modifier.padding(16.dp)) {
-                            // PLACEHOLDER_PROFILE_CONTENT
                             ProfileInfoRow("用户名", user.username)
 
                             HorizontalDivider(
@@ -197,7 +242,6 @@ fun ProfileScreen(
 
                     Spacer(Modifier.weight(1f))
 
-                    // 退出登录
                     Button(
                         onClick = { viewModel.onIntent(ProfileIntent.Logout) },
                         colors = ButtonDefaults.buttonColors(

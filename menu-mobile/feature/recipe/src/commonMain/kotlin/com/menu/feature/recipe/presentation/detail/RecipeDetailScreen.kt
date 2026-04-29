@@ -16,8 +16,10 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import coil3.compose.AsyncImage
 import com.menu.feature.recipe.data.RecipeDetail
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -183,12 +185,29 @@ fun RecipeDetailContent(
 ) {
     LazyColumn(
         modifier = modifier.fillMaxSize(),
-        contentPadding = PaddingValues(16.dp),
+        contentPadding = PaddingValues(0.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
+        // 封面图
+        detail.recipe.coverImage?.let { coverUrl ->
+            item {
+                AsyncImage(
+                    model = coverUrl,
+                    contentDescription = detail.recipe.title,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(220.dp),
+                    contentScale = ContentScale.Crop
+                )
+            }
+        }
+
         // 标题区域
         item {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Column(
+                modifier = Modifier.padding(horizontal = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
                 Text(
                     text = detail.recipe.title,
                     style = MaterialTheme.typography.headlineMedium,
@@ -215,7 +234,7 @@ fun RecipeDetailContent(
         // 食材区域
         if (detail.ingredients.isNotEmpty()) {
             item {
-                SectionCard(title = "食材") {
+                SectionCard(title = "食材", modifier = Modifier.padding(horizontal = 16.dp)) {
                     detail.ingredients.forEach { ingredient ->
                         Row(
                             modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp),
@@ -241,7 +260,7 @@ fun RecipeDetailContent(
         // 调料区域
         if (detail.seasonings.isNotEmpty()) {
             item {
-                SectionCard(title = "调料") {
+                SectionCard(title = "调料", modifier = Modifier.padding(horizontal = 16.dp)) {
                     detail.seasonings.forEach { seasoning ->
                         Row(
                             modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp),
@@ -270,12 +289,13 @@ fun RecipeDetailContent(
                 Text(
                     text = "制作步骤",
                     style = MaterialTheme.typography.titleLarge,
-                    color = MaterialTheme.colorScheme.onSurface
+                    color = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.padding(horizontal = 16.dp)
                 )
             }
             items(detail.steps) { step ->
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     // 时间线
@@ -316,6 +336,18 @@ fun RecipeDetailContent(
                         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
                     ) {
                         Column(modifier = Modifier.padding(12.dp)) {
+                            step.image?.let { imageUrl ->
+                                AsyncImage(
+                                    model = imageUrl,
+                                    contentDescription = "步骤 ${step.stepNumber}",
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(160.dp)
+                                        .clip(RoundedCornerShape(8.dp)),
+                                    contentScale = ContentScale.Crop
+                                )
+                                Spacer(modifier = Modifier.height(8.dp))
+                            }
                             Text(
                                 step.content,
                                 style = MaterialTheme.typography.bodyMedium,
@@ -344,7 +376,7 @@ fun RecipeDetailContent(
         // 营养信息
         detail.nutrition?.let { nutrition ->
             item {
-                SectionCard(title = "营养信息") {
+                SectionCard(title = "营养信息", modifier = Modifier.padding(horizontal = 16.dp)) {
                     NutritionRow("热量", "${nutrition.calories} kcal")
                     NutritionRow("蛋白质", "${nutrition.protein}g")
                     NutritionRow("脂肪", "${nutrition.fat}g")
@@ -360,10 +392,11 @@ fun RecipeDetailContent(
 @Composable
 fun SectionCard(
     title: String,
+    modifier: Modifier = Modifier,
     content: @Composable ColumnScope.() -> Unit
 ) {
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface

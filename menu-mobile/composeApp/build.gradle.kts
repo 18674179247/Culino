@@ -38,6 +38,8 @@ kotlin {
             implementation(libs.napier)
             implementation(libs.datastore.preferences)
             implementation(libs.ktor.client.core)
+            implementation(libs.coil.compose)
+            implementation(libs.coil.network.ktor)
         }
         androidMain.dependencies {
             implementation(libs.androidx.activity.compose)
@@ -55,6 +57,21 @@ android {
         targetSdk = 35
         versionCode = 1
         versionName = "1.0.0"
+    }
+
+    buildFeatures {
+        buildConfig = true
+    }
+
+    buildTypes {
+        debug {
+            isDebuggable = true
+            buildConfigField("String", "API_BASE_URL", "\"http://127.0.0.1:3000/api/v1/\"")
+        }
+        release {
+            isMinifyEnabled = false
+            buildConfigField("String", "API_BASE_URL", "\"https://your-prod-domain.com/api/v1/\"")
+        }
     }
 
     compileOptions {
