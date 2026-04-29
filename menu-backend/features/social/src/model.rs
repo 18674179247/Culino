@@ -11,13 +11,17 @@ pub struct Favorite {
     pub created_at: Option<DateTime<Utc>>,
 }
 
-/// 收藏列表项（包含菜谱标题）
+/// 收藏列表项（包含菜谱摘要信息）
 #[derive(Debug, FromRow, Serialize, utoipa::ToSchema)]
 pub struct FavoriteWithTitle {
     pub user_id: Uuid,
     pub recipe_id: Uuid,
     pub created_at: Option<DateTime<Utc>>,
     pub recipe_title: Option<String>,
+    pub cover_image: Option<String>,
+    pub difficulty: Option<i16>,
+    pub cooking_time: Option<i32>,
+    pub servings: Option<i32>,
 }
 
 #[derive(Debug, FromRow, Serialize, utoipa::ToSchema)]

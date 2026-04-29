@@ -33,10 +33,11 @@ impl PgFavoriteRepo {
 
 #[async_trait]
 impl FavoriteRepo for PgFavoriteRepo {
-    /// 查询用户的所有收藏，按时间倒序，JOIN 菜谱表获取标题
+    /// 查询用户的所有收藏，按时间倒序，JOIN 菜谱表获取摘要信息
     async fn list_by_user(&self, user_id: Uuid) -> Result<Vec<FavoriteWithTitle>, AppError> {
         let rows = sqlx::query_as::<_, FavoriteWithTitle>(
-            "SELECT f.user_id, f.recipe_id, f.created_at, r.title as recipe_title \
+            "SELECT f.user_id, f.recipe_id, f.created_at, \
+             r.title as recipe_title, r.cover_image, r.difficulty, r.cooking_time, r.servings \
              FROM favorites f LEFT JOIN recipes r ON f.recipe_id = r.id \
              WHERE f.user_id = $1 ORDER BY f.created_at DESC",
         )
