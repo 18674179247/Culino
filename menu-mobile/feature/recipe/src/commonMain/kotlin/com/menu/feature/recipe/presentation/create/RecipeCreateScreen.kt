@@ -22,6 +22,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
+import com.menu.core.ui.component.MenuBottomSheetHost
+import com.menu.core.ui.component.rememberMenuBottomSheetState
+import com.menu.core.ui.component.showError
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -33,6 +36,8 @@ fun RecipeCreateScreen(
     onPickRecipeImages: () -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val errorMessage by viewModel.errorMessage.collectAsState()
+    val sheetState = rememberMenuBottomSheetState()
 
     LaunchedEffect(uiState) {
         if (uiState is RecipeCreateUiState.Success) {
@@ -40,6 +45,18 @@ fun RecipeCreateScreen(
             onCreateSuccess(recipeId)
         }
     }
+
+    LaunchedEffect(errorMessage) {
+        val msg = errorMessage ?: return@LaunchedEffect
+        sheetState.showError(
+            message = msg,
+            onRetry = { viewModel.createRecipe() },
+            onDismiss = { viewModel.clearError() }
+        )
+        viewModel.clearError()
+    }
+
+    MenuBottomSheetHost(sheetState)
 
     Scaffold(
         topBar = {
@@ -72,23 +89,12 @@ fun RecipeCreateScreen(
         containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
         Box(modifier = Modifier.fillMaxSize().padding(padding)) {
-            when (val state = uiState) {
+            when (uiState) {
                 is RecipeCreateUiState.Loading -> {
                     CircularProgressIndicator(
                         modifier = Modifier.align(Alignment.Center),
                         color = MaterialTheme.colorScheme.primary
                     )
-                }
-                is RecipeCreateUiState.Error -> {
-                    Column(
-                        modifier = Modifier.fillMaxSize().padding(16.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.Center
-                    ) {
-                        Text(state.message, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodyMedium)
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Button(onClick = { viewModel.createRecipe() }, shape = RoundedCornerShape(20.dp)) { Text("重试") }
-                    }
                 }
                 else -> RecipeForm(viewModel, onPickCoverImage, onPickRecipeImages)
             }

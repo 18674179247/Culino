@@ -48,6 +48,16 @@ class RecipeCreateViewModel(
     private val _formState = MutableStateFlow(RecipeFormState())
     val formState: StateFlow<RecipeFormState> = _formState.asStateFlow()
 
+    private val _errorMessage = MutableStateFlow<String?>(null)
+    val errorMessage: StateFlow<String?> = _errorMessage.asStateFlow()
+
+    fun clearError() {
+        _errorMessage.value = null
+        if (_uiState.value is RecipeCreateUiState.Error) {
+            _uiState.value = RecipeCreateUiState.Idle
+        }
+    }
+
     fun updateName(name: String) {
         _formState.value = _formState.value.copy(name = name)
     }
@@ -74,7 +84,7 @@ class RecipeCreateViewModel(
                 )
                 is AppResult.Error -> {
                     _formState.value = _formState.value.copy(isUploadingCover = false)
-                    _uiState.value = RecipeCreateUiState.Error(result.message)
+                    _errorMessage.value = result.message
                 }
             }
         }
@@ -93,7 +103,7 @@ class RecipeCreateViewModel(
                     is AppResult.Success -> urls.add(result.data)
                     is AppResult.Error -> {
                         _formState.value = _formState.value.copy(isUploadingImages = false)
-                        _uiState.value = RecipeCreateUiState.Error(result.message)
+                        _errorMessage.value = result.message
                         return@launch
                     }
                 }
@@ -169,25 +179,25 @@ class RecipeCreateViewModel(
         val form = _formState.value
 
         if (form.name.isBlank()) {
-            _uiState.value = RecipeCreateUiState.Error("请输入菜谱名称")
+            _errorMessage.value = "请输入菜谱名称"
             return
         }
 
         val cookingTimeInt = form.cookingTime.toIntOrNull()
         if (cookingTimeInt == null || cookingTimeInt <= 0) {
-            _uiState.value = RecipeCreateUiState.Error("请输入有效的烹饪时间")
+            _errorMessage.value = "请输入有效的烹饪时间"
             return
         }
 
         val validIngredients = form.ingredients.filter { it.name.isNotBlank() }
         if (validIngredients.isEmpty()) {
-            _uiState.value = RecipeCreateUiState.Error("请至少添加一个食材")
+            _errorMessage.value = "请至少添加一个食材"
             return
         }
 
         val validSteps = form.steps.filter { it.isNotBlank() }
         if (validSteps.isEmpty()) {
-            _uiState.value = RecipeCreateUiState.Error("请至少添加一个步骤")
+            _errorMessage.value = "请至少添加一个步骤"
             return
         }
 
@@ -227,7 +237,8 @@ class RecipeCreateViewModel(
                     _uiState.value = RecipeCreateUiState.Success(result.data.recipe.id)
                 }
                 is AppResult.Error -> {
-                    _uiState.value = RecipeCreateUiState.Error(result.message)
+                    _uiState.value = RecipeCreateUiState.Idle
+                    _errorMessage.value = result.message
                 }
             }
         }

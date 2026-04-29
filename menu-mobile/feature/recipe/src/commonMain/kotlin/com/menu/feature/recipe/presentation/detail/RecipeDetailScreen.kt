@@ -11,6 +11,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
+import androidx.compose.material.icons.outlined.Warning
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -20,6 +21,10 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
+import com.menu.core.ui.component.MenuBottomSheetHost
+import com.menu.core.ui.component.rememberMenuBottomSheetState
+import com.menu.core.ui.component.showConfirm
+import com.menu.core.ui.component.showError
 import com.menu.feature.recipe.data.RecipeDetail
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -34,7 +39,7 @@ fun RecipeDetailScreen(
     val deleteState by viewModel.deleteState.collectAsState()
     val favoriteState by viewModel.favoriteState.collectAsState()
     val isFavorited by viewModel.isFavorited.collectAsState()
-    var showDeleteDialog by remember { mutableStateOf(false) }
+    val sheetState = rememberMenuBottomSheetState()
 
     LaunchedEffect(recipeId) {
         viewModel.loadRecipeDetail(recipeId)
@@ -46,6 +51,11 @@ fun RecipeDetailScreen(
                 viewModel.resetDeleteState()
                 onBack()
             }
+            is DeleteState.Error -> {
+                val msg = (deleteState as DeleteState.Error).message
+                sheetState.showError(message = msg, onDismiss = { viewModel.resetDeleteState() })
+                viewModel.resetDeleteState()
+            }
             else -> {}
         }
     }
@@ -55,33 +65,18 @@ fun RecipeDetailScreen(
             is FavoriteState.Success -> {
                 viewModel.resetFavoriteState()
             }
-            else -> {}
-        }
-    }
-
-    val snackbarHostState = remember { SnackbarHostState() }
-
-    LaunchedEffect(deleteState) {
-        when (deleteState) {
-            is DeleteState.Error -> {
-                snackbarHostState.showSnackbar((deleteState as DeleteState.Error).message)
-                viewModel.resetDeleteState()
-            }
-            else -> {}
-        }
-    }
-    LaunchedEffect(favoriteState) {
-        when (favoriteState) {
             is FavoriteState.Error -> {
-                snackbarHostState.showSnackbar((favoriteState as FavoriteState.Error).message)
+                val msg = (favoriteState as FavoriteState.Error).message
+                sheetState.showError(message = msg, onDismiss = { viewModel.resetFavoriteState() })
                 viewModel.resetFavoriteState()
             }
             else -> {}
         }
     }
 
+    MenuBottomSheetHost(sheetState)
+
     Scaffold(
-        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
                 title = { Text("菜谱详情") },
@@ -110,18 +105,18 @@ fun RecipeDetailScreen(
                                 modifier = Modifier.size(24.dp).padding(end = 12.dp),
                                 strokeWidth = 2.dp
                             )
-                        } else if (showDeleteDialog) {
-                            TextButton(onClick = {
-                                showDeleteDialog = false
-                                viewModel.deleteRecipe(recipeId)
-                            }) {
-                                Text("确认删除", color = MaterialTheme.colorScheme.error)
-                            }
-                            TextButton(onClick = { showDeleteDialog = false }) {
-                                Text("取消")
-                            }
                         } else {
-                            IconButton(onClick = { showDeleteDialog = true }) {
+                            val errorColor = MaterialTheme.colorScheme.error
+                            IconButton(onClick = {
+                                sheetState.showConfirm(
+                                    title = "删除菜谱",
+                                    message = "确认删除「${detail.recipe.title}」？删除后无法恢复。",
+                                    confirmText = "删除",
+                                    confirmColor = errorColor,
+                                    icon = Icons.Outlined.Warning,
+                                    onConfirm = { viewModel.deleteRecipe(recipeId) }
+                                )
+                            }) {
                                 Icon(Icons.Default.Delete, contentDescription = "删除菜谱")
                             }
                         }
