@@ -4,8 +4,11 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.menu.core.common.AppResult
 import com.menu.core.network.ImageUploadApi
+import com.menu.feature.recipe.data.RecipeRepository
+import com.menu.feature.social.data.SocialRepository
 import com.menu.feature.user.domain.GetProfileUseCase
 import io.github.aakira.napier.Napier
+import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -14,7 +17,9 @@ import kotlinx.coroutines.launch
 
 class ProfileViewModel(
     private val getProfileUseCase: GetProfileUseCase,
-    private val imageUploadApi: ImageUploadApi
+    private val imageUploadApi: ImageUploadApi,
+    private val socialRepository: SocialRepository,
+    private val recipeRepository: RecipeRepository
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(ProfileState())
@@ -22,7 +27,10 @@ class ProfileViewModel(
 
     fun onIntent(intent: ProfileIntent) {
         when (intent) {
-            is ProfileIntent.LoadProfile -> loadProfile()
+            is ProfileIntent.LoadProfile -> {
+                loadProfile()
+                loadStats()
+            }
             is ProfileIntent.ToggleEdit -> {
                 val current = _state.value
                 _state.update {
@@ -50,6 +58,35 @@ class ProfileViewModel(
                 is AppResult.Error -> _state.update {
                     it.copy(isLoading = false, error = result.message)
                 }
+            }
+        }
+    }
+
+    private fun loadStats() {
+        viewModelScope.launch {
+            val favoritesDeferred = async { socialRepository.getFavorites() }
+            val cookingLogsDeferred = async { socialRepository.getCookingLogs() }
+            val recipesDeferred = async { recipeRepository.searchRecipes(null, null, 1, 1) }
+
+            val favoriteCount = when (val r = favoritesDeferred.await()) {
+                is AppResult.Success -> r.data.size
+                is AppResult.Error -> 0
+            }
+            val cookingLogCount = when (val r = cookingLogsDeferred.await()) {
+                is AppResult.Success -> r.data.size
+                is AppResult.Error -> 0
+            }
+            val recipeCount = when (val r = recipesDeferred.await()) {
+                is AppResult.Success -> r.data.total.toInt()
+                is AppResult.Error -> 0
+            }
+
+            _state.update {
+                it.copy(stats = ProfileStats(
+                    recipeCount = recipeCount,
+                    favoriteCount = favoriteCount,
+                    cookingLogCount = cookingLogCount
+                ))
             }
         }
     }

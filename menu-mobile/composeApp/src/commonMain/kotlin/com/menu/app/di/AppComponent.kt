@@ -20,6 +20,11 @@ import com.menu.feature.recipe.presentation.detail.RecipeDetailViewModel
 import com.menu.feature.recipe.presentation.create.RecipeCreateViewModel
 import com.menu.feature.social.data.*
 import com.menu.feature.social.presentation.favorites.FavoritesViewModel
+import com.menu.feature.social.presentation.cookinglog.CookingLogViewModel
+import com.menu.feature.tool.data.*
+import com.menu.feature.tool.presentation.shoppinglist.ShoppingListViewModel
+import com.menu.feature.tool.presentation.shoppinglist.ShoppingListDetailViewModel
+import com.menu.feature.tool.presentation.mealplan.MealPlanViewModel
 
 class AppComponent(dataStorePath: String) {
 
@@ -52,13 +57,21 @@ class AppComponent(dataStorePath: String) {
     private val socialApi: SocialApi by lazy { SocialApiImpl(apiClient) }
     private val socialRepository: SocialRepository by lazy { SocialRepositoryImpl(socialApi) }
 
+    // Tool feature
+    private val toolApi: ToolApi by lazy { ToolApiImpl(apiClient) }
+    private val toolRepository: ToolRepository by lazy { ToolRepositoryImpl(toolApi) }
+
     fun loginViewModel() = LoginViewModel(loginUseCase)
     fun registerViewModel() = RegisterViewModel(registerUseCase)
-    fun profileViewModel() = ProfileViewModel(getProfileUseCase, imageUploadApi)
+    fun profileViewModel() = ProfileViewModel(getProfileUseCase, imageUploadApi, socialRepository, recipeRepository)
 
     fun recipeListViewModel() = RecipeListViewModel(searchRecipesUseCase, getRandomRecipesUseCase)
     fun recipeDetailViewModel() = RecipeDetailViewModel(getRecipeDetailUseCase, recipeRepository, socialRepository)
     fun recipeCreateViewModel() = RecipeCreateViewModel(recipeRepository, imageUploadApi, aiApiService)
 
     fun favoritesViewModel() = FavoritesViewModel(socialRepository)
+    fun cookingLogViewModel() = CookingLogViewModel(socialRepository)
+    fun shoppingListViewModel() = ShoppingListViewModel(toolRepository)
+    fun shoppingListDetailViewModel() = ShoppingListDetailViewModel(toolRepository)
+    fun mealPlanViewModel() = MealPlanViewModel(toolRepository)
 }

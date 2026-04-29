@@ -5,6 +5,8 @@ import androidx.lifecycle.viewModelScope
 import com.menu.core.common.AppResult
 import com.menu.feature.recipe.domain.GetRandomRecipesUseCase
 import com.menu.feature.recipe.domain.SearchRecipesUseCase
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -19,8 +21,23 @@ class RecipeListViewModel(
     private val _uiState = MutableStateFlow(RecipeListUiState())
     val uiState: StateFlow<RecipeListUiState> = _uiState.asStateFlow()
 
+    private var searchJob: Job? = null
+
     init {
-        loadRandomRecipes()
+        searchRecipes(page = 1)
+    }
+
+    fun search(keyword: String) {
+        _uiState.update { it.copy(searchKeyword = keyword) }
+        searchJob?.cancel()
+        if (keyword.isBlank()) {
+            searchRecipes(page = 1)
+            return
+        }
+        searchJob = viewModelScope.launch {
+            delay(300L)
+            searchRecipes(keyword = keyword, page = 1)
+        }
     }
 
     fun loadRandomRecipes() {
@@ -97,15 +114,11 @@ class RecipeListViewModel(
     fun refresh() {
         viewModelScope.launch {
             _uiState.update { it.copy(isRefreshing = true) }
-            if (_uiState.value.searchKeyword.isBlank() && _uiState.value.selectedDifficulty == null) {
-                loadRandomRecipes()
-            } else {
-                searchRecipes(
-                    keyword = _uiState.value.searchKeyword,
-                    difficulty = _uiState.value.selectedDifficulty,
-                    page = 1
-                )
-            }
+            searchRecipes(
+                keyword = _uiState.value.searchKeyword,
+                difficulty = _uiState.value.selectedDifficulty,
+                page = 1
+            )
             _uiState.update { it.copy(isRefreshing = false) }
         }
     }

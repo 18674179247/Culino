@@ -18,6 +18,8 @@ kotlin {
             implementation(project(":core:network"))
             implementation(project(":core:data"))
             implementation(project(":core:ui"))
+            implementation(project(":feature:social"))
+            implementation(project(":feature:recipe"))
             implementation(compose.runtime)
             implementation(compose.foundation)
             implementation(compose.material3)

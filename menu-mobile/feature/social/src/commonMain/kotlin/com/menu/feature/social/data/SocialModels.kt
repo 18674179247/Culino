@@ -9,7 +9,11 @@ data class Favorite(
     @SerialName("user_id") val userId: String,
     @SerialName("recipe_id") val recipeId: String,
     @SerialName("created_at") val createdAt: Instant,
-    @SerialName("recipe_title") val recipeTitle: String? = null
+    @SerialName("recipe_title") val recipeTitle: String? = null,
+    @SerialName("cover_image") val coverImage: String? = null,
+    val difficulty: Int? = null,
+    @SerialName("cooking_time") val cookingTime: Int? = null,
+    val servings: Int? = null
 )
 
 @Serializable

@@ -1,15 +1,25 @@
 package com.menu.app
 
 import androidx.compose.animation.*
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.outlined.DateRange
+import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Person
+import androidx.compose.material.icons.outlined.ShoppingCart
+import androidx.compose.material.icons.outlined.Star
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -18,8 +28,13 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavHostController
@@ -46,12 +61,18 @@ object Routes {
     const val REGISTER = "register"
     const val MAIN = "main"
     const val RECIPES = "recipes"
+    const val MY_RECIPES = "my_recipes"
     const val FAVORITES = "favorites"
     const val PROFILE = "profile"
     const val RECIPE_DETAIL = "recipe_detail/{recipeId}"
     const val RECIPE_CREATE = "recipe_create"
+    const val COOKING_LOGS = "cooking_logs"
+    const val SHOPPING_LISTS = "shopping_lists"
+    const val SHOPPING_LIST_DETAIL = "shopping_list_detail/{listId}"
+    const val MEAL_PLANS = "meal_plans"
 
     fun recipeDetail(recipeId: String) = "recipe_detail/$recipeId"
+    fun shoppingListDetail(listId: String) = "shopping_list_detail/$listId"
 }
 
 sealed class BottomNavItem(
@@ -60,7 +81,8 @@ sealed class BottomNavItem(
     val unselectedIcon: ImageVector,
     val label: String
 ) {
-    object Recipes : BottomNavItem(Routes.RECIPES, Icons.Filled.Home, Icons.Outlined.Home, "菜谱")
+    object Home : BottomNavItem(Routes.RECIPES, Icons.Filled.Home, Icons.Outlined.Home, "首页")
+    object MyRecipes : BottomNavItem(Routes.MY_RECIPES, Icons.Outlined.Edit, Icons.Outlined.Edit, "菜谱")
     object Favorites : BottomNavItem(Routes.FAVORITES, Icons.Filled.Favorite, Icons.Outlined.FavoriteBorder, "收藏")
     object Profile : BottomNavItem(Routes.PROFILE, Icons.Filled.Person, Icons.Outlined.Person, "我的")
 }
@@ -162,14 +184,16 @@ fun MainScreen(
     }
 
     val bottomNavItems = listOf(
-        BottomNavItem.Recipes,
+        BottomNavItem.Home,
+        BottomNavItem.MyRecipes,
         BottomNavItem.Favorites,
         BottomNavItem.Profile
     )
 
-    val showBottomNav = currentDestination?.route?.let { route ->
-        route != Routes.RECIPE_DETAIL && route != Routes.RECIPE_CREATE
-    } ?: true
+    val tabRoutes = bottomNavItems.map { it.route } + Routes.MY_RECIPES
+    val showBottomNav = currentDestination?.route?.let { it in tabRoutes } ?: true
+
+    var fabExpanded by remember { mutableStateOf(false) }
 
     Scaffold(
         bottomBar = {
@@ -178,43 +202,94 @@ fun MainScreen(
                 enter = slideInVertically(tween(ANIM_DURATION)) { it } + fadeIn(tween(FADE_DURATION)),
                 exit = slideOutVertically(tween(ANIM_DURATION)) { it } + fadeOut(tween(FADE_DURATION))
             ) {
-            NavigationBar(
-                containerColor = MaterialTheme.colorScheme.surface,
-                tonalElevation = 0.dp
-            ) {
-                bottomNavItems.forEach { item ->
-                    val selected = currentDestination?.hierarchy?.any { it.route == item.route } == true
+            Box {
+                NavigationBar(
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    tonalElevation = 0.dp,
+                    modifier = Modifier.height(56.dp)
+                ) {
+                    val leftItems = bottomNavItems.take(2)
+                    val rightItems = bottomNavItems.drop(2)
+
+                    leftItems.forEach { item ->
+                        val selected = currentDestination?.hierarchy?.any { it.route == item.route } == true
+                        NavigationBarItem(
+                            icon = { Icon(if (selected) item.selectedIcon else item.unselectedIcon, contentDescription = item.label) },
+                            label = { Text(item.label, style = MaterialTheme.typography.labelSmall) },
+                            selected = selected,
+                            onClick = {
+                                fabExpanded = false
+                                navController.navigate(item.route) {
+                                    popUpTo(Routes.RECIPES) { saveState = true }
+                                    launchSingleTop = true
+                                    restoreState = true
+                                }
+                            },
+                            colors = NavigationBarItemDefaults.colors(
+                                selectedIconColor = MaterialTheme.colorScheme.primary,
+                                selectedTextColor = MaterialTheme.colorScheme.primary,
+                                unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                                unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                                indicatorColor = MaterialTheme.colorScheme.surface,
+                            )
+                        )
+                    }
+
                     NavigationBarItem(
                         icon = {
-                            Icon(
-                                if (selected) item.selectedIcon else item.unselectedIcon,
-                                contentDescription = item.label
-                            )
-                        },
-                        label = { Text(item.label, style = MaterialTheme.typography.labelSmall) },
-                        selected = selected,
-                        onClick = {
-                            navController.navigate(item.route) {
-                                popUpTo(Routes.RECIPES) {
-                                    saveState = true
-                                }
-                                launchSingleTop = true
-                                restoreState = true
+                            val rotation by animateFloatAsState(if (fabExpanded) 45f else 0f, tween(250))
+                            Box(
+                                modifier = Modifier
+                                    .size(40.dp)
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .background(MaterialTheme.colorScheme.primary),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    Icons.Default.Add,
+                                    contentDescription = "创建",
+                                    tint = MaterialTheme.colorScheme.onPrimary,
+                                    modifier = Modifier.size(24.dp).rotate(rotation)
+                                )
                             }
                         },
+                        label = { },
+                        selected = false,
+                        onClick = { fabExpanded = !fabExpanded },
                         colors = NavigationBarItemDefaults.colors(
-                            selectedIconColor = MaterialTheme.colorScheme.primary,
-                            selectedTextColor = MaterialTheme.colorScheme.primary,
-                            unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                            unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                            indicatorColor = MaterialTheme.colorScheme.primaryContainer,
+                            indicatorColor = MaterialTheme.colorScheme.surface,
                         )
                     )
+
+                    rightItems.forEach { item ->
+                        val selected = currentDestination?.hierarchy?.any { it.route == item.route } == true
+                        NavigationBarItem(
+                            icon = { Icon(if (selected) item.selectedIcon else item.unselectedIcon, contentDescription = item.label) },
+                            label = { Text(item.label, style = MaterialTheme.typography.labelSmall) },
+                            selected = selected,
+                            onClick = {
+                                fabExpanded = false
+                                navController.navigate(item.route) {
+                                    popUpTo(Routes.RECIPES) { saveState = true }
+                                    launchSingleTop = true
+                                    restoreState = true
+                                }
+                            },
+                            colors = NavigationBarItemDefaults.colors(
+                                selectedIconColor = MaterialTheme.colorScheme.primary,
+                                selectedTextColor = MaterialTheme.colorScheme.primary,
+                                unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                                unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                                indicatorColor = MaterialTheme.colorScheme.surface,
+                            )
+                        )
+                    }
                 }
             }
             }
         }
     ) { innerPadding ->
+        Box(modifier = Modifier.fillMaxSize()) {
         SharedTransitionLayout {
             CompositionLocalProvider(LocalSharedTransitionScope provides this) {
         NavHost(
@@ -233,10 +308,20 @@ fun MainScreen(
                     viewModel = viewModel,
                     onRecipeClick = { recipeId ->
                         navController.navigate(Routes.recipeDetail(recipeId))
-                    },
-                    onCreateClick = {
-                        navController.navigate(Routes.RECIPE_CREATE)
                     }
+                )
+                }
+            }
+
+            composable(Routes.MY_RECIPES) {
+                CompositionLocalProvider(LocalNavAnimatedVisibilityScope provides this@composable) {
+                val viewModel = remember { appComponent.recipeListViewModel() }
+                RecipeListScreen(
+                    viewModel = viewModel,
+                    onRecipeClick = { recipeId ->
+                        navController.navigate(Routes.recipeDetail(recipeId))
+                    },
+                    title = "我的菜谱"
                 )
                 }
             }
@@ -264,7 +349,24 @@ fun MainScreen(
                 ProfileScreen(
                     viewModel = viewModel,
                     onLoggedOut = onLoggedOut,
-                    onPickAvatar = { avatarPicker.pickSingle() }
+                    onPickAvatar = { avatarPicker.pickSingle() },
+                    onNavigateToMyRecipes = {
+                        navController.navigate(Routes.RECIPES) {
+                            popUpTo(Routes.RECIPES) { saveState = true }
+                            launchSingleTop = true
+                            restoreState = true
+                        }
+                    },
+                    onNavigateToFavorites = {
+                        navController.navigate(Routes.FAVORITES) {
+                            popUpTo(Routes.RECIPES) { saveState = true }
+                            launchSingleTop = true
+                            restoreState = true
+                        }
+                    },
+                    onNavigateToCookingLogs = { navController.navigate(Routes.COOKING_LOGS) },
+                    onNavigateToShoppingLists = { navController.navigate(Routes.SHOPPING_LISTS) },
+                    onNavigateToMealPlans = { navController.navigate(Routes.MEAL_PLANS) }
                 )
             }
 
@@ -321,8 +423,142 @@ fun MainScreen(
                     onPickRecipeImages = { imagesPicker.pickMultiple() }
                 )
             }
+
+            composable(
+                Routes.COOKING_LOGS,
+                enterTransition = { slideInFromRight },
+                exitTransition = { slideOutToLeft },
+                popEnterTransition = { slideInFromLeft },
+                popExitTransition = { slideOutToRight }
+            ) {
+                val viewModel = remember { appComponent.cookingLogViewModel() }
+                com.menu.feature.social.presentation.cookinglog.CookingLogScreen(
+                    viewModel = viewModel,
+                    onBack = { navController.popBackStack() }
+                )
+            }
+
+            composable(
+                Routes.SHOPPING_LISTS,
+                enterTransition = { slideInFromRight },
+                exitTransition = { slideOutToLeft },
+                popEnterTransition = { slideInFromLeft },
+                popExitTransition = { slideOutToRight }
+            ) {
+                val viewModel = remember { appComponent.shoppingListViewModel() }
+                com.menu.feature.tool.presentation.shoppinglist.ShoppingListScreen(
+                    viewModel = viewModel,
+                    onBack = { navController.popBackStack() },
+                    onListClick = { listId ->
+                        navController.navigate(Routes.shoppingListDetail(listId))
+                    }
+                )
+            }
+
+            composable(
+                Routes.SHOPPING_LIST_DETAIL,
+                enterTransition = { slideInFromRight },
+                exitTransition = { slideOutToLeft },
+                popEnterTransition = { slideInFromLeft },
+                popExitTransition = { slideOutToRight }
+            ) { backStackEntry ->
+                val listId = backStackEntry.arguments?.getString("listId") ?: return@composable
+                val viewModel = remember { appComponent.shoppingListDetailViewModel() }
+                com.menu.feature.tool.presentation.shoppinglist.ShoppingListDetailScreen(
+                    listId = listId,
+                    viewModel = viewModel,
+                    onBack = { navController.popBackStack() }
+                )
+            }
+
+            composable(
+                Routes.MEAL_PLANS,
+                enterTransition = { slideInFromRight },
+                exitTransition = { slideOutToLeft },
+                popEnterTransition = { slideInFromLeft },
+                popExitTransition = { slideOutToRight }
+            ) {
+                val viewModel = remember { appComponent.mealPlanViewModel() }
+                com.menu.feature.tool.presentation.mealplan.MealPlanScreen(
+                    viewModel = viewModel,
+                    onBack = { navController.popBackStack() }
+                )
+            }
         }
             }
         }
+
+        // FAB expanded overlay
+        AnimatedVisibility(
+            visible = fabExpanded,
+            enter = fadeIn(tween(200)),
+            exit = fadeOut(tween(200)),
+            modifier = Modifier.fillMaxSize()
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(MaterialTheme.colorScheme.scrim.copy(alpha = 0.4f))
+                    .clickable { fabExpanded = false }
+            )
+        }
+
+        AnimatedVisibility(
+            visible = fabExpanded,
+            enter = fadeIn(tween(200)) + scaleIn(tween(250), initialScale = 0.5f),
+            exit = fadeOut(tween(150)) + scaleOut(tween(200), targetScale = 0.5f),
+            modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = innerPadding.calculateBottomPadding() + 16.dp)
+        ) {
+            val radius = 120.dp
+            val radiusPx = with(LocalDensity.current) { radius.toPx() }
+            val actions = listOf(
+                Triple(Icons.Outlined.Edit, "创建菜谱", Routes.RECIPE_CREATE),
+                Triple(Icons.Outlined.Star, "记录烹饪", Routes.COOKING_LOGS),
+                Triple(Icons.Outlined.ShoppingCart, "购物清单", Routes.SHOPPING_LISTS),
+                Triple(Icons.Outlined.DateRange, "膳食计划", Routes.MEAL_PLANS),
+            )
+            Box(
+                modifier = Modifier.size(radius * 2, radius + 48.dp),
+                contentAlignment = Alignment.BottomCenter
+            ) {
+                actions.forEachIndexed { index, (icon, label, route) ->
+                    val angle = Math.PI * (1.0 - index.toDouble() / (actions.size - 1))
+                    val x = (kotlin.math.cos(angle) * radiusPx).toFloat()
+                    val y = (kotlin.math.sin(angle) * radiusPx).toFloat()
+                    val offsetX = with(LocalDensity.current) { x.toDp() }
+                    val offsetY = with(LocalDensity.current) { y.toDp() }
+                    Box(
+                        modifier = Modifier.offset(x = offsetX, y = -offsetY)
+                            .align(Alignment.BottomCenter)
+                    ) {
+                        FabAction(icon, label) {
+                            fabExpanded = false
+                            navController.navigate(route)
+                        }
+                    }
+                }
+            }
+        }
+        }
+    }
+}
+
+@Composable
+private fun FabAction(icon: ImageVector, label: String, onClick: () -> Unit) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier.clickable(onClick = onClick).padding(4.dp)
+    ) {
+        Box(
+            modifier = Modifier
+                .size(48.dp)
+                .clip(CircleShape)
+                .background(MaterialTheme.colorScheme.primary),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(icon, contentDescription = label, modifier = Modifier.size(24.dp), tint = Color.White)
+        }
+        Spacer(Modifier.height(6.dp))
+        Text(label, style = MaterialTheme.typography.labelSmall, color = Color.White)
     }
 }

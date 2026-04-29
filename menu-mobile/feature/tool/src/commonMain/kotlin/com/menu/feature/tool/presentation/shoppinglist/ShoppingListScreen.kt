@@ -1,50 +1,70 @@
-package com.menu.feature.social.presentation.favorites
+package com.menu.feature.tool.presentation.shoppinglist
 
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material.icons.outlined.FavoriteBorder
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.outlined.ShoppingCart
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import coil3.compose.AsyncImage
-import com.menu.feature.social.data.Favorite
+import com.menu.core.ui.component.MenuBottomSheetHost
+import com.menu.core.ui.component.rememberMenuBottomSheetState
+import com.menu.feature.tool.data.ShoppingList
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun FavoritesScreen(
-    viewModel: FavoritesViewModel,
-    onRecipeClick: (String) -> Unit
+fun ShoppingListScreen(
+    viewModel: ShoppingListViewModel,
+    onBack: () -> Unit,
+    onListClick: (String) -> Unit
 ) {
     val state by viewModel.state.collectAsState()
+    val sheetState = rememberMenuBottomSheetState()
+
+    MenuBottomSheetHost(sheetState)
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = {
-                    Text("我的收藏", style = MaterialTheme.typography.titleLarge)
+                title = { Text("购物清单", style = MaterialTheme.typography.headlineMedium) },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "返回")
+                    }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface
-                ),
-                windowInsets = WindowInsets(top = 0.dp)
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface)
             )
+        },
+        floatingActionButton = {
+            FloatingActionButton(
+                onClick = {
+                    sheetState.show { dismiss ->
+                        CreateListSheet(
+                            onCreate = { title ->
+                                viewModel.createList(title)
+                                dismiss()
+                            }
+                        )
+                    }
+                },
+                containerColor = MaterialTheme.colorScheme.primary
+            ) {
+                Icon(Icons.Default.Add, contentDescription = "新建清单")
+            }
         },
         containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
         when (val currentState = state) {
-            is FavoritesState.Loading -> {
+            is ShoppingListState.Loading -> {
                 Box(
                     modifier = Modifier.fillMaxSize().padding(padding),
                     contentAlignment = Alignment.Center
@@ -53,8 +73,8 @@ fun FavoritesScreen(
                 }
             }
 
-            is FavoritesState.Success -> {
-                if (currentState.favorites.isEmpty()) {
+            is ShoppingListState.Success -> {
+                if (currentState.lists.isEmpty()) {
                     Box(
                         modifier = Modifier.fillMaxSize().padding(padding),
                         contentAlignment = Alignment.Center
@@ -64,20 +84,15 @@ fun FavoritesScreen(
                             verticalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
                             Icon(
-                                Icons.Outlined.FavoriteBorder,
+                                Icons.Outlined.ShoppingCart,
                                 contentDescription = null,
                                 modifier = Modifier.size(64.dp),
                                 tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
                             )
                             Text(
-                                "还没有收藏任何菜谱",
+                                "还没有购物清单",
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                            Text(
-                                "去发现好吃的吧",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
                             )
                         }
                     }
@@ -87,11 +102,11 @@ fun FavoritesScreen(
                         contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        items(currentState.favorites, key = { it.recipeId }) { favorite ->
-                            FavoriteCard(
-                                favorite = favorite,
-                                onClick = { onRecipeClick(favorite.recipeId) },
-                                onRemove = { viewModel.removeFavorite(favorite.recipeId) },
+                        items(currentState.lists, key = { it.id }) { shoppingList ->
+                            ShoppingListCard(
+                                shoppingList = shoppingList,
+                                onClick = { onListClick(shoppingList.id) },
+                                onDelete = { viewModel.deleteList(shoppingList.id) },
                                 modifier = Modifier.animateItem(
                                     fadeInSpec = tween(300),
                                     fadeOutSpec = tween(300),
@@ -103,7 +118,7 @@ fun FavoritesScreen(
                 }
             }
 
-            is FavoritesState.Error -> {
+            is ShoppingListState.Error -> {
                 Box(
                     modifier = Modifier.fillMaxSize().padding(padding),
                     contentAlignment = Alignment.Center
@@ -118,7 +133,7 @@ fun FavoritesScreen(
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         Button(
-                            onClick = { viewModel.loadFavorites() },
+                            onClick = { viewModel.loadLists() },
                             shape = RoundedCornerShape(20.dp)
                         ) {
                             Text("重试")
@@ -131,10 +146,10 @@ fun FavoritesScreen(
 }
 
 @Composable
-private fun FavoriteCard(
-    favorite: Favorite,
+private fun ShoppingListCard(
+    shoppingList: ShoppingList,
     onClick: () -> Unit,
-    onRemove: () -> Unit,
+    onDelete: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Card(
@@ -143,95 +158,87 @@ private fun FavoriteCard(
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {
-        Row(modifier = Modifier.padding(12.dp)) {
-            if (favorite.coverImage != null) {
-                AsyncImage(
-                    model = favorite.coverImage,
-                    contentDescription = favorite.recipeTitle,
-                    modifier = Modifier.size(80.dp).clip(RoundedCornerShape(8.dp)),
-                    contentScale = ContentScale.Crop
-                )
-                Spacer(Modifier.width(12.dp))
-            } else {
-                val difficultyColor = difficultyColor(favorite.difficulty)
-                Box(
-                    modifier = Modifier
-                        .width(4.dp).height(60.dp)
-                        .clip(RoundedCornerShape(2.dp))
-                        .background(difficultyColor)
-                )
-                Spacer(Modifier.width(12.dp))
-            }
-
+        Row(
+            modifier = Modifier.padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = favorite.recipeTitle ?: "未知菜谱",
+                    text = shoppingList.title,
                     style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis
+                    color = MaterialTheme.colorScheme.onSurface
                 )
                 Spacer(Modifier.height(4.dp))
-                Text(
-                    text = favorite.createdAt.toString().take(10) + " 收藏",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
-                )
-                Spacer(Modifier.height(8.dp))
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    favorite.difficulty?.let { d ->
-                        InfoTag(
-                            text = when (d) { 1 -> "简单"; 2 -> "较简单"; 3 -> "中等"; 4 -> "较难"; 5 -> "困难"; else -> "未知" },
-                            color = difficultyColor(d)
-                        )
-                    }
-                    favorite.cookingTime?.let {
-                        InfoTag(text = "${it}分钟", color = MaterialTheme.colorScheme.secondary)
-                    }
-                    favorite.servings?.let {
-                        InfoTag(text = "${it}人份", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    }
+                    StatusTag(shoppingList.status)
+                    Text(
+                        text = shoppingList.createdAt.toString().take(10),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                    )
                 }
             }
-
-            IconButton(onClick = onRemove) {
-                Icon(Icons.Default.Favorite, contentDescription = "取消收藏", tint = MaterialTheme.colorScheme.primary)
+            IconButton(onClick = onDelete) {
+                Icon(
+                    Icons.Default.Delete,
+                    contentDescription = "删除",
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                )
             }
         }
     }
 }
 
 @Composable
-private fun difficultyColor(difficulty: Int?): androidx.compose.ui.graphics.Color {
-    return when (difficulty) {
-        1 -> MaterialTheme.colorScheme.tertiary
-        2 -> MaterialTheme.colorScheme.secondary
-        3 -> MaterialTheme.colorScheme.primary
-        4 -> MaterialTheme.colorScheme.error.copy(alpha = 0.7f)
-        5 -> MaterialTheme.colorScheme.error
+private fun StatusTag(status: String) {
+    val color = when (status) {
+        "active" -> MaterialTheme.colorScheme.primary
+        "completed" -> MaterialTheme.colorScheme.tertiary
         else -> MaterialTheme.colorScheme.onSurfaceVariant
     }
-}
-
-@Composable
-private fun InfoTag(
-    text: String,
-    color: androidx.compose.ui.graphics.Color,
-    modifier: Modifier = Modifier
-) {
+    val label = when (status) {
+        "active" -> "进行中"
+        "completed" -> "已完成"
+        else -> status
+    }
     Surface(
-        modifier = modifier,
         shape = RoundedCornerShape(6.dp),
         color = color.copy(alpha = 0.1f)
     ) {
         Text(
-            text = text,
+            text = label,
             modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
             style = MaterialTheme.typography.labelSmall,
             color = color
         )
+    }
+}
+
+@Composable
+private fun CreateListSheet(onCreate: (String) -> Unit) {
+    var title by remember { mutableStateOf("") }
+    Column(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp).padding(bottom = 32.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        Text("新建购物清单", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurface)
+        OutlinedTextField(
+            value = title,
+            onValueChange = { title = it },
+            label = { Text("清单名称") },
+            singleLine = true,
+            modifier = Modifier.fillMaxWidth()
+        )
+        Button(
+            onClick = { if (title.isNotBlank()) onCreate(title) },
+            enabled = title.isNotBlank(),
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(12.dp)
+        ) {
+            Text("创建")
+        }
     }
 }

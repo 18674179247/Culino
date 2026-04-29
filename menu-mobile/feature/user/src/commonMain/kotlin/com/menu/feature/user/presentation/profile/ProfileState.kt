@@ -2,8 +2,15 @@ package com.menu.feature.user.presentation.profile
 
 import com.menu.core.model.User
 
+data class ProfileStats(
+    val recipeCount: Int = 0,
+    val favoriteCount: Int = 0,
+    val cookingLogCount: Int = 0
+)
+
 data class ProfileState(
     val user: User? = null,
+    val stats: ProfileStats = ProfileStats(),
     val editNickname: String = "",
     val isLoading: Boolean = false,
     val isEditing: Boolean = false,
