@@ -3,6 +3,9 @@ package com.menu.feature.recipe.presentation.create
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.menu.core.common.AppResult
+import com.menu.core.model.RecognizeRecipeResponse
+import com.menu.core.network.AiApiService
+import com.menu.core.network.ApiResponse
 import com.menu.core.network.ImageUploadApi
 import com.menu.feature.recipe.data.CreateRecipeRequest
 import com.menu.feature.recipe.data.CreateRecipeStep
@@ -19,9 +22,23 @@ sealed class RecipeCreateUiState {
     data class Error(val message: String) : RecipeCreateUiState()
 }
 
+sealed class AiRecognitionState {
+    object Idle : AiRecognitionState()
+    object NeedTitle : AiRecognitionState()
+    object Loading : AiRecognitionState()
+    data class Success(val result: RecognizeRecipeResponse) : AiRecognitionState()
+    data class Error(val message: String) : AiRecognitionState()
+}
+
 data class IngredientInput(
     val name: String = "",
     val amount: String = ""
+)
+
+data class StepInput(
+    val description: String = "",
+    val imageUrl: String? = null,
+    val isUploadingImage: Boolean = false
 )
 
 data class RecipeFormState(
@@ -34,12 +51,13 @@ data class RecipeFormState(
     val isUploadingCover: Boolean = false,
     val isUploadingImages: Boolean = false,
     val ingredients: List<IngredientInput> = listOf(IngredientInput()),
-    val steps: List<String> = listOf("")
+    val steps: List<StepInput> = listOf(StepInput())
 )
 
 class RecipeCreateViewModel(
     private val repository: RecipeRepository,
-    private val imageUploadApi: ImageUploadApi
+    private val imageUploadApi: ImageUploadApi,
+    private val aiApiService: AiApiService
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<RecipeCreateUiState>(RecipeCreateUiState.Idle)
@@ -50,6 +68,9 @@ class RecipeCreateViewModel(
 
     private val _errorMessage = MutableStateFlow<String?>(null)
     val errorMessage: StateFlow<String?> = _errorMessage.asStateFlow()
+
+    private val _aiRecognitionState = MutableStateFlow<AiRecognitionState>(AiRecognitionState.Idle)
+    val aiRecognitionState: StateFlow<AiRecognitionState> = _aiRecognitionState.asStateFlow()
 
     fun clearError() {
         _errorMessage.value = null
@@ -155,14 +176,14 @@ class RecipeCreateViewModel(
 
     fun addStep() {
         val current = _formState.value.steps.toMutableList()
-        current.add("")
+        current.add(StepInput())
         _formState.value = _formState.value.copy(steps = current)
     }
 
     fun updateStep(index: Int, description: String) {
         val current = _formState.value.steps.toMutableList()
         if (index in current.indices) {
-            current[index] = description
+            current[index] = current[index].copy(description = description)
             _formState.value = _formState.value.copy(steps = current)
         }
     }
@@ -171,6 +192,41 @@ class RecipeCreateViewModel(
         val current = _formState.value.steps.toMutableList()
         if (current.size > 1 && index in current.indices) {
             current.removeAt(index)
+            _formState.value = _formState.value.copy(steps = current)
+        }
+    }
+
+    fun uploadStepImage(index: Int, bytes: ByteArray, fileName: String, contentType: String) {
+        val current = _formState.value.steps.toMutableList()
+        if (index !in current.indices) return
+        current[index] = current[index].copy(isUploadingImage = true)
+        _formState.value = _formState.value.copy(steps = current)
+
+        viewModelScope.launch {
+            when (val result = imageUploadApi.uploadImage(bytes, fileName, contentType)) {
+                is AppResult.Success -> {
+                    val steps = _formState.value.steps.toMutableList()
+                    if (index in steps.indices) {
+                        steps[index] = steps[index].copy(imageUrl = result.data, isUploadingImage = false)
+                        _formState.value = _formState.value.copy(steps = steps)
+                    }
+                }
+                is AppResult.Error -> {
+                    val steps = _formState.value.steps.toMutableList()
+                    if (index in steps.indices) {
+                        steps[index] = steps[index].copy(isUploadingImage = false)
+                        _formState.value = _formState.value.copy(steps = steps)
+                    }
+                    _errorMessage.value = result.message
+                }
+            }
+        }
+    }
+
+    fun removeStepImage(index: Int) {
+        val current = _formState.value.steps.toMutableList()
+        if (index in current.indices) {
+            current[index] = current[index].copy(imageUrl = null)
             _formState.value = _formState.value.copy(steps = current)
         }
     }
@@ -195,7 +251,7 @@ class RecipeCreateViewModel(
             return
         }
 
-        val validSteps = form.steps.filter { it.isNotBlank() }
+        val validSteps = form.steps.filter { it.description.isNotBlank() }
         if (validSteps.isEmpty()) {
             _errorMessage.value = "请至少添加一个步骤"
             return
@@ -221,11 +277,11 @@ class RecipeCreateViewModel(
                 servings = 2,
                 ingredients = null,
                 seasonings = null,
-                steps = validSteps.mapIndexed { index, description ->
+                steps = validSteps.mapIndexed { index, step ->
                     CreateRecipeStep(
                         stepNumber = index + 1,
-                        content = description,
-                        image = form.recipeImages.getOrNull(index),
+                        content = step.description,
+                        image = step.imageUrl,
                         duration = null
                     )
                 },
@@ -242,5 +298,62 @@ class RecipeCreateViewModel(
                 }
             }
         }
+    }
+
+    fun recognizeFromImage() {
+        val imageUrl = _formState.value.coverImageUrl ?: return
+        val existingTitle = _formState.value.name.ifBlank { null }
+        if (existingTitle == null) {
+            _aiRecognitionState.value = AiRecognitionState.NeedTitle
+            return
+        }
+        startRecognition(imageUrl, existingTitle)
+    }
+
+    fun recognizeWithTitle(title: String) {
+        val imageUrl = _formState.value.coverImageUrl ?: return
+        _formState.value = _formState.value.copy(name = title)
+        startRecognition(imageUrl, title)
+    }
+
+    private fun startRecognition(imageUrl: String, title: String) {
+        _aiRecognitionState.value = AiRecognitionState.Loading
+        viewModelScope.launch {
+            when (val result = aiApiService.recognizeRecipe(imageUrl, title)) {
+                is ApiResponse.Success -> {
+                    _aiRecognitionState.value = AiRecognitionState.Success(result.data)
+                }
+                is ApiResponse.Error -> {
+                    _aiRecognitionState.value = AiRecognitionState.Error(result.message)
+                }
+            }
+        }
+    }
+
+    fun applyRecognition(result: RecognizeRecipeResponse) {
+        val form = _formState.value
+        _formState.value = form.copy(
+            name = form.name.ifBlank { result.title },
+            description = form.description.ifBlank { result.description ?: "" },
+            difficulty = if (form.difficulty == "简单" && result.difficulty != null) {
+                when (result.difficulty) {
+                    in 1..2 -> "简单"
+                    in 3..4 -> "中等"
+                    else -> "困难"
+                }
+            } else form.difficulty,
+            cookingTime = form.cookingTime.ifBlank { result.cookingTime?.toString() ?: "" },
+            ingredients = if (form.ingredients.size == 1 && form.ingredients[0].name.isBlank() && result.ingredients.isNotEmpty()) {
+                result.ingredients.map { IngredientInput(it.name, it.amount) }
+            } else form.ingredients,
+            steps = if (form.steps.size == 1 && form.steps[0].description.isBlank() && result.steps.isNotEmpty()) {
+                result.steps.map { StepInput(description = it) }
+            } else form.steps
+        )
+        _aiRecognitionState.value = AiRecognitionState.Idle
+    }
+
+    fun dismissRecognition() {
+        _aiRecognitionState.value = AiRecognitionState.Idle
     }
 }

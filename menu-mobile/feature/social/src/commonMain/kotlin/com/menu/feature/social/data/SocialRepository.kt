@@ -11,6 +11,10 @@ interface SocialRepository {
     suspend fun createCookingLog(request: CreateCookingLogRequest): AppResult<CookingLog>
     suspend fun updateCookingLog(id: String, request: UpdateCookingLogRequest): AppResult<CookingLog>
     suspend fun deleteCookingLog(id: String): AppResult<Boolean>
+    suspend fun toggleLike(recipeId: String): AppResult<Boolean>
+    suspend fun getComments(recipeId: String, page: Int = 1, pageSize: Int = 20): AppResult<CommentListResponse>
+    suspend fun createComment(request: CreateCommentRequest): AppResult<RecipeComment>
+    suspend fun deleteComment(id: String): AppResult<Boolean>
 }
 
 class SocialRepositoryImpl(private val api: SocialApi) : SocialRepository {
@@ -73,6 +77,42 @@ class SocialRepositoryImpl(private val api: SocialApi) : SocialRepository {
 
     override suspend fun deleteCookingLog(id: String): AppResult<Boolean> = try {
         when (val response = api.deleteCookingLog(id)) {
+            is ApiResponse.Success -> AppResult.Success(response.data)
+            is ApiResponse.Error -> AppResult.Error(response.message)
+        }
+    } catch (e: Exception) {
+        AppResult.Error(e.message ?: "Unknown error", e)
+    }
+
+    override suspend fun toggleLike(recipeId: String): AppResult<Boolean> = try {
+        when (val response = api.toggleLike(recipeId)) {
+            is ApiResponse.Success -> AppResult.Success(response.data)
+            is ApiResponse.Error -> AppResult.Error(response.message)
+        }
+    } catch (e: Exception) {
+        AppResult.Error(e.message ?: "Unknown error", e)
+    }
+
+    override suspend fun getComments(recipeId: String, page: Int, pageSize: Int): AppResult<CommentListResponse> = try {
+        when (val response = api.getComments(recipeId, page, pageSize)) {
+            is ApiResponse.Success -> AppResult.Success(response.data)
+            is ApiResponse.Error -> AppResult.Error(response.message)
+        }
+    } catch (e: Exception) {
+        AppResult.Error(e.message ?: "Unknown error", e)
+    }
+
+    override suspend fun createComment(request: CreateCommentRequest): AppResult<RecipeComment> = try {
+        when (val response = api.createComment(request)) {
+            is ApiResponse.Success -> AppResult.Success(response.data)
+            is ApiResponse.Error -> AppResult.Error(response.message)
+        }
+    } catch (e: Exception) {
+        AppResult.Error(e.message ?: "Unknown error", e)
+    }
+
+    override suspend fun deleteComment(id: String): AppResult<Boolean> = try {
+        when (val response = api.deleteComment(id)) {
             is ApiResponse.Success -> AppResult.Success(response.data)
             is ApiResponse.Error -> AppResult.Error(response.message)
         }

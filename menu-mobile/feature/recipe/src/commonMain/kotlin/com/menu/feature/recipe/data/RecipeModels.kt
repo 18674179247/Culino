@@ -18,13 +18,24 @@ data class RecipeListItem(
 )
 
 @Serializable
+data class AuthorInfo(
+    val id: String,
+    val username: String,
+    val nickname: String? = null,
+    val avatar: String? = null
+)
+
+@Serializable
 data class RecipeDetail(
     val recipe: Recipe,
     val ingredients: List<RecipeIngredient>,
     val seasonings: List<RecipeSeasoning>,
     val steps: List<RecipeStep>,
     val tags: List<RecipeTag>,
-    val nutrition: RecipeNutrition? = null
+    val nutrition: RecipeNutrition? = null,
+    val author: AuthorInfo? = null,
+    @SerialName("like_count") val likeCount: Long? = null,
+    @SerialName("comment_count") val commentCount: Long? = null
 )
 
 @Serializable
@@ -86,7 +97,12 @@ data class RecipeNutrition(
     @SerialName("health_score") val healthScore: Int?,
     @SerialName("health_tags") val healthTags: List<String>?,
     @SerialName("suitable_for") val suitableFor: List<String>?,
-    @SerialName("analysis_text") val analysisText: String?
+    @SerialName("analysis_text") val analysisText: String?,
+    @SerialName("serving_size") val servingSize: String? = null,
+    @SerialName("traffic_light") val trafficLight: Map<String, String>? = null,
+    @SerialName("overall_rating") val overallRating: String? = null,
+    val summary: String? = null,
+    val cautions: List<String>? = null
 )
 
 @Serializable

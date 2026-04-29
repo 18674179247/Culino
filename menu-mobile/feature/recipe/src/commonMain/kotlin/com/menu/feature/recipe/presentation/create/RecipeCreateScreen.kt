@@ -25,6 +25,7 @@ import coil3.compose.AsyncImage
 import com.menu.core.ui.component.MenuBottomSheetHost
 import com.menu.core.ui.component.rememberMenuBottomSheetState
 import com.menu.core.ui.component.showError
+import com.menu.core.model.RecognizeRecipeResponse
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -37,6 +38,7 @@ fun RecipeCreateScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val errorMessage by viewModel.errorMessage.collectAsState()
+    val aiState by viewModel.aiRecognitionState.collectAsState()
     val sheetState = rememberMenuBottomSheetState()
 
     LaunchedEffect(uiState) {
@@ -54,6 +56,49 @@ fun RecipeCreateScreen(
             onDismiss = { viewModel.clearError() }
         )
         viewModel.clearError()
+    }
+
+    LaunchedEffect(aiState) {
+        when (val state = aiState) {
+            is AiRecognitionState.NeedTitle -> {
+                sheetState.show { dismiss ->
+                    TitleInputSheet(
+                        onConfirm = { title ->
+                            dismiss()
+                            viewModel.recognizeWithTitle(title)
+                        },
+                        onDismiss = {
+                            dismiss()
+                            viewModel.dismissRecognition()
+                        }
+                    )
+                }
+            }
+            is AiRecognitionState.Success -> {
+                sheetState.show { dismiss ->
+                    AiRecognitionPreview(
+                        result = state.result,
+                        onApply = {
+                            viewModel.applyRecognition(state.result)
+                            dismiss()
+                        },
+                        onDismiss = {
+                            viewModel.dismissRecognition()
+                            dismiss()
+                        }
+                    )
+                }
+            }
+            is AiRecognitionState.Error -> {
+                sheetState.showError(
+                    message = "AI 识别失败：${state.message}",
+                    onRetry = { viewModel.recognizeFromImage() },
+                    onDismiss = { viewModel.dismissRecognition() }
+                )
+                viewModel.dismissRecognition()
+            }
+            else -> {}
+        }
     }
 
     MenuBottomSheetHost(sheetState)
@@ -96,7 +141,7 @@ fun RecipeCreateScreen(
                         color = MaterialTheme.colorScheme.primary
                     )
                 }
-                else -> RecipeForm(viewModel, onPickCoverImage, onPickRecipeImages)
+                else -> RecipeForm(viewModel, aiState, onPickCoverImage, onPickRecipeImages)
             }
         }
     }
@@ -105,6 +150,7 @@ fun RecipeCreateScreen(
 @Composable
 private fun RecipeForm(
     viewModel: RecipeCreateViewModel,
+    aiState: AiRecognitionState,
     onPickCoverImage: () -> Unit,
     onPickRecipeImages: () -> Unit
 ) {
@@ -135,6 +181,29 @@ private fun RecipeForm(
                             )
                     ) {
                         Icon(Icons.Default.Close, "移除", modifier = Modifier.size(16.dp))
+                    }
+                }
+                Spacer(Modifier.height(8.dp))
+                Button(
+                    onClick = { viewModel.recognizeFromImage() },
+                    enabled = aiState !is AiRecognitionState.Loading,
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                        contentColor = MaterialTheme.colorScheme.secondary
+                    )
+                ) {
+                    if (aiState is AiRecognitionState.Loading) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(18.dp),
+                            strokeWidth = 2.dp,
+                            color = MaterialTheme.colorScheme.secondary
+                        )
+                        Spacer(Modifier.width(8.dp))
+                        Text("AI 识别中...")
+                    } else {
+                        Text("AI 智能补全")
                     }
                 }
             } else {
@@ -267,7 +336,13 @@ private fun RecipeForm(
             action = { IconButton(onClick = { viewModel.addStep() }) { Icon(Icons.Default.Add, "添加步骤", tint = MaterialTheme.colorScheme.secondary) } }
         ) {
             formState.steps.forEachIndexed { index, step ->
-                StepItem(index + 1, step, { viewModel.updateStep(index, it) }, { viewModel.removeStep(index) })
+                StepItem(
+                    stepNumber = index + 1,
+                    step = step,
+                    onDescriptionChange = { viewModel.updateStep(index, it) },
+                    onDelete = { viewModel.removeStep(index) },
+                    onRemoveImage = { viewModel.removeStepImage(index) }
+                )
                 if (index < formState.steps.lastIndex) Spacer(Modifier.height(8.dp))
             }
         }
@@ -310,7 +385,13 @@ private fun IngredientItem(ingredient: IngredientInput, onNameChange: (String) -
 }
 
 @Composable
-private fun StepItem(stepNumber: Int, description: String, onDescriptionChange: (String) -> Unit, onDelete: () -> Unit) {
+private fun StepItem(
+    stepNumber: Int,
+    step: StepInput,
+    onDescriptionChange: (String) -> Unit,
+    onDelete: () -> Unit,
+    onRemoveImage: () -> Unit
+) {
     Surface(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(8.dp), color = MaterialTheme.colorScheme.surfaceVariant) {
         Column(modifier = Modifier.padding(12.dp)) {
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
@@ -324,7 +405,140 @@ private fun StepItem(stepNumber: Int, description: String, onDescriptionChange: 
                 }
                 IconButton(onClick = onDelete) { Icon(Icons.Default.Delete, "删除", tint = MaterialTheme.colorScheme.error.copy(alpha = 0.7f)) }
             }
-            OutlinedTextField(value = description, onValueChange = onDescriptionChange, label = { Text("描述") }, modifier = Modifier.fillMaxWidth(), minLines = 2, maxLines = 5, shape = RoundedCornerShape(8.dp))
+            OutlinedTextField(value = step.description, onValueChange = onDescriptionChange, label = { Text("描述") }, modifier = Modifier.fillMaxWidth(), minLines = 2, maxLines = 5, shape = RoundedCornerShape(8.dp))
+            Spacer(Modifier.height(8.dp))
+            if (step.imageUrl != null) {
+                Box(modifier = Modifier.fillMaxWidth().height(120.dp)) {
+                    AsyncImage(
+                        model = step.imageUrl,
+                        contentDescription = "步骤图片",
+                        modifier = Modifier.fillMaxSize().clip(RoundedCornerShape(8.dp)),
+                        contentScale = ContentScale.Crop
+                    )
+                    IconButton(
+                        onClick = onRemoveImage,
+                        modifier = Modifier.align(Alignment.TopEnd).padding(4.dp)
+                            .size(24.dp).background(MaterialTheme.colorScheme.surface.copy(alpha = 0.8f), CircleShape)
+                    ) {
+                        Icon(Icons.Default.Close, "移除", modifier = Modifier.size(14.dp))
+                    }
+                }
+            } else if (step.isUploadingImage) {
+                Box(modifier = Modifier.fillMaxWidth().height(60.dp), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
+                }
+            } else {
+                Text(
+                    text = "可通过代码上传步骤图片",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun AiRecognitionPreview(
+    result: RecognizeRecipeResponse,
+    onApply: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 24.dp)
+            .padding(bottom = 32.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        Text(
+            text = "AI 识别结果",
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.onSurface
+        )
+        if (result.title.isNotBlank()) {
+            Text("菜名：${result.title}", style = MaterialTheme.typography.bodyMedium)
+        }
+        if (result.ingredients.isNotEmpty()) {
+            Text(
+                "食材：${result.ingredients.joinToString("、") { "${it.name} ${it.amount}" }}",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+        if (result.steps.isNotEmpty()) {
+            Text(
+                "步骤：共 ${result.steps.size} 步",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            OutlinedButton(
+                onClick = onDismiss,
+                modifier = Modifier.weight(1f),
+                shape = RoundedCornerShape(12.dp)
+            ) { Text("取消") }
+            Button(
+                onClick = onApply,
+                modifier = Modifier.weight(1f),
+                shape = RoundedCornerShape(12.dp)
+            ) { Text("填充到表单") }
+        }
+    }
+}
+
+@Composable
+private fun TitleInputSheet(
+    onConfirm: (String) -> Unit,
+    onDismiss: () -> Unit
+) {
+    var title by remember { mutableStateOf("") }
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 24.dp)
+            .padding(bottom = 32.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        Text(
+            text = "请输入菜名",
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.onSurface
+        )
+        Text(
+            text = "AI 将根据菜名生成完整菜谱",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        OutlinedTextField(
+            value = title,
+            onValueChange = { title = it },
+            label = { Text("菜名") },
+            placeholder = { Text("例如：宫保鸡丁") },
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true,
+            shape = RoundedCornerShape(12.dp)
+        )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            OutlinedButton(
+                onClick = onDismiss,
+                modifier = Modifier.weight(1f),
+                shape = RoundedCornerShape(12.dp)
+            ) { Text("取消") }
+            Button(
+                onClick = { if (title.isNotBlank()) onConfirm(title.trim()) },
+                enabled = title.isNotBlank(),
+                modifier = Modifier.weight(1f),
+                shape = RoundedCornerShape(12.dp)
+            ) { Text("开始识别") }
         }
     }
 }

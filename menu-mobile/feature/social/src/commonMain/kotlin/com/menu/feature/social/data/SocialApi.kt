@@ -12,6 +12,11 @@ interface SocialApi {
     suspend fun createCookingLog(request: CreateCookingLogRequest): ApiResponse<CookingLog>
     suspend fun updateCookingLog(id: String, request: UpdateCookingLogRequest): ApiResponse<CookingLog>
     suspend fun deleteCookingLog(id: String): ApiResponse<Boolean>
+
+    suspend fun toggleLike(recipeId: String): ApiResponse<Boolean>
+    suspend fun getComments(recipeId: String, page: Int = 1, pageSize: Int = 20): ApiResponse<CommentListResponse>
+    suspend fun createComment(request: CreateCommentRequest): ApiResponse<RecipeComment>
+    suspend fun deleteComment(id: String): ApiResponse<Boolean>
 }
 
 class SocialApiImpl(private val client: ApiClient) : SocialApi {
@@ -44,5 +49,21 @@ class SocialApiImpl(private val client: ApiClient) : SocialApi {
 
     override suspend fun deleteCookingLog(id: String): ApiResponse<Boolean> {
         return client.delete("social/cooking-logs/$id")
+    }
+
+    override suspend fun toggleLike(recipeId: String): ApiResponse<Boolean> {
+        return client.post("social/likes/$recipeId", Unit)
+    }
+
+    override suspend fun getComments(recipeId: String, page: Int, pageSize: Int): ApiResponse<CommentListResponse> {
+        return client.get("social/comments/recipe/$recipeId", mapOf("page" to "$page", "page_size" to "$pageSize"))
+    }
+
+    override suspend fun createComment(request: CreateCommentRequest): ApiResponse<RecipeComment> {
+        return client.post("social/comments", request)
+    }
+
+    override suspend fun deleteComment(id: String): ApiResponse<Boolean> {
+        return client.delete("social/comments/$id")
     }
 }

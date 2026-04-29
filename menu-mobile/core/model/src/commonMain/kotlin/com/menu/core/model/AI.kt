@@ -1,10 +1,8 @@
 package com.menu.core.model
 
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
-/**
- * 菜谱营养信息
- */
 @Serializable
 data class RecipeNutrition(
     val calories: Double? = null,
@@ -13,15 +11,17 @@ data class RecipeNutrition(
     val carbohydrate: Double? = null,
     val fiber: Double? = null,
     val sodium: Double? = null,
-    val healthScore: Int? = null,
-    val healthTags: List<String>? = null,
-    val suitableFor: List<String>? = null,
-    val analysisText: String? = null
+    @SerialName("health_score") val healthScore: Int? = null,
+    @SerialName("health_tags") val healthTags: List<String>? = null,
+    @SerialName("suitable_for") val suitableFor: List<String>? = null,
+    @SerialName("analysis_text") val analysisText: String? = null,
+    @SerialName("serving_size") val servingSize: String? = null,
+    @SerialName("traffic_light") val trafficLight: Map<String, String>? = null,
+    @SerialName("overall_rating") val overallRating: String? = null,
+    val summary: String? = null,
+    val cautions: List<String>? = null
 )
 
-/**
- * 推荐菜谱项
- */
 @Serializable
 data class RecommendationItem(
     val recipeId: String,
@@ -32,9 +32,6 @@ data class RecommendationItem(
     val recommendationType: String
 )
 
-/**
- * 用户偏好画像
- */
 @Serializable
 data class UserPreference(
     val userId: String,
@@ -51,12 +48,34 @@ data class UserPreference(
     val avgRating: Double? = null
 )
 
-/**
- * 行为日志请求
- */
 @Serializable
 data class BehaviorLogRequest(
     val recipeId: String,
     val actionType: String,
     val actionValue: Map<String, String>? = null
+)
+
+@Serializable
+data class RecognizeRecipeRequest(
+    @SerialName("image_url") val imageUrl: String,
+    @SerialName("existing_title") val existingTitle: String? = null
+)
+
+@Serializable
+data class RecognizedIngredient(
+    val name: String,
+    val amount: String
+)
+
+@Serializable
+data class RecognizeRecipeResponse(
+    val title: String,
+    val description: String? = null,
+    val difficulty: Int? = null,
+    @SerialName("cooking_time") val cookingTime: Int? = null,
+    val servings: Int? = null,
+    val ingredients: List<RecognizedIngredient> = emptyList(),
+    val seasonings: List<RecognizedIngredient> = emptyList(),
+    val steps: List<String> = emptyList(),
+    val confidence: Double = 0.0
 )

@@ -142,8 +142,13 @@ fun MainScreen(
         BottomNavItem.Profile
     )
 
+    val showBottomNav = currentDestination?.route?.let { route ->
+        route != Routes.RECIPE_DETAIL && route != Routes.RECIPE_CREATE
+    } ?: true
+
     Scaffold(
         bottomBar = {
+            if (showBottomNav) {
             NavigationBar(
                 containerColor = MaterialTheme.colorScheme.surface,
                 tonalElevation = 0.dp
@@ -177,6 +182,7 @@ fun MainScreen(
                         )
                     )
                 }
+            }
             }
         }
     ) { innerPadding ->

@@ -165,4 +165,11 @@ class AiApiService(private val apiClient: ApiClient, private val baseUrl: String
         val actionValue = rating?.let { mapOf("rating" to it.toString()) }
         logBehavior(BehaviorLogRequest(recipeId, "cook", actionValue))
     }
+
+    suspend fun recognizeRecipe(
+        imageUrl: String,
+        existingTitle: String? = null
+    ): ApiResponse<RecognizeRecipeResponse> {
+        return apiClient.post("ai/recipe/recognize", RecognizeRecipeRequest(imageUrl, existingTitle))
+    }
 }
