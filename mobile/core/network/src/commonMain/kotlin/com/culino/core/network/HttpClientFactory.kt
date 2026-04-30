@@ -27,10 +27,12 @@ fun createHttpClient(tokenProvider: TokenProvider): HttpClient {
                     token?.let { BearerTokens(it, "") }
                 }
 
-                // 在每次请求前都发送 token（如果存在）
+                refreshTokens {
+                    val token = tokenProvider.getToken()
+                    token?.let { BearerTokens(it, "") }
+                }
+
                 sendWithoutRequest { request ->
-                    // 对所有需要认证的请求都发送 token
-                    // 排除登录和注册接口
                     !request.url.encodedPath.contains("/login") &&
                     !request.url.encodedPath.contains("/register")
                 }
