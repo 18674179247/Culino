@@ -68,12 +68,14 @@ object Routes {
     const val PROFILE = "profile"
     const val RECIPE_DETAIL = "recipe_detail/{recipeId}"
     const val RECIPE_CREATE = "recipe_create"
+    const val RECIPE_EDIT = "recipe_edit/{recipeId}"
     const val COOKING_LOGS = "cooking_logs"
     const val SHOPPING_LISTS = "shopping_lists"
     const val SHOPPING_LIST_DETAIL = "shopping_list_detail/{listId}"
     const val MEAL_PLANS = "meal_plans"
 
     fun recipeDetail(recipeId: String) = "recipe_detail/$recipeId"
+    fun recipeEdit(recipeId: String) = "recipe_edit/$recipeId"
     fun shoppingListDetail(listId: String) = "shopping_list_detail/$listId"
 }
 
@@ -316,16 +318,15 @@ fun MainScreen(
             }
 
             composable(Routes.MY_RECIPES) {
-                CompositionLocalProvider(LocalNavAnimatedVisibilityScope provides this@composable) {
-                val viewModel = remember { appComponent.recipeListViewModel() }
+                val viewModel = remember(currentUserId) { appComponent.recipeListViewModel(authorId = currentUserId) }
                 RecipeListScreen(
                     viewModel = viewModel,
                     onRecipeClick = { recipeId ->
                         navController.navigate(Routes.recipeDetail(recipeId))
                     },
-                    title = "我的菜谱"
+                    title = "我的菜谱",
+                    enableSharedElement = false
                 )
-                }
             }
 
             composable(Routes.FAVORITES) {
@@ -386,7 +387,8 @@ fun MainScreen(
                     recipeId = recipeId,
                     viewModel = viewModel,
                     onBack = { navController.popBackStack() },
-                    currentUserId = currentUserId
+                    currentUserId = currentUserId,
+                    onEdit = { id -> navController.navigate(Routes.recipeEdit(id)) }
                 )
                 }
             }
@@ -421,6 +423,33 @@ fun MainScreen(
                             popUpTo(Routes.RECIPES)
                         }
                     },
+                    onPickCoverImage = { coverPicker.pickSingle() },
+                    onPickRecipeImages = { imagesPicker.pickMultiple() }
+                )
+            }
+
+            composable(
+                Routes.RECIPE_EDIT,
+                enterTransition = { slideInFromRight },
+                exitTransition = { slideOutToLeft },
+                popEnterTransition = { slideInFromLeft },
+                popExitTransition = { slideOutToRight }
+            ) { backStackEntry ->
+                val recipeId = backStackEntry.arguments?.getString("recipeId") ?: return@composable
+                val viewModel = remember { appComponent.recipeCreateViewModel() }
+                LaunchedEffect(recipeId) { viewModel.loadForEdit(recipeId) }
+                val coverPicker = rememberImagePickerLauncher(
+                    onSingleResult = { image -> image?.let { viewModel.uploadCoverImage(it.bytes, it.fileName, it.contentType) } },
+                    onMultipleResult = {}
+                )
+                val imagesPicker = rememberImagePickerLauncher(
+                    onSingleResult = {},
+                    onMultipleResult = { images -> if (images.isNotEmpty()) { viewModel.uploadRecipeImages(images.map { Triple(it.bytes, it.fileName, it.contentType) }) } }
+                )
+                RecipeCreateScreen(
+                    viewModel = viewModel,
+                    onNavigateBack = { navController.popBackStack() },
+                    onCreateSuccess = { navController.popBackStack() },
                     onPickCoverImage = { coverPicker.pickSingle() },
                     onPickRecipeImages = { imagesPicker.pickMultiple() }
                 )

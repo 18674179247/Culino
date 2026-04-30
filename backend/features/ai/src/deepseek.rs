@@ -239,4 +239,26 @@ impl DeepSeekClient {
 
         self.chat_completion(prompt).await
     }
+
+    pub async fn parse_shopping_list(&self, text: &str) -> Result<String> {
+        let prompt = format!(
+            r#"请将以下购物清单文本解析为结构化数据。文本可能包含口语化表达、数量单位不规范等情况，请智能识别。
+
+文本：{}
+
+请以 JSON 格式返回（只返回 JSON 数组，不要其他文字）：
+[
+  {{"name": "物品名称", "amount": "数量（如2个、500g、一瓶）"}}
+]
+
+规则：
+- 如果没有明确数量，amount 填 "适量"
+- 合并重复项
+- 去除无关内容（如"我要买"、"帮我加"等）
+- 保持物品名称简洁"#,
+            text
+        );
+
+        self.chat_completion(prompt).await
+    }
 }

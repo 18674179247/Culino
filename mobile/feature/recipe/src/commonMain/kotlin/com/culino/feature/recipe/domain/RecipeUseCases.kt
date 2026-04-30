@@ -8,8 +8,9 @@ class SearchRecipesUseCase(private val repository: RecipeRepository) {
     suspend operator fun invoke(
         keyword: String? = null,
         difficulty: String? = null,
+        authorId: String? = null,
         page: Int = 1
-    ) = repository.searchRecipes(keyword, difficulty, page)
+    ) = repository.searchRecipes(keyword, difficulty, authorId, page)
 }
 
 class GetRecipeDetailUseCase(private val repository: RecipeRepository) {

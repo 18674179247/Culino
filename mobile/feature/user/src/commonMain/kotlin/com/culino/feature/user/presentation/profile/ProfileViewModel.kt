@@ -29,7 +29,6 @@ class ProfileViewModel(
         when (intent) {
             is ProfileIntent.LoadProfile -> {
                 loadProfile()
-                loadStats()
             }
             is ProfileIntent.ToggleEdit -> {
                 val current = _state.value
@@ -52,8 +51,11 @@ class ProfileViewModel(
         _state.update { it.copy(isLoading = true) }
         viewModelScope.launch {
             when (val result = getProfileUseCase.getProfile()) {
-                is AppResult.Success -> _state.update {
-                    it.copy(isLoading = false, user = result.data, editNickname = result.data.nickname ?: "")
+                is AppResult.Success -> {
+                    _state.update {
+                        it.copy(isLoading = false, user = result.data, editNickname = result.data.nickname ?: "")
+                    }
+                    loadStats(result.data.id)
                 }
                 is AppResult.Error -> _state.update {
                     it.copy(isLoading = false, error = result.message)
@@ -62,11 +64,11 @@ class ProfileViewModel(
         }
     }
 
-    private fun loadStats() {
+    private fun loadStats(userId: String) {
         viewModelScope.launch {
             val favoritesDeferred = async { socialRepository.getFavorites() }
             val cookingLogsDeferred = async { socialRepository.getCookingLogs() }
-            val recipesDeferred = async { recipeRepository.searchRecipes(null, null, 1, 1) }
+            val recipesDeferred = async { recipeRepository.searchRecipes(authorId = userId, page = 1, pageSize = 1) }
 
             val favoriteCount = when (val r = favoritesDeferred.await()) {
                 is AppResult.Success -> r.data.size

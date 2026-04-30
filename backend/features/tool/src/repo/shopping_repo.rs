@@ -43,6 +43,14 @@ pub trait ShoppingRepo: Send + Sync {
     ) -> Result<ShoppingListItem, AppError>;
     /// 删除购物清单项
     async fn delete_item(&self, item_id: i32, list_id: Uuid) -> Result<(), AppError>;
+    /// 批量添加购物清单项
+    async fn batch_add_items(
+        &self,
+        list_id: Uuid,
+        items: &[AddShoppingItemReq],
+    ) -> Result<Vec<ShoppingListItem>, AppError>;
+    /// 如果所有项都已勾选，自动将清单标记为已完成
+    async fn auto_complete_list(&self, list_id: Uuid) -> Result<(), AppError>;
 }
 
 /// PostgreSQL 购物清单仓储实现
@@ -172,6 +180,49 @@ impl ShoppingRepo for PgShoppingRepo {
             .await?;
         if result.rows_affected() == 0 {
             return Err(AppError::NotFound("shopping list item not found".into()));
+        }
+        Ok(())
+    }
+
+    async fn batch_add_items(
+        &self,
+        list_id: Uuid,
+        items: &[AddShoppingItemReq],
+    ) -> Result<Vec<ShoppingListItem>, AppError> {
+        let mut result = Vec::with_capacity(items.len());
+        for (i, item) in items.iter().enumerate() {
+            let row = sqlx::query_as::<_, ShoppingListItem>(
+                "INSERT INTO shopping_list_items (list_id, name, amount, sort_order) VALUES ($1, $2, $3, $4) RETURNING *"
+            )
+            .bind(list_id)
+            .bind(&item.name)
+            .bind(item.amount.as_deref())
+            .bind(item.sort_order.unwrap_or(i as i32))
+            .fetch_one(&self.pool)
+            .await?;
+            result.push(row);
+        }
+        Ok(result)
+    }
+
+    async fn auto_complete_list(&self, list_id: Uuid) -> Result<(), AppError> {
+        let unchecked: i64 = sqlx::query_scalar(
+            "SELECT COUNT(*) FROM shopping_list_items WHERE list_id = $1 AND (is_checked = false OR is_checked IS NULL)"
+        )
+        .bind(list_id)
+        .fetch_one(&self.pool)
+        .await?;
+
+        if unchecked == 0 {
+            sqlx::query("UPDATE shopping_lists SET status = 2 WHERE id = $1")
+                .bind(list_id)
+                .execute(&self.pool)
+                .await?;
+        } else {
+            sqlx::query("UPDATE shopping_lists SET status = 1 WHERE id = $1")
+                .bind(list_id)
+                .execute(&self.pool)
+                .await?;
         }
         Ok(())
     }

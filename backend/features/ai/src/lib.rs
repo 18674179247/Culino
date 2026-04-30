@@ -34,6 +34,7 @@ use utoipa::OpenApi;
         handler::get_preference_profile,
         handler::log_behavior,
         handler::recognize_recipe,
+        handler::parse_shopping_text,
     ),
     components(schemas(
         RecipeNutrition,
@@ -47,6 +48,9 @@ use utoipa::OpenApi;
         RecognizeRecipeReq,
         RecognizeRecipeResp,
         RecognizedIngredient,
+        ParseShoppingTextReq,
+        ParseShoppingTextResp,
+        ParsedShoppingItem,
     )),
     tags(
         (name = "AI", description = "AI 功能接口")

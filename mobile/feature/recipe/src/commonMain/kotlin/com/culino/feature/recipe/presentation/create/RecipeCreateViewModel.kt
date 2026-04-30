@@ -67,6 +67,37 @@ class RecipeCreateViewModel(
     private val _formState = MutableStateFlow(RecipeFormState())
     val formState: StateFlow<RecipeFormState> = _formState.asStateFlow()
 
+    private var editRecipeId: String? = null
+    val isEditMode: Boolean get() = editRecipeId != null
+
+    fun loadForEdit(recipeId: String) {
+        editRecipeId = recipeId
+        viewModelScope.launch {
+            when (val result = repository.getRecipeDetail(recipeId)) {
+                is AppResult.Success -> {
+                    val detail = result.data
+                    val difficultyStr = when (detail.recipe.difficulty) {
+                        1, 2 -> "简单"
+                        3, 4 -> "中等"
+                        5 -> "困难"
+                        else -> "简单"
+                    }
+                    _formState.value = RecipeFormState(
+                        name = detail.recipe.title,
+                        description = detail.recipe.description ?: "",
+                        difficulty = difficultyStr,
+                        cookingTime = detail.recipe.cookingTime?.toString() ?: "",
+                        servings = detail.recipe.servings?.toString() ?: "1",
+                        coverImageUrl = detail.recipe.coverImage,
+                        ingredients = detail.ingredients.map { IngredientInput(it.ingredientName, it.amount) }.ifEmpty { listOf(IngredientInput()) },
+                        steps = detail.steps.map { StepInput(it.content, it.image) }.ifEmpty { listOf(StepInput()) }
+                    )
+                }
+                is AppResult.Error -> _errorMessage.value = result.message
+            }
+        }
+    }
+
     private val _errorMessage = MutableStateFlow<String?>(null)
     val errorMessage: StateFlow<String?> = _errorMessage.asStateFlow()
 
@@ -293,7 +324,7 @@ class RecipeCreateViewModel(
                 tagIds = null
             )
 
-            when (val result = repository.createRecipe(request)) {
+            when (val result = if (editRecipeId != null) repository.updateRecipe(editRecipeId!!, request) else repository.createRecipe(request)) {
                 is AppResult.Success -> {
                     _uiState.value = RecipeCreateUiState.Success(result.data.recipe.id)
                 }

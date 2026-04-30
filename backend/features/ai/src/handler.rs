@@ -292,3 +292,40 @@ pub async fn recognize_recipe(
 
     ApiResponse::ok(result)
 }
+
+// ============================================
+// 购物清单 AI 解析
+// ============================================
+
+/// AI 解析购物清单文本
+#[utoipa::path(post, path = "/api/v1/ai/shopping-list/parse", tag = "AI",
+    security(("bearer" = [])),
+    request_body = ParseShoppingTextReq,
+    responses((status = 200, body = ParseShoppingTextResp))
+)]
+pub async fn parse_shopping_text(
+    State(state): State<AppState>,
+    _auth: AuthUser,
+    Json(req): Json<ParseShoppingTextReq>,
+) -> ApiResult<ParseShoppingTextResp> {
+    tracing::info!("Parsing shopping list text: {} chars", req.text.len());
+
+    let api_key = state.config.deepseek_api_key.clone().ok_or_else(|| {
+        culino_common::error::AppError::Internal(anyhow::anyhow!("DeepSeek API key not configured"))
+    })?;
+
+    let client = crate::deepseek::DeepSeekClient::new(api_key)
+        .map_err(|e| culino_common::error::AppError::Internal(e))?;
+
+    let raw = client
+        .parse_shopping_list(&req.text)
+        .await
+        .map_err(|e| culino_common::error::AppError::Internal(e))?;
+
+    let items: Vec<ParsedShoppingItem> = serde_json::from_str(&raw).map_err(|e| {
+        tracing::warn!("Failed to parse AI response: {}, raw: {}", e, raw);
+        culino_common::error::AppError::Internal(anyhow::anyhow!("AI 返回格式异常"))
+    })?;
+
+    ApiResponse::ok(ParseShoppingTextResp { items })
+}

@@ -106,7 +106,7 @@ fun RecipeCreateScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("创建菜谱") },
+                title = { Text(if (viewModel.isEditMode) "编辑菜谱" else "创建菜谱") },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, "返回")

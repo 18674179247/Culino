@@ -55,6 +55,11 @@ pub struct UpdateShoppingItemReq {
     pub sort_order: Option<i32>,
 }
 
+#[derive(Debug, Deserialize, utoipa::ToSchema)]
+pub struct BatchAddItemsReq {
+    pub items: Vec<AddShoppingItemReq>,
+}
+
 #[derive(Debug, Serialize, utoipa::ToSchema)]
 pub struct ShoppingListDetail {
     pub list: ShoppingList,

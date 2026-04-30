@@ -23,6 +23,7 @@ use utoipa::OpenApi;
         handler::add_shopping_item,
         handler::update_shopping_item,
         handler::delete_shopping_item,
+        handler::batch_add_shopping_items,
         handler::list_meal_plans,
         handler::create_meal_plan,
         handler::update_meal_plan,
@@ -35,6 +36,7 @@ use utoipa::OpenApi;
         model::CreateShoppingListReq,
         model::AddShoppingItemReq,
         model::UpdateShoppingItemReq,
+        model::BatchAddItemsReq,
         model::ShoppingListDetail,
         model::CreateMealPlanReq,
         model::UpdateMealPlanReq,
@@ -56,6 +58,10 @@ pub fn routes() -> Router<AppState> {
         .route(
             "/shopping-lists/{id}/items",
             post(handler::add_shopping_item),
+        )
+        .route(
+            "/shopping-lists/{id}/items/batch",
+            post(handler::batch_add_shopping_items),
         )
         .route(
             "/shopping-lists/{list_id}/items/{item_id}",
