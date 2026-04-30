@@ -1,0 +1,17 @@
+load("@rules_kotlin//kotlin:jvm.bzl", "kt_jvm_library")
+
+kt_jvm_library(
+    name = "user",
+    srcs = glob(["src/commonMain/kotlin/**/*.kt"]),
+    visibility = ["//visibility:public"],
+    deps = [
+        "//core/common",
+        "//core/model",
+        "//core/network",
+        "//core/data",
+        "//core/ui",
+        "@maven//:io_ktor_ktor_client_core",
+        "@maven//:org_jetbrains_kotlinx_kotlinx_coroutines_core",
+        "@maven//:org_jetbrains_kotlinx_kotlinx_serialization_json",
+    ],
+)

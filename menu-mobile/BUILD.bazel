@@ -1,0 +1,2 @@
+# Root BUILD file for menu-mobile
+# Individual modules define their own build targets

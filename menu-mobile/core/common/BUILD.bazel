@@ -1,0 +1,19 @@
+load("@rules_kotlin//kotlin:jvm.bzl", "kt_jvm_library", "kt_jvm_test")
+
+kt_jvm_library(
+    name = "common",
+    srcs = glob(["src/commonMain/kotlin/**/*.kt"]),
+    visibility = ["//visibility:public"],
+    deps = [
+        "@maven//:org_jetbrains_kotlinx_kotlinx_coroutines_core",
+    ],
+)
+
+kt_jvm_test(
+    name = "common_test",
+    srcs = glob(["src/commonTest/kotlin/**/*.kt"]),
+    deps = [
+        ":common",
+        "@maven//:org_jetbrains_kotlinx_kotlinx_coroutines_core",
+    ],
+)
