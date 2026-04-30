@@ -1,11 +1,14 @@
 package com.culino.app
 
 import androidx.compose.animation.*
+import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -32,9 +35,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavHostController
@@ -489,51 +491,88 @@ fun MainScreen(
         }
 
         // FAB expanded overlay
-        AnimatedVisibility(
-            visible = fabExpanded,
-            enter = fadeIn(tween(200)),
-            exit = fadeOut(tween(200)),
-            modifier = Modifier.fillMaxSize()
-        ) {
+        if (fabExpanded) {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
                     .background(MaterialTheme.colorScheme.scrim.copy(alpha = 0.4f))
-                    .clickable { fabExpanded = false }
+                    .clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null
+                    ) { fabExpanded = false }
             )
         }
 
-        AnimatedVisibility(
-            visible = fabExpanded,
-            enter = fadeIn(tween(200)) + scaleIn(tween(250), initialScale = 0.5f),
-            exit = fadeOut(tween(150)) + scaleOut(tween(200), targetScale = 0.5f),
-            modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = innerPadding.calculateBottomPadding() + 16.dp)
-        ) {
-            val radius = 120.dp
-            val radiusPx = with(LocalDensity.current) { radius.toPx() }
+        // Vertical staggered FAB actions
+        if (fabExpanded) {
             val actions = listOf(
-                Triple(Icons.Outlined.Edit, "创建菜谱", Routes.RECIPE_CREATE),
-                Triple(Icons.Outlined.Star, "记录烹饪", Routes.COOKING_LOGS),
-                Triple(Icons.Outlined.ShoppingCart, "购物清单", Routes.SHOPPING_LISTS),
                 Triple(Icons.Outlined.DateRange, "膳食计划", Routes.MEAL_PLANS),
+                Triple(Icons.Outlined.ShoppingCart, "购物清单", Routes.SHOPPING_LISTS),
+                Triple(Icons.Outlined.Star, "记录烹饪", Routes.COOKING_LOGS),
+                Triple(Icons.Outlined.Edit, "创建菜谱", Routes.RECIPE_CREATE),
             )
-            Box(
-                modifier = Modifier.size(radius * 2, radius + 48.dp),
-                contentAlignment = Alignment.BottomCenter
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(bottom = innerPadding.calculateBottomPadding() + 72.dp)
             ) {
                 actions.forEachIndexed { index, (icon, label, route) ->
-                    val angle = kotlin.math.PI * (1.0 - index.toDouble() / (actions.size - 1))
-                    val x = (kotlin.math.cos(angle) * radiusPx).toFloat()
-                    val y = (kotlin.math.sin(angle) * radiusPx).toFloat()
-                    val offsetX = with(LocalDensity.current) { x.toDp() }
-                    val offsetY = with(LocalDensity.current) { y.toDp() }
-                    Box(
-                        modifier = Modifier.offset(x = offsetX, y = -offsetY)
-                            .align(Alignment.BottomCenter)
+                    val delay = (actions.size - 1 - index) * 50
+                    val alpha = remember { Animatable(0f) }
+                    LaunchedEffect(Unit) {
+                        kotlinx.coroutines.delay(delay.toLong())
+                        alpha.animateTo(1f, tween(150))
+                    }
+                    val offsetY = remember { Animatable(40f) }
+                    LaunchedEffect(Unit) {
+                        kotlinx.coroutines.delay(delay.toLong())
+                        offsetY.animateTo(
+                            0f,
+                            spring(dampingRatio = 0.75f, stiffness = 600f)
+                        )
+                    }
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier
+                            .offset(y = offsetY.value.dp)
+                            .graphicsLayer { this.alpha = alpha.value }
+                            .clickable(
+                                interactionSource = remember { MutableInteractionSource() },
+                                indication = null
+                            ) {
+                                fabExpanded = false
+                                navController.navigate(route)
+                            }
                     ) {
-                        FabAction(icon, label) {
-                            fabExpanded = false
-                            navController.navigate(route)
+                        Surface(
+                            shape = RoundedCornerShape(8.dp),
+                            color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                            shadowElevation = 2.dp
+                        ) {
+                            Text(
+                                text = label,
+                                style = MaterialTheme.typography.labelLarge,
+                                color = MaterialTheme.colorScheme.onSurface,
+                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
+                            )
+                        }
+                        Spacer(Modifier.width(12.dp))
+                        Surface(
+                            shape = CircleShape,
+                            color = MaterialTheme.colorScheme.primaryContainer,
+                            shadowElevation = 4.dp,
+                            modifier = Modifier.size(48.dp)
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Icon(
+                                    icon,
+                                    contentDescription = label,
+                                    modifier = Modifier.size(24.dp),
+                                    tint = MaterialTheme.colorScheme.onPrimaryContainer
+                                )
+                            }
                         }
                     }
                 }
@@ -543,22 +582,3 @@ fun MainScreen(
     }
 }
 
-@Composable
-private fun FabAction(icon: ImageVector, label: String, onClick: () -> Unit) {
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier.clickable(onClick = onClick).padding(4.dp)
-    ) {
-        Box(
-            modifier = Modifier
-                .size(48.dp)
-                .clip(CircleShape)
-                .background(MaterialTheme.colorScheme.primary),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(icon, contentDescription = label, modifier = Modifier.size(24.dp), tint = Color.White)
-        }
-        Spacer(Modifier.height(6.dp))
-        Text(label, style = MaterialTheme.typography.labelSmall, color = Color.White)
-    }
-}
