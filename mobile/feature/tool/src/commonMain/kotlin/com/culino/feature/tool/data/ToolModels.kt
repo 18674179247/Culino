@@ -9,20 +9,20 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class ShoppingList(
     val id: String,
-    @SerialName("user_id") val userId: String,
-    val title: String,
-    val status: String,
-    @SerialName("created_at") val createdAt: Instant
+    @SerialName("user_id") val userId: String? = null,
+    val title: String? = null,
+    val status: Int? = null,
+    @SerialName("created_at") val createdAt: Instant? = null
 )
 
 @Serializable
 data class ShoppingListItem(
     val id: Int,
-    @SerialName("list_id") val listId: String,
+    @SerialName("list_id") val listId: String? = null,
     val name: String,
     val amount: String? = null,
-    @SerialName("is_checked") val isChecked: Boolean,
-    @SerialName("sort_order") val sortOrder: Int
+    @SerialName("is_checked") val isChecked: Boolean = false,
+    @SerialName("sort_order") val sortOrder: Int = 0
 )
 
 @Serializable
@@ -51,9 +51,28 @@ data class UpdateShoppingItemRequest(
     @SerialName("sort_order") val sortOrder: Int? = null
 )
 
-// endregion
+@Serializable
+data class BatchAddItemsRequest(
+    val items: List<CreateShoppingItemRequest>
+)
 
-// region Meal Plan
+@Serializable
+data class ParseShoppingTextRequest(
+    val text: String
+)
+
+@Serializable
+data class ParsedShoppingItem(
+    val name: String,
+    val amount: String
+)
+
+@Serializable
+data class ParseShoppingTextResponse(
+    val items: List<ParsedShoppingItem>
+)
+
+// endregion
 
 @Serializable
 data class MealPlan(

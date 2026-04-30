@@ -7,6 +7,7 @@ interface RecipeRepository {
     suspend fun searchRecipes(
         keyword: String? = null,
         difficulty: String? = null,
+        authorId: String? = null,
         page: Int = 1,
         pageSize: Int = 20
     ): AppResult<PaginatedResponse<RecipeListItem>>
@@ -26,10 +27,11 @@ class RecipeRepositoryImpl(private val api: RecipeApi) : RecipeRepository {
     override suspend fun searchRecipes(
         keyword: String?,
         difficulty: String?,
+        authorId: String?,
         page: Int,
         pageSize: Int
     ): AppResult<PaginatedResponse<RecipeListItem>> = try {
-        when (val response = api.searchRecipes(keyword, difficulty, page, pageSize)) {
+        when (val response = api.searchRecipes(keyword, difficulty, authorId, page, pageSize)) {
             is ApiResponse.Success -> AppResult.Success(response.data)
             is ApiResponse.Error -> AppResult.Error(response.message)
         }

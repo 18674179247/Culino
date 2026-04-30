@@ -14,6 +14,8 @@ interface ToolRepository {
     suspend fun addShoppingItem(listId: String, request: CreateShoppingItemRequest): AppResult<ShoppingListItem>
     suspend fun updateShoppingItem(listId: String, itemId: Int, request: UpdateShoppingItemRequest): AppResult<ShoppingListItem>
     suspend fun deleteShoppingItem(listId: String, itemId: Int): AppResult<Boolean>
+    suspend fun batchAddItems(listId: String, items: List<CreateShoppingItemRequest>): AppResult<List<ShoppingListItem>>
+    suspend fun parseShoppingText(text: String): AppResult<ParseShoppingTextResponse>
 
     // Meal Plans
     suspend fun getMealPlans(startDate: String? = null, endDate: String? = null): AppResult<List<MealPlan>>
@@ -87,6 +89,27 @@ class ToolRepositoryImpl(private val api: ToolApi) : ToolRepository {
 
     override suspend fun deleteShoppingItem(listId: String, itemId: Int): AppResult<Boolean> = try {
         when (val response = api.deleteShoppingItem(listId, itemId)) {
+            is ApiResponse.Success -> AppResult.Success(response.data)
+            is ApiResponse.Error -> AppResult.Error(response.message)
+        }
+    } catch (e: Exception) {
+        AppResult.Error(e.message ?: "Unknown error", e)
+    }
+
+    override suspend fun batchAddItems(
+        listId: String,
+        items: List<CreateShoppingItemRequest>
+    ): AppResult<List<ShoppingListItem>> = try {
+        when (val response = api.batchAddItems(listId, BatchAddItemsRequest(items))) {
+            is ApiResponse.Success -> AppResult.Success(response.data)
+            is ApiResponse.Error -> AppResult.Error(response.message)
+        }
+    } catch (e: Exception) {
+        AppResult.Error(e.message ?: "Unknown error", e)
+    }
+
+    override suspend fun parseShoppingText(text: String): AppResult<ParseShoppingTextResponse> = try {
+        when (val response = api.parseShoppingText(ParseShoppingTextRequest(text))) {
             is ApiResponse.Success -> AppResult.Success(response.data)
             is ApiResponse.Error -> AppResult.Error(response.message)
         }

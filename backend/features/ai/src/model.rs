@@ -175,3 +175,23 @@ pub struct RecognizeRecipeResp {
     pub steps: Vec<String>,
     pub confidence: f64,
 }
+
+// ============================================
+// 购物清单 AI 解析
+// ============================================
+
+#[derive(Debug, Deserialize, utoipa::ToSchema)]
+pub struct ParseShoppingTextReq {
+    pub text: String,
+}
+
+#[derive(Debug, Serialize, Deserialize, utoipa::ToSchema)]
+pub struct ParsedShoppingItem {
+    pub name: String,
+    pub amount: String,
+}
+
+#[derive(Debug, Serialize, utoipa::ToSchema)]
+pub struct ParseShoppingTextResp {
+    pub items: Vec<ParsedShoppingItem>,
+}

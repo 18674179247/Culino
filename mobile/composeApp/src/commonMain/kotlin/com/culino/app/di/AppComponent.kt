@@ -65,7 +65,7 @@ class AppComponent(dataStorePath: String) {
     fun registerViewModel() = RegisterViewModel(registerUseCase)
     fun profileViewModel() = ProfileViewModel(getProfileUseCase, imageUploadApi, socialRepository, recipeRepository)
 
-    fun recipeListViewModel() = RecipeListViewModel(searchRecipesUseCase, getRandomRecipesUseCase)
+    fun recipeListViewModel(authorId: String? = null) = RecipeListViewModel(searchRecipesUseCase, getRandomRecipesUseCase, authorId)
     fun recipeDetailViewModel() = RecipeDetailViewModel(getRecipeDetailUseCase, recipeRepository, socialRepository)
     fun recipeCreateViewModel() = RecipeCreateViewModel(recipeRepository, imageUploadApi, aiApiService)
 

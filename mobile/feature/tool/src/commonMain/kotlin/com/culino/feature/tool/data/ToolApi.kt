@@ -14,6 +14,10 @@ interface ToolApi {
     suspend fun addShoppingItem(listId: String, request: CreateShoppingItemRequest): ApiResponse<ShoppingListItem>
     suspend fun updateShoppingItem(listId: String, itemId: Int, request: UpdateShoppingItemRequest): ApiResponse<ShoppingListItem>
     suspend fun deleteShoppingItem(listId: String, itemId: Int): ApiResponse<Boolean>
+    suspend fun batchAddItems(listId: String, request: BatchAddItemsRequest): ApiResponse<List<ShoppingListItem>>
+
+    // AI
+    suspend fun parseShoppingText(request: ParseShoppingTextRequest): ApiResponse<ParseShoppingTextResponse>
 
     // Meal Plans
     suspend fun getMealPlans(startDate: String? = null, endDate: String? = null): ApiResponse<List<MealPlan>>
@@ -63,6 +67,17 @@ class ToolApiImpl(private val client: ApiClient) : ToolApi {
 
     override suspend fun deleteShoppingItem(listId: String, itemId: Int): ApiResponse<Boolean> {
         return client.delete("tool/shopping-lists/$listId/items/$itemId")
+    }
+
+    override suspend fun batchAddItems(
+        listId: String,
+        request: BatchAddItemsRequest
+    ): ApiResponse<List<ShoppingListItem>> {
+        return client.post("tool/shopping-lists/$listId/items/batch", request)
+    }
+
+    override suspend fun parseShoppingText(request: ParseShoppingTextRequest): ApiResponse<ParseShoppingTextResponse> {
+        return client.post("ai/shopping-list/parse", request)
     }
 
     // endregion

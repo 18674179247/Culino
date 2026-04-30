@@ -15,7 +15,8 @@ import kotlinx.coroutines.launch
 
 class RecipeListViewModel(
     private val searchRecipesUseCase: SearchRecipesUseCase,
-    private val getRandomRecipesUseCase: GetRandomRecipesUseCase
+    private val getRandomRecipesUseCase: GetRandomRecipesUseCase,
+    private val authorId: String? = null
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(RecipeListUiState())
@@ -70,7 +71,7 @@ class RecipeListViewModel(
                 _uiState.update { it.copy(state = RecipeListState.Loading) }
             }
 
-            when (val result = searchRecipesUseCase(keyword.ifBlank { null }, difficulty, page)) {
+            when (val result = searchRecipesUseCase(keyword.ifBlank { null }, difficulty, authorId, page)) {
                 is AppResult.Success -> {
                     val response = result.data
                     val currentRecipes = if (page == 1) {

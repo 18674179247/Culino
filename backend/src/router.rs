@@ -67,6 +67,11 @@ fn ai_routes() -> Router<AppState> {
             "/recipe/recognize",
             axum::routing::post(culino_ai::recognize_recipe),
         )
+        // AI 购物清单解析
+        .route(
+            "/shopping-list/parse",
+            axum::routing::post(culino_ai::parse_shopping_text),
+        )
         .layer(TimeoutLayer::with_status_code(
             StatusCode::REQUEST_TIMEOUT,
             Duration::from_secs(120),

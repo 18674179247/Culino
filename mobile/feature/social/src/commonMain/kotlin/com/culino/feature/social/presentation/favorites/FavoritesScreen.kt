@@ -19,6 +19,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
+import com.culino.core.ui.component.CulinoTopBar
 import com.culino.feature.social.data.Favorite
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -30,17 +31,7 @@ fun FavoritesScreen(
     val state by viewModel.state.collectAsState()
 
     Scaffold(
-        topBar = {
-            TopAppBar(
-                title = {
-                    Text("我的收藏", style = MaterialTheme.typography.titleLarge)
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface
-                ),
-                windowInsets = WindowInsets(top = 0.dp)
-            )
-        },
+        topBar = { CulinoTopBar(title = "我的收藏") },
         containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
         when (val currentState = state) {

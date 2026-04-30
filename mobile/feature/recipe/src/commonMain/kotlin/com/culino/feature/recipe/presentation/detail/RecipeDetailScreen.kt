@@ -19,6 +19,7 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.Email
 import androidx.compose.material.icons.outlined.Star
 import androidx.compose.material.icons.outlined.Warning
@@ -38,6 +39,7 @@ import com.culino.core.ui.component.CulinoBottomSheetHost
 import com.culino.core.ui.component.rememberCulinoBottomSheetState
 import com.culino.core.ui.component.showConfirm
 import com.culino.core.ui.component.showError
+import com.culino.core.ui.component.ShimmerBox
 import com.culino.feature.recipe.data.RecipeDetail
 import com.culino.feature.social.data.RecipeComment
 import kotlinx.coroutines.delay
@@ -48,7 +50,8 @@ fun RecipeDetailScreen(
     recipeId: String,
     onBack: () -> Unit,
     viewModel: RecipeDetailViewModel,
-    currentUserId: String? = null
+    currentUserId: String? = null,
+    onEdit: ((String) -> Unit)? = null
 ) {
     val state by viewModel.state.collectAsState()
     val deleteState by viewModel.deleteState.collectAsState()
@@ -85,8 +88,30 @@ fun RecipeDetailScreen(
     Box(modifier = Modifier.fillMaxSize()) {
         when (val currentState = state) {
             is RecipeDetailState.Loading -> {
-                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+                Column(
+                    modifier = Modifier.fillMaxSize().padding(16.dp)
+                ) {
+                    ShimmerBox(modifier = Modifier.fillMaxWidth().height(240.dp), cornerRadius = 16.dp)
+                    Spacer(Modifier.height(16.dp))
+                    ShimmerBox(modifier = Modifier.fillMaxWidth(0.6f), height = 24.dp)
+                    Spacer(Modifier.height(12.dp))
+                    ShimmerBox(modifier = Modifier.fillMaxWidth(0.4f), height = 16.dp)
+                    Spacer(Modifier.height(20.dp))
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        ShimmerBox(modifier = Modifier.width(60.dp), height = 28.dp, cornerRadius = 14.dp)
+                        ShimmerBox(modifier = Modifier.width(60.dp), height = 28.dp, cornerRadius = 14.dp)
+                        ShimmerBox(modifier = Modifier.width(60.dp), height = 28.dp, cornerRadius = 14.dp)
+                    }
+                    Spacer(Modifier.height(24.dp))
+                    ShimmerBox(modifier = Modifier.fillMaxWidth(), height = 16.dp)
+                    Spacer(Modifier.height(8.dp))
+                    ShimmerBox(modifier = Modifier.fillMaxWidth(0.9f), height = 16.dp)
+                    Spacer(Modifier.height(8.dp))
+                    ShimmerBox(modifier = Modifier.fillMaxWidth(0.7f), height = 16.dp)
+                    Spacer(Modifier.height(24.dp))
+                    ShimmerBox(modifier = Modifier.fillMaxWidth(), height = 16.dp)
+                    Spacer(Modifier.height(8.dp))
+                    ShimmerBox(modifier = Modifier.fillMaxWidth(0.85f), height = 16.dp)
                 }
             }
             is RecipeDetailState.Success -> {
@@ -250,6 +275,7 @@ fun RecipeDetailScreen(
                                     )
                                 }
                             },
+                            onEdit = { onEdit?.invoke(recipeId) },
                             onDelete = {
                                 sheetState.showConfirm(
                                     title = "删除菜谱",
@@ -424,14 +450,17 @@ private fun CommentItem(comment: RecipeComment, isOwner: Boolean, onDelete: () -
 @Composable
 private fun BottomActionBar(
     isLiked: Boolean, likeCount: Long, isFavorited: Boolean, commentCount: Long,
-    isAuthor: Boolean, onLike: () -> Unit, onFavorite: () -> Unit, onComment: () -> Unit, onDelete: () -> Unit
+    isAuthor: Boolean, onLike: () -> Unit, onFavorite: () -> Unit, onComment: () -> Unit, onEdit: () -> Unit, onDelete: () -> Unit
 ) {
     Surface(tonalElevation = 3.dp, shadowElevation = 8.dp, color = MaterialTheme.colorScheme.surface) {
         Row(Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp), horizontalArrangement = Arrangement.SpaceEvenly, verticalAlignment = Alignment.CenterVertically) {
             BottomBarItem(if (isLiked) Icons.Filled.Star else Icons.Outlined.Star, if (likeCount > 0) "$likeCount" else "点赞", isLiked, onLike, Modifier.weight(1f))
             BottomBarItem(if (isFavorited) Icons.Filled.Favorite else Icons.Default.FavoriteBorder, "收藏", isFavorited, onFavorite, Modifier.weight(1f))
             BottomBarItem(Icons.Outlined.Email, if (commentCount > 0) "$commentCount" else "评论", false, onComment, Modifier.weight(1f))
-            if (isAuthor) BottomBarItem(Icons.Default.Delete, "删除", false, onDelete, Modifier.weight(1f))
+            if (isAuthor) {
+                BottomBarItem(Icons.Outlined.Edit, "编辑", false, onEdit, Modifier.weight(1f))
+                BottomBarItem(Icons.Default.Delete, "删除", false, onDelete, Modifier.weight(1f))
+            }
         }
     }
 }

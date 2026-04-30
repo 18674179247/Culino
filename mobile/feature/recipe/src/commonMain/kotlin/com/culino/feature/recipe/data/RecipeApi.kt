@@ -7,6 +7,7 @@ interface RecipeApi {
     suspend fun searchRecipes(
         keyword: String? = null,
         difficulty: String? = null,
+        authorId: String? = null,
         page: Int = 1,
         pageSize: Int = 20
     ): ApiResponse<PaginatedResponse<RecipeListItem>>
@@ -26,12 +27,14 @@ class RecipeApiImpl(private val client: ApiClient) : RecipeApi {
     override suspend fun searchRecipes(
         keyword: String?,
         difficulty: String?,
+        authorId: String?,
         page: Int,
         pageSize: Int
     ): ApiResponse<PaginatedResponse<RecipeListItem>> {
         val params = buildMap {
             keyword?.let { put("keyword", it) }
             difficulty?.let { put("difficulty", it) }
+            authorId?.let { put("author_id", it) }
             put("page", page.toString())
             put("page_size", pageSize.toString())
         }

@@ -376,6 +376,11 @@ impl RecipeRepo for PgRecipeRepo {
             param_index += 1;
         }
 
+        if params.author_id.is_some() {
+            conditions.push(format!("author_id = ${param_index}"));
+            param_index += 1;
+        }
+
         let where_clause = conditions.join(" AND ");
 
         let page = params.page.unwrap_or(1).max(1);
@@ -408,6 +413,9 @@ impl RecipeRepo for PgRecipeRepo {
         }
         if let Some(t) = params.max_cooking_time {
             query = query.bind(t);
+        }
+        if let Some(a) = params.author_id {
+            query = query.bind(a);
         }
         query = query.bind(page_size).bind(offset);
 

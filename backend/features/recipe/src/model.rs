@@ -140,6 +140,7 @@ pub struct RecipeSearchParams {
     pub max_cooking_time: Option<i32>,
     pub tag_ids: Option<String>,
     pub ingredient_ids: Option<String>,
+    pub author_id: Option<Uuid>,
     pub page: Option<i64>,
     pub page_size: Option<i64>,
 }

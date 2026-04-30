@@ -35,7 +35,8 @@ import com.culino.feature.recipe.data.RecipeListItem
 fun RecipeListScreen(
     onRecipeClick: (String) -> Unit,
     viewModel: RecipeListViewModel,
-    title: String = "首页"
+    title: String = "首页",
+    enableSharedElement: Boolean = true
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val listState = rememberLazyListState()
@@ -52,55 +53,50 @@ fun RecipeListScreen(
         topBar = {
             TopAppBar(
                 title = {
-                    AnimatedVisibility(
-                        visible = !isSearchActive,
-                        enter = fadeIn(tween(200)),
-                        exit = fadeOut(tween(200))
-                    ) {
-                        Text(
-                            title,
-                            style = MaterialTheme.typography.titleLarge
-                        )
-                    }
-                    AnimatedVisibility(
-                        visible = isSearchActive,
-                        enter = fadeIn(tween(200)),
-                        exit = fadeOut(tween(200))
-                    ) {
-                        OutlinedTextField(
-                            value = uiState.searchKeyword,
-                            onValueChange = { viewModel.search(it) },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .focusRequester(focusRequester),
-                            placeholder = {
+                    Box(modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp), contentAlignment = Alignment.CenterStart) {
+                        androidx.compose.animation.Crossfade(targetState = isSearchActive, animationSpec = tween(200)) { searching ->
+                            if (!searching) {
                                 Text(
-                                    "搜索菜谱...",
-                                    style = MaterialTheme.typography.bodyMedium
+                                    title,
+                                    style = MaterialTheme.typography.titleLarge
                                 )
-                            },
-                            singleLine = true,
-                            shape = RoundedCornerShape(20.dp),
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = MaterialTheme.colorScheme.primary,
-                                unfocusedBorderColor = MaterialTheme.colorScheme.outline,
-                                cursorColor = MaterialTheme.colorScheme.primary,
-                                focusedContainerColor = Color.Transparent,
-                                unfocusedContainerColor = Color.Transparent
-                            ),
-                            textStyle = MaterialTheme.typography.bodyMedium,
-                            trailingIcon = {
-                                if (uiState.searchKeyword.isNotEmpty()) {
-                                    IconButton(onClick = { viewModel.search("") }) {
-                                        Icon(
-                                            Icons.Default.Close,
-                                            contentDescription = "清除",
-                                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            } else {
+                                OutlinedTextField(
+                                    value = uiState.searchKeyword,
+                                    onValueChange = { viewModel.search(it) },
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .focusRequester(focusRequester),
+                                    placeholder = {
+                                        Text(
+                                            "搜索菜谱...",
+                                            style = MaterialTheme.typography.bodyMedium
                                         )
+                                    },
+                                    singleLine = true,
+                                    shape = RoundedCornerShape(20.dp),
+                                    colors = OutlinedTextFieldDefaults.colors(
+                                        focusedBorderColor = MaterialTheme.colorScheme.primary,
+                                        unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                                        cursorColor = MaterialTheme.colorScheme.primary,
+                                        focusedContainerColor = Color.Transparent,
+                                        unfocusedContainerColor = Color.Transparent
+                                    ),
+                                    textStyle = MaterialTheme.typography.bodyMedium,
+                                    trailingIcon = {
+                                        if (uiState.searchKeyword.isNotEmpty()) {
+                                            IconButton(onClick = { viewModel.search("") }) {
+                                                Icon(
+                                                    Icons.Default.Close,
+                                                    contentDescription = "清除",
+                                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                                )
+                                            }
+                                        }
                                     }
-                                }
+                                )
                             }
-                        )
+                        }
                     }
                 },
                 actions = {
@@ -159,7 +155,8 @@ fun RecipeListScreen(
                                 fadeInSpec = tween(300),
                                 fadeOutSpec = tween(300),
                                 placementSpec = tween(300)
-                            )
+                            ),
+                            enableSharedElement = enableSharedElement
                         )
                     }
 
@@ -218,10 +215,11 @@ fun RecipeListScreen(
 fun RecipeCard(
     recipe: RecipeListItem,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    enableSharedElement: Boolean = true
 ) {
-    val sharedTransitionScope = LocalSharedTransitionScope.current
-    val animatedVisibilityScope = LocalNavAnimatedVisibilityScope.current
+    val sharedTransitionScope = if (enableSharedElement) LocalSharedTransitionScope.current else null
+    val animatedVisibilityScope = if (enableSharedElement) LocalNavAnimatedVisibilityScope.current else null
 
     Card(
         modifier = modifier.fillMaxWidth().clickable(onClick = onClick),

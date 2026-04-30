@@ -7,7 +7,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.outlined.ShoppingCart
@@ -17,6 +16,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.culino.core.ui.component.CulinoBottomSheetHost
+import com.culino.core.ui.component.CulinoTopBar
 import com.culino.core.ui.component.rememberCulinoBottomSheetState
 import com.culino.feature.tool.data.ShoppingList
 
@@ -33,17 +33,7 @@ fun ShoppingListScreen(
     CulinoBottomSheetHost(sheetState)
 
     Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("购物清单", style = MaterialTheme.typography.headlineMedium) },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "返回")
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface)
-            )
-        },
+        topBar = { CulinoTopBar(title = "购物清单", onBack = onBack) },
         floatingActionButton = {
             FloatingActionButton(
                 onClick = {
@@ -164,7 +154,7 @@ private fun ShoppingListCard(
         ) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = shoppingList.title,
+                    text = shoppingList.title ?: "未命名",
                     style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.onSurface
                 )
@@ -173,9 +163,9 @@ private fun ShoppingListCard(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    StatusTag(shoppingList.status)
+                    StatusTag(shoppingList.status ?: 0)
                     Text(
-                        text = shoppingList.createdAt.toString().take(10),
+                        text = shoppingList.createdAt?.toString()?.take(10) ?: "",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
                     )
@@ -193,16 +183,16 @@ private fun ShoppingListCard(
 }
 
 @Composable
-private fun StatusTag(status: String) {
+private fun StatusTag(status: Int) {
     val color = when (status) {
-        "active" -> MaterialTheme.colorScheme.primary
-        "completed" -> MaterialTheme.colorScheme.tertiary
+        1 -> MaterialTheme.colorScheme.primary
+        2 -> MaterialTheme.colorScheme.tertiary
         else -> MaterialTheme.colorScheme.onSurfaceVariant
     }
     val label = when (status) {
-        "active" -> "进行中"
-        "completed" -> "已完成"
-        else -> status
+        1 -> "进行中"
+        2 -> "已完成"
+        else -> "未知"
     }
     Surface(
         shape = RoundedCornerShape(6.dp),
