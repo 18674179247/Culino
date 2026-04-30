@@ -139,4 +139,4 @@ Login ─── Register
 
 ## 许可证
 
-[MIT](LICENSE) © 云山苍苍
+[MIT](../LICENSE) © 云山苍苍

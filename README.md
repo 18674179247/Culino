@@ -128,4 +128,4 @@ menu-mobile/
 
 ## 许可证
 
-[MIT](menu-backend/LICENSE) © 云山苍苍
+[MIT](LICENSE) © 云山苍苍

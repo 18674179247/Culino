@@ -65,3 +65,7 @@ open http://localhost:3000/swagger-ui/
 - [架构规范](./docs/架构设计.md)
 - [AI 集成方案](./docs/AI集成方案.md)
 - [AI 完成总结](./docs/AI功能完成.md)
+
+## 许可证
+
+[MIT](../LICENSE) © 云山苍苍
