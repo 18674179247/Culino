@@ -1,0 +1,24 @@
+[package]
+name = "culino-ai"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+axum.workspace = true
+tokio.workspace = true
+sqlx.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+uuid.workspace = true
+chrono.workspace = true
+thiserror.workspace = true
+anyhow.workspace = true
+async-trait.workspace = true
+tracing.workspace = true
+validator.workspace = true
+rust_decimal.workspace = true
+culino-common.workspace = true
+utoipa.workspace = true
+
+# HTTP 客户端
+reqwest = { version = "0.12", features = ["json"] }

@@ -1,0 +1,21 @@
+[package]
+name = "culino-recipe"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+culino-common.workspace = true
+culino-ai.workspace = true
+axum.workspace = true
+tokio.workspace = true
+sqlx.workspace = true
+uuid.workspace = true
+chrono.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+async-trait.workspace = true
+tracing.workspace = true
+anyhow.workspace = true
+rust_decimal.workspace = true
+utoipa.workspace = true
+validator.workspace = true

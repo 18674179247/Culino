@@ -1,17 +1,17 @@
-# Rust (menu-backend)
-/menu-backend/target/
-/menu-backend/logs/
-/menu-backend/.env
-/menu-backend/.env.*
-!/menu-backend/.env.example
+# Rust (backend)
+/backend/target/
+/backend/logs/
+/backend/.env
+/backend/.env.*
+!/backend/.env.example
 
-# Kotlin / Gradle (menu-mobile)
-/menu-mobile/.gradle/
-/menu-mobile/build/
-/menu-mobile/**/build/
-/menu-mobile/.kotlin/
-/menu-mobile/local.properties
-!menu-mobile/gradle/wrapper/gradle-wrapper.jar
+# Kotlin / Gradle (mobile)
+/mobile/.gradle/
+/mobile/build/
+/mobile/**/build/
+/mobile/.kotlin/
+/mobile/local.properties
+!mobile/gradle/wrapper/gradle-wrapper.jar
 
 # Bazel
 bazel-*

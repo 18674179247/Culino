@@ -1,13 +1,13 @@
-# Menu — 智能菜谱管理平台
+# Culino — 智能菜谱管理平台
 
 一个全栈菜谱管理应用，包含 Rust 后端服务和 Kotlin Multiplatform 移动端，支持 AI 驱动的营养分析与个性化推荐。
 
 ## 项目结构
 
 ```
-menu/
-├── menu-backend/     # Rust 后端服务（Axum + PostgreSQL）
-└── menu-mobile/      # KMP 移动端（Compose Multiplatform，Android / iOS）
+culino/
+├── backend/      # Rust 后端服务（Axum + PostgreSQL）
+└── mobile/       # KMP 移动端（Compose Multiplatform，Android / iOS）
 ```
 
 ## 功能特性
@@ -51,7 +51,7 @@ menu/
 ### 后端
 
 ```bash
-cd menu-backend
+cd backend
 
 # 启动依赖服务（PostgreSQL、Redis、RustFS）
 docker compose up -d db redis rustfs
@@ -70,7 +70,7 @@ open http://localhost:3000/swagger-ui/
 ### 移动端
 
 ```bash
-cd menu-mobile
+cd mobile
 
 # Android
 ./gradlew :composeApp:assembleDebug
@@ -100,7 +100,7 @@ cd menu-mobile
 采用多模块 Clean Architecture：
 
 ```
-menu-mobile/
+mobile/
 ├── core/
 │   ├── common/       # 通用工具与扩展
 │   ├── model/        # 数据模型
