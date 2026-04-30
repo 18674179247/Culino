@@ -43,7 +43,7 @@ impl NutritionService {
         // 格式化食材和调料
         let ingredients = self.format_ingredients(&recipe_detail.ingredients);
         let seasonings = self.format_seasonings(&recipe_detail.seasonings);
-        let servings = recipe_detail.recipe.servings.unwrap_or(2);
+        let servings = recipe_detail.recipe.servings.unwrap_or(1);
 
         // 调用 DeepSeek API 分析
         let response = self

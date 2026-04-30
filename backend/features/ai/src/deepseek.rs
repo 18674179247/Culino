@@ -172,13 +172,18 @@ impl DeepSeekClient {
             format!(
                 r#"请根据菜名「{}」生成一份完整的菜谱。
 
+关于份数（servings）的判断规则：
+1. 优先从菜名中提取份数线索：如"单人餐"→1，"双人餐"→2，"三人份"→3，"家庭装"→4
+2. 如果菜名中没有明确的份数线索，根据食材总量和菜品类型合理推断，普通家常菜默认为 1 份
+3. 食材用量必须与份数匹配，1 份的食材量应该是单人合理食用量
+
 请以 JSON 格式返回（只返回 JSON，不要其他文字）：
 {{
   "title": "菜名",
   "description": "菜品简介（50-100字）",
   "difficulty": 难度（1-5的整数，1最简单），
   "cooking_time": 烹饪时间（分钟，整数），
-  "servings": 建议份数（整数），
+  "servings": 份数（整数，严格按照上述规则判断），
   "ingredients": [
     {{"name": "食材名", "amount": "用量（如500g、2个）"}}
   ],
@@ -202,7 +207,7 @@ impl DeepSeekClient {
   "description": "",
   "difficulty": 3,
   "cooking_time": 30,
-  "servings": 2,
+  "servings": 1,
   "ingredients": [],
   "seasonings": [],
   "steps": [],

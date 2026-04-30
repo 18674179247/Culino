@@ -21,7 +21,7 @@ pub struct FavoriteWithTitle {
     pub cover_image: Option<String>,
     pub difficulty: Option<i16>,
     pub cooking_time: Option<i32>,
-    pub servings: Option<i32>,
+    pub servings: Option<i16>,
 }
 
 #[derive(Debug, FromRow, Serialize, utoipa::ToSchema)]

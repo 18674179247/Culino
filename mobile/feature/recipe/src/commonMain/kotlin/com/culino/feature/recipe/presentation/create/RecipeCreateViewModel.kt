@@ -46,6 +46,7 @@ data class RecipeFormState(
     val description: String = "",
     val difficulty: String = "简单",
     val cookingTime: String = "",
+    val servings: String = "1",
     val coverImageUrl: String? = null,
     val recipeImages: List<String> = emptyList(),
     val isUploadingCover: Boolean = false,
@@ -93,6 +94,10 @@ class RecipeCreateViewModel(
 
     fun updateCookingTime(time: String) {
         _formState.value = _formState.value.copy(cookingTime = time)
+    }
+
+    fun updateServings(servings: String) {
+        _formState.value = _formState.value.copy(servings = servings)
     }
 
     fun uploadCoverImage(bytes: ByteArray, fileName: String, contentType: String) {
@@ -274,7 +279,7 @@ class RecipeCreateViewModel(
                 difficulty = difficultyInt,
                 cookingTime = cookingTimeInt,
                 prepTime = null,
-                servings = 2,
+                servings = form.servings.toIntOrNull() ?: 1,
                 ingredients = null,
                 seasonings = null,
                 steps = validSteps.mapIndexed { index, step ->
@@ -343,6 +348,7 @@ class RecipeCreateViewModel(
                 }
             } else form.difficulty,
             cookingTime = form.cookingTime.ifBlank { result.cookingTime?.toString() ?: "" },
+            servings = if (result.servings != null) result.servings.toString() else form.servings,
             ingredients = if (form.ingredients.size == 1 && form.ingredients[0].name.isBlank() && result.ingredients.isNotEmpty()) {
                 result.ingredients.map { IngredientInput(it.name, it.amount) }
             } else form.ingredients,
