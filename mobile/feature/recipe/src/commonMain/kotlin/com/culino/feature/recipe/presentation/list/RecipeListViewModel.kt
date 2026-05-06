@@ -3,6 +3,10 @@ package com.culino.feature.recipe.presentation.list
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.culino.core.common.AppResult
+import com.culino.feature.ingredient.data.IngredientRepository
+import com.culino.feature.ingredient.data.Tag
+import com.culino.feature.ingredient.data.Ingredient
+import com.culino.feature.ingredient.data.IngredientCategory
 import com.culino.feature.recipe.domain.GetRandomRecipesUseCase
 import com.culino.feature.recipe.domain.SearchRecipesUseCase
 import kotlinx.coroutines.Job
@@ -16,16 +20,48 @@ import kotlinx.coroutines.launch
 class RecipeListViewModel(
     private val searchRecipesUseCase: SearchRecipesUseCase,
     private val getRandomRecipesUseCase: GetRandomRecipesUseCase,
+    private val ingredientRepository: IngredientRepository,
     private val authorId: String? = null
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(RecipeListUiState())
     val uiState: StateFlow<RecipeListUiState> = _uiState.asStateFlow()
 
+    private val _availableTags = MutableStateFlow<List<Tag>>(emptyList())
+    val availableTags: StateFlow<List<Tag>> = _availableTags.asStateFlow()
+
+    private val _availableIngredients = MutableStateFlow<List<Ingredient>>(emptyList())
+    val availableIngredients: StateFlow<List<Ingredient>> = _availableIngredients.asStateFlow()
+
+    private val _availableCategories = MutableStateFlow<List<IngredientCategory>>(emptyList())
+    val availableCategories: StateFlow<List<IngredientCategory>> = _availableCategories.asStateFlow()
+
     private var searchJob: Job? = null
 
     init {
         searchRecipes(page = 1)
+        loadFilterData()
+    }
+
+    private fun loadFilterData() {
+        viewModelScope.launch {
+            when (val result = ingredientRepository.getTags()) {
+                is AppResult.Success -> _availableTags.value = result.data
+                is AppResult.Error -> {}
+            }
+        }
+        viewModelScope.launch {
+            when (val result = ingredientRepository.getIngredients()) {
+                is AppResult.Success -> _availableIngredients.value = result.data
+                is AppResult.Error -> {}
+            }
+        }
+        viewModelScope.launch {
+            when (val result = ingredientRepository.getCategories()) {
+                is AppResult.Success -> _availableCategories.value = result.data
+                is AppResult.Error -> {}
+            }
+        }
     }
 
     fun search(keyword: String) {
@@ -71,7 +107,16 @@ class RecipeListViewModel(
                 _uiState.update { it.copy(state = RecipeListState.Loading) }
             }
 
-            when (val result = searchRecipesUseCase(keyword.ifBlank { null }, difficulty, authorId, page)) {
+            val state = _uiState.value
+            when (val result = searchRecipesUseCase(
+                keyword.ifBlank { null },
+                difficulty,
+                authorId,
+                page,
+                maxCookingTime = state.maxCookingTime,
+                tagIds = state.selectedTagIds.ifEmpty { null },
+                ingredientIds = state.selectedIngredientIds.ifEmpty { null }
+            )) {
                 is AppResult.Success -> {
                     val response = result.data
                     val currentRecipes = if (page == 1) {
@@ -99,6 +144,35 @@ class RecipeListViewModel(
                 }
             }
         }
+    }
+
+    fun updateFilters(
+        tagIds: List<Int> = _uiState.value.selectedTagIds,
+        maxCookingTime: Int? = _uiState.value.maxCookingTime,
+        ingredientIds: List<Int> = _uiState.value.selectedIngredientIds
+    ) {
+        val hasFilter = tagIds.isNotEmpty() || maxCookingTime != null || ingredientIds.isNotEmpty()
+        _uiState.update {
+            it.copy(
+                selectedTagIds = tagIds,
+                maxCookingTime = maxCookingTime,
+                selectedIngredientIds = ingredientIds,
+                isFilterActive = hasFilter
+            )
+        }
+        searchRecipes(keyword = _uiState.value.searchKeyword, difficulty = _uiState.value.selectedDifficulty, page = 1)
+    }
+
+    fun clearFilters() {
+        _uiState.update {
+            it.copy(
+                selectedTagIds = emptyList(),
+                maxCookingTime = null,
+                selectedIngredientIds = emptyList(),
+                isFilterActive = false
+            )
+        }
+        searchRecipes(keyword = _uiState.value.searchKeyword, difficulty = _uiState.value.selectedDifficulty, page = 1)
     }
 
     fun loadMore() {

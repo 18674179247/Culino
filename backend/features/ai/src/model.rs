@@ -173,6 +173,7 @@ pub struct RecognizeRecipeResp {
     pub ingredients: Vec<RecognizedIngredient>,
     pub seasonings: Vec<RecognizedIngredient>,
     pub steps: Vec<String>,
+    pub tags: Vec<String>,
     pub confidence: f64,
 }
 

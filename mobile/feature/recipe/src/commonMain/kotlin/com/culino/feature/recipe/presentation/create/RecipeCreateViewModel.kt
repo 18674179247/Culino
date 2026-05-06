@@ -7,7 +7,13 @@ import com.culino.core.model.RecognizeRecipeResponse
 import com.culino.core.network.AiApiService
 import com.culino.core.network.ApiResponse
 import com.culino.core.network.ImageUploadApi
+import com.culino.feature.ingredient.data.Ingredient
+import com.culino.feature.ingredient.data.IngredientCategory
+import com.culino.feature.ingredient.data.IngredientRepository
+import com.culino.feature.ingredient.data.Seasoning
+import com.culino.feature.recipe.data.CreateRecipeIngredient
 import com.culino.feature.recipe.data.CreateRecipeRequest
+import com.culino.feature.recipe.data.CreateRecipeSeasoning
 import com.culino.feature.recipe.data.CreateRecipeStep
 import com.culino.feature.recipe.data.RecipeRepository
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -32,7 +38,14 @@ sealed class AiRecognitionState {
 
 data class IngredientInput(
     val name: String = "",
-    val amount: String = ""
+    val amount: String = "",
+    val ingredientId: Int? = null
+)
+
+data class SeasoningInput(
+    val name: String = "",
+    val amount: String = "",
+    val seasoningId: Int? = null
 )
 
 data class StepInput(
@@ -52,13 +65,16 @@ data class RecipeFormState(
     val isUploadingCover: Boolean = false,
     val isUploadingImages: Boolean = false,
     val ingredients: List<IngredientInput> = listOf(IngredientInput()),
-    val steps: List<StepInput> = listOf(StepInput())
+    val seasonings: List<SeasoningInput> = listOf(SeasoningInput()),
+    val steps: List<StepInput> = listOf(StepInput()),
+    val selectedTagIds: List<Int> = emptyList()
 )
 
 class RecipeCreateViewModel(
     private val repository: RecipeRepository,
     private val imageUploadApi: ImageUploadApi,
-    private val aiApiService: AiApiService
+    private val aiApiService: AiApiService,
+    private val ingredientRepository: IngredientRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<RecipeCreateUiState>(RecipeCreateUiState.Idle)
@@ -67,8 +83,51 @@ class RecipeCreateViewModel(
     private val _formState = MutableStateFlow(RecipeFormState())
     val formState: StateFlow<RecipeFormState> = _formState.asStateFlow()
 
+    private val _availableIngredients = MutableStateFlow<List<Ingredient>>(emptyList())
+    val availableIngredients: StateFlow<List<Ingredient>> = _availableIngredients.asStateFlow()
+
+    private val _availableCategories = MutableStateFlow<List<IngredientCategory>>(emptyList())
+    val availableCategories: StateFlow<List<IngredientCategory>> = _availableCategories.asStateFlow()
+
+    private val _availableSeasonings = MutableStateFlow<List<Seasoning>>(emptyList())
+    val availableSeasonings: StateFlow<List<Seasoning>> = _availableSeasonings.asStateFlow()
+
+    private val _availableTags = MutableStateFlow<List<com.culino.feature.ingredient.data.Tag>>(emptyList())
+    val availableTags: StateFlow<List<com.culino.feature.ingredient.data.Tag>> = _availableTags.asStateFlow()
+
     private var editRecipeId: String? = null
     val isEditMode: Boolean get() = editRecipeId != null
+
+    init {
+        loadIngredientData()
+    }
+
+    private fun loadIngredientData() {
+        viewModelScope.launch {
+            when (val result = ingredientRepository.getIngredients()) {
+                is AppResult.Success -> _availableIngredients.value = result.data
+                is AppResult.Error -> {}
+            }
+        }
+        viewModelScope.launch {
+            when (val result = ingredientRepository.getCategories()) {
+                is AppResult.Success -> _availableCategories.value = result.data
+                is AppResult.Error -> {}
+            }
+        }
+        viewModelScope.launch {
+            when (val result = ingredientRepository.getSeasonings()) {
+                is AppResult.Success -> _availableSeasonings.value = result.data
+                is AppResult.Error -> {}
+            }
+        }
+        viewModelScope.launch {
+            when (val result = ingredientRepository.getTags()) {
+                is AppResult.Success -> _availableTags.value = result.data
+                is AppResult.Error -> {}
+            }
+        }
+    }
 
     fun loadForEdit(recipeId: String) {
         editRecipeId = recipeId
@@ -89,8 +148,14 @@ class RecipeCreateViewModel(
                         cookingTime = detail.recipe.cookingTime?.toString() ?: "",
                         servings = detail.recipe.servings?.toString() ?: "1",
                         coverImageUrl = detail.recipe.coverImage,
-                        ingredients = detail.ingredients.map { IngredientInput(it.ingredientName, it.amount) }.ifEmpty { listOf(IngredientInput()) },
-                        steps = detail.steps.map { StepInput(it.content, it.image) }.ifEmpty { listOf(StepInput()) }
+                        ingredients = detail.ingredients.map {
+                            IngredientInput(it.ingredientName, it.amount ?: "", ingredientId = it.ingredientId)
+                        }.ifEmpty { listOf(IngredientInput()) },
+                        seasonings = detail.seasonings.map {
+                            SeasoningInput(it.seasoningName, it.amount ?: "", seasoningId = it.seasoningId)
+                        }.ifEmpty { listOf(SeasoningInput()) },
+                        steps = detail.steps.map { StepInput(it.content, it.image) }.ifEmpty { listOf(StepInput()) },
+                        selectedTagIds = detail.tags.map { it.tagId }
                     )
                 }
                 is AppResult.Error -> _errorMessage.value = result.message
@@ -210,6 +275,74 @@ class RecipeCreateViewModel(
         }
     }
 
+    fun selectIngredient(index: Int, id: Int, name: String) {
+        val current = _formState.value.ingredients.toMutableList()
+        if (index in current.indices) {
+            current[index] = current[index].copy(ingredientId = id, name = name)
+            _formState.value = _formState.value.copy(ingredients = current)
+        }
+    }
+
+    fun addSeasoning() {
+        val current = _formState.value.seasonings.toMutableList()
+        current.add(SeasoningInput())
+        _formState.value = _formState.value.copy(seasonings = current)
+    }
+
+    fun updateSeasoningName(index: Int, name: String) {
+        val current = _formState.value.seasonings.toMutableList()
+        if (index in current.indices) {
+            current[index] = current[index].copy(name = name)
+            _formState.value = _formState.value.copy(seasonings = current)
+        }
+    }
+
+    fun updateSeasoningAmount(index: Int, amount: String) {
+        val current = _formState.value.seasonings.toMutableList()
+        if (index in current.indices) {
+            current[index] = current[index].copy(amount = amount)
+            _formState.value = _formState.value.copy(seasonings = current)
+        }
+    }
+
+    fun removeSeasoning(index: Int) {
+        val current = _formState.value.seasonings.toMutableList()
+        if (current.size > 1 && index in current.indices) {
+            current.removeAt(index)
+            _formState.value = _formState.value.copy(seasonings = current)
+        }
+    }
+
+    fun selectSeasoning(index: Int, id: Int, name: String) {
+        val current = _formState.value.seasonings.toMutableList()
+        if (index in current.indices) {
+            current[index] = current[index].copy(seasoningId = id, name = name)
+            _formState.value = _formState.value.copy(seasonings = current)
+        }
+    }
+
+    fun toggleTag(tagId: Int) {
+        val current = _formState.value.selectedTagIds
+        _formState.value = _formState.value.copy(
+            selectedTagIds = if (tagId in current) current - tagId else current + tagId
+        )
+    }
+
+    fun createTag(name: String, type: String) {
+        viewModelScope.launch {
+            when (val result = ingredientRepository.createTag(name, type)) {
+                is AppResult.Success -> {
+                    val newTag = result.data
+                    _availableTags.value = _availableTags.value + newTag
+                    _formState.value = _formState.value.copy(
+                        selectedTagIds = _formState.value.selectedTagIds + newTag.id
+                    )
+                }
+                is AppResult.Error -> _errorMessage.value = result.message
+            }
+        }
+    }
+
     fun addStep() {
         val current = _formState.value.steps.toMutableList()
         current.add(StepInput())
@@ -311,8 +444,25 @@ class RecipeCreateViewModel(
                 cookingTime = cookingTimeInt,
                 prepTime = null,
                 servings = form.servings.toIntOrNull() ?: 1,
-                ingredients = null,
-                seasonings = null,
+                ingredients = validIngredients
+                    .mapIndexed { index, ing ->
+                        CreateRecipeIngredient(
+                            ingredientId = ing.ingredientId,
+                            name = if (ing.ingredientId == null) ing.name else null,
+                            amount = ing.amount.ifBlank { null },
+                            sortOrder = index + 1
+                        )
+                    }.ifEmpty { null },
+                seasonings = form.seasonings
+                    .filter { it.name.isNotBlank() }
+                    .mapIndexed { index, s ->
+                        CreateRecipeSeasoning(
+                            seasoningId = s.seasoningId,
+                            name = if (s.seasoningId == null) s.name else null,
+                            amount = s.amount.ifBlank { null },
+                            sortOrder = index + 1
+                        )
+                    }.ifEmpty { null },
                 steps = validSteps.mapIndexed { index, step ->
                     CreateRecipeStep(
                         stepNumber = index + 1,
@@ -321,7 +471,7 @@ class RecipeCreateViewModel(
                         duration = null
                     )
                 },
-                tagIds = null
+                tagIds = form.selectedTagIds.ifEmpty { null }
             )
 
             when (val result = if (editRecipeId != null) repository.updateRecipe(editRecipeId!!, request) else repository.createRecipe(request)) {
@@ -368,6 +518,13 @@ class RecipeCreateViewModel(
 
     fun applyRecognition(result: RecognizeRecipeResponse) {
         val form = _formState.value
+        val matchedTagIds = if (result.tags.isNotEmpty() && form.selectedTagIds.isEmpty()) {
+            val allTags = _availableTags.value
+            result.tags.mapNotNull { tagName ->
+                allTags.find { it.name == tagName }?.id
+            }
+        } else form.selectedTagIds
+
         _formState.value = form.copy(
             name = form.name.ifBlank { result.title },
             description = form.description.ifBlank { result.description ?: "" },
@@ -381,11 +538,23 @@ class RecipeCreateViewModel(
             cookingTime = form.cookingTime.ifBlank { result.cookingTime?.toString() ?: "" },
             servings = if (result.servings != null) result.servings.toString() else form.servings,
             ingredients = if (form.ingredients.size == 1 && form.ingredients[0].name.isBlank() && result.ingredients.isNotEmpty()) {
-                result.ingredients.map { IngredientInput(it.name, it.amount) }
+                val allIngredients = _availableIngredients.value
+                result.ingredients.map { recognized ->
+                    val matched = allIngredients.find { it.name == recognized.name }
+                    IngredientInput(recognized.name, recognized.amount, ingredientId = matched?.id)
+                }
             } else form.ingredients,
+            seasonings = if (form.seasonings.size == 1 && form.seasonings[0].name.isBlank() && result.seasonings.isNotEmpty()) {
+                val allSeasonings = _availableSeasonings.value
+                result.seasonings.map { recognized ->
+                    val matched = allSeasonings.find { it.name == recognized.name }
+                    SeasoningInput(recognized.name, recognized.amount, seasoningId = matched?.id)
+                }
+            } else form.seasonings,
             steps = if (form.steps.size == 1 && form.steps[0].description.isBlank() && result.steps.isNotEmpty()) {
                 result.steps.map { StepInput(description = it) }
-            } else form.steps
+            } else form.steps,
+            selectedTagIds = matchedTagIds
         )
         _aiRecognitionState.value = AiRecognitionState.Idle
     }

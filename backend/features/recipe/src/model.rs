@@ -28,8 +28,8 @@ pub struct RecipeIngredient {
     pub id: i32,
     pub recipe_id: Option<Uuid>,
     pub ingredient_id: Option<i32>,
-    #[schema(value_type = Option<f64>)]
-    pub amount: Option<rust_decimal::Decimal>,
+    pub ingredient_name: String,
+    pub amount: Option<String>,
     pub unit: Option<String>,
     pub note: Option<String>,
     pub sort_order: Option<i32>,
@@ -40,8 +40,8 @@ pub struct RecipeSeasoning {
     pub id: i32,
     pub recipe_id: Option<Uuid>,
     pub seasoning_id: Option<i32>,
-    #[schema(value_type = Option<f64>)]
-    pub amount: Option<rust_decimal::Decimal>,
+    pub seasoning_name: String,
+    pub amount: Option<String>,
     pub unit: Option<String>,
     pub sort_order: Option<i32>,
 }
@@ -60,6 +60,7 @@ pub struct RecipeStep {
 pub struct RecipeTag {
     pub recipe_id: Uuid,
     pub tag_id: i32,
+    pub tag_name: String,
 }
 
 // ---- DTOs ----
@@ -110,8 +111,9 @@ pub struct UpdateRecipeReq {
 
 #[derive(Debug, Deserialize, utoipa::ToSchema)]
 pub struct RecipeIngredientInput {
-    pub ingredient_id: i32,
-    pub amount: Option<f64>,
+    pub ingredient_id: Option<i32>,
+    pub name: Option<String>,
+    pub amount: Option<String>,
     pub unit: Option<String>,
     pub note: Option<String>,
     pub sort_order: Option<i32>,
@@ -119,8 +121,9 @@ pub struct RecipeIngredientInput {
 
 #[derive(Debug, Deserialize, utoipa::ToSchema)]
 pub struct RecipeSeasoningInput {
-    pub seasoning_id: i32,
-    pub amount: Option<f64>,
+    pub seasoning_id: Option<i32>,
+    pub name: Option<String>,
+    pub amount: Option<String>,
     pub unit: Option<String>,
     pub sort_order: Option<i32>,
 }

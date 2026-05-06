@@ -9,7 +9,10 @@ interface RecipeRepository {
         difficulty: String? = null,
         authorId: String? = null,
         page: Int = 1,
-        pageSize: Int = 20
+        pageSize: Int = 20,
+        maxCookingTime: Int? = null,
+        tagIds: List<Int>? = null,
+        ingredientIds: List<Int>? = null
     ): AppResult<PaginatedResponse<RecipeListItem>>
 
     suspend fun getRecipeDetail(id: String): AppResult<RecipeDetail>
@@ -29,9 +32,12 @@ class RecipeRepositoryImpl(private val api: RecipeApi) : RecipeRepository {
         difficulty: String?,
         authorId: String?,
         page: Int,
-        pageSize: Int
+        pageSize: Int,
+        maxCookingTime: Int?,
+        tagIds: List<Int>?,
+        ingredientIds: List<Int>?
     ): AppResult<PaginatedResponse<RecipeListItem>> = try {
-        when (val response = api.searchRecipes(keyword, difficulty, authorId, page, pageSize)) {
+        when (val response = api.searchRecipes(keyword, difficulty, authorId, page, pageSize, maxCookingTime, tagIds, ingredientIds)) {
             is ApiResponse.Success -> AppResult.Success(response.data)
             is ApiResponse.Error -> AppResult.Error(response.message)
         }

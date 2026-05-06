@@ -9,7 +9,10 @@ interface RecipeApi {
         difficulty: String? = null,
         authorId: String? = null,
         page: Int = 1,
-        pageSize: Int = 20
+        pageSize: Int = 20,
+        maxCookingTime: Int? = null,
+        tagIds: List<Int>? = null,
+        ingredientIds: List<Int>? = null
     ): ApiResponse<PaginatedResponse<RecipeListItem>>
 
     suspend fun getRecipeDetail(id: String): ApiResponse<RecipeDetail>
@@ -29,7 +32,10 @@ class RecipeApiImpl(private val client: ApiClient) : RecipeApi {
         difficulty: String?,
         authorId: String?,
         page: Int,
-        pageSize: Int
+        pageSize: Int,
+        maxCookingTime: Int?,
+        tagIds: List<Int>?,
+        ingredientIds: List<Int>?
     ): ApiResponse<PaginatedResponse<RecipeListItem>> {
         val params = buildMap {
             keyword?.let { put("keyword", it) }
@@ -37,6 +43,9 @@ class RecipeApiImpl(private val client: ApiClient) : RecipeApi {
             authorId?.let { put("author_id", it) }
             put("page", page.toString())
             put("page_size", pageSize.toString())
+            maxCookingTime?.let { put("max_cooking_time", it.toString()) }
+            tagIds?.takeIf { it.isNotEmpty() }?.let { put("tag_ids", it.joinToString(",")) }
+            ingredientIds?.takeIf { it.isNotEmpty() }?.let { put("ingredient_ids", it.joinToString(",")) }
         }
         return client.get("recipe/search", params)
     }

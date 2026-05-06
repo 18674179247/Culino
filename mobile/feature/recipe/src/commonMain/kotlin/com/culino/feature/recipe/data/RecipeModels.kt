@@ -55,19 +55,21 @@ data class Recipe(
 @Serializable
 data class RecipeIngredient(
     val id: Int,
-    @SerialName("ingredient_id") val ingredientId: Int,
-    @SerialName("ingredient_name") val ingredientName: String,
-    val amount: String,
-    @SerialName("sort_order") val sortOrder: Int
+    @SerialName("ingredient_id") val ingredientId: Int? = null,
+    @SerialName("ingredient_name") val ingredientName: String = "",
+    val amount: String? = null,
+    val unit: String? = null,
+    @SerialName("sort_order") val sortOrder: Int? = null
 )
 
 @Serializable
 data class RecipeSeasoning(
     val id: Int,
-    @SerialName("seasoning_id") val seasoningId: Int,
-    @SerialName("seasoning_name") val seasoningName: String,
-    val amount: String,
-    @SerialName("sort_order") val sortOrder: Int
+    @SerialName("seasoning_id") val seasoningId: Int? = null,
+    @SerialName("seasoning_name") val seasoningName: String = "",
+    val amount: String? = null,
+    val unit: String? = null,
+    @SerialName("sort_order") val sortOrder: Int? = null
 )
 
 @Serializable
@@ -81,7 +83,7 @@ data class RecipeStep(
 
 @Serializable
 data class RecipeTag(
-    val id: Int,
+    @SerialName("recipe_id") val recipeId: String,
     @SerialName("tag_id") val tagId: Int,
     @SerialName("tag_name") val tagName: String
 )
@@ -122,15 +124,17 @@ data class CreateRecipeRequest(
 
 @Serializable
 data class CreateRecipeIngredient(
-    @SerialName("ingredient_id") val ingredientId: Int,
-    val amount: String,
+    @SerialName("ingredient_id") val ingredientId: Int? = null,
+    val name: String? = null,
+    val amount: String? = null,
     @SerialName("sort_order") val sortOrder: Int
 )
 
 @Serializable
 data class CreateRecipeSeasoning(
-    @SerialName("seasoning_id") val seasoningId: Int,
-    val amount: String,
+    @SerialName("seasoning_id") val seasoningId: Int? = null,
+    val name: String? = null,
+    val amount: String? = null,
     @SerialName("sort_order") val sortOrder: Int
 )
 

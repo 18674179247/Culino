@@ -85,10 +85,23 @@ impl RecipeRepo for PgRecipeRepo {
             // 批量插入菜谱食材
             if let Some(ref items) = req.ingredients {
                 for item in items {
+                    let ingredient_id = match item.ingredient_id {
+                        Some(id) => id,
+                        None => {
+                            let name = item.name.as_deref().unwrap_or("未知食材");
+                            let row = sqlx::query_scalar::<_, i32>(
+                                "INSERT INTO ingredients (name) VALUES ($1) ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name RETURNING id"
+                            )
+                            .bind(name)
+                            .fetch_one(&mut *tx)
+                            .await?;
+                            row
+                        }
+                    };
                     sqlx::query("INSERT INTO recipe_ingredients (recipe_id, ingredient_id, amount, unit, note, sort_order) VALUES ($1,$2,$3,$4,$5,$6)")
                         .bind(recipe_id)
-                        .bind(item.ingredient_id)
-                        .bind(item.amount)
+                        .bind(ingredient_id)
+                        .bind(&item.amount)
                         .bind(&item.unit)
                         .bind(&item.note)
                         .bind(item.sort_order)
@@ -100,10 +113,23 @@ impl RecipeRepo for PgRecipeRepo {
             // 批量插入菜谱调料
             if let Some(ref items) = req.seasonings {
                 for item in items {
+                    let seasoning_id = match item.seasoning_id {
+                        Some(id) => id,
+                        None => {
+                            let name = item.name.as_deref().unwrap_or("未知调料");
+                            let row = sqlx::query_scalar::<_, i32>(
+                                "INSERT INTO seasonings (name) VALUES ($1) ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name RETURNING id"
+                            )
+                            .bind(name)
+                            .fetch_one(&mut *tx)
+                            .await?;
+                            row
+                        }
+                    };
                     sqlx::query("INSERT INTO recipe_seasonings (recipe_id, seasoning_id, amount, unit, sort_order) VALUES ($1,$2,$3,$4,$5)")
                         .bind(recipe_id)
-                        .bind(item.seasoning_id)
-                        .bind(item.amount)
+                        .bind(seasoning_id)
+                        .bind(&item.amount)
                         .bind(&item.unit)
                         .bind(item.sort_order)
                         .execute(&mut *tx)
@@ -157,14 +183,14 @@ impl RecipeRepo for PgRecipeRepo {
         };
 
         let ingredients = sqlx::query_as::<_, RecipeIngredient>(
-            "SELECT * FROM recipe_ingredients WHERE recipe_id = $1 ORDER BY sort_order",
+            "SELECT ri.id, ri.recipe_id, ri.ingredient_id, i.name as ingredient_name, ri.amount, ri.unit, ri.note, ri.sort_order FROM recipe_ingredients ri JOIN ingredients i ON i.id = ri.ingredient_id WHERE ri.recipe_id = $1 ORDER BY ri.sort_order",
         )
         .bind(id)
         .fetch_all(&self.pool)
         .await?;
 
         let seasonings = sqlx::query_as::<_, RecipeSeasoning>(
-            "SELECT * FROM recipe_seasonings WHERE recipe_id = $1 ORDER BY sort_order",
+            "SELECT rs.id, rs.recipe_id, rs.seasoning_id, s.name as seasoning_name, rs.amount, rs.unit, rs.sort_order FROM recipe_seasonings rs JOIN seasonings s ON s.id = rs.seasoning_id WHERE rs.recipe_id = $1 ORDER BY rs.sort_order",
         )
         .bind(id)
         .fetch_all(&self.pool)
@@ -177,7 +203,7 @@ impl RecipeRepo for PgRecipeRepo {
         .fetch_all(&self.pool)
         .await?;
 
-        let tags = sqlx::query_as::<_, RecipeTag>("SELECT * FROM recipe_tags WHERE recipe_id = $1")
+        let tags = sqlx::query_as::<_, RecipeTag>("SELECT rt.recipe_id, rt.tag_id, t.name as tag_name FROM recipe_tags rt JOIN tags t ON t.id = rt.tag_id WHERE rt.recipe_id = $1")
             .bind(id)
             .fetch_all(&self.pool)
             .await?;
@@ -230,10 +256,22 @@ impl RecipeRepo for PgRecipeRepo {
                     .execute(&mut *tx)
                     .await?;
                 for item in items {
+                    let ingredient_id = match item.ingredient_id {
+                        Some(id) => id,
+                        None => {
+                            let name = item.name.as_deref().unwrap_or("未知食材");
+                            sqlx::query_scalar::<_, i32>(
+                                "INSERT INTO ingredients (name) VALUES ($1) ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name RETURNING id"
+                            )
+                            .bind(name)
+                            .fetch_one(&mut *tx)
+                            .await?
+                        }
+                    };
                     sqlx::query("INSERT INTO recipe_ingredients (recipe_id, ingredient_id, amount, unit, note, sort_order) VALUES ($1,$2,$3,$4,$5,$6)")
                         .bind(recipe_id)
-                        .bind(item.ingredient_id)
-                        .bind(item.amount)
+                        .bind(ingredient_id)
+                        .bind(&item.amount)
                         .bind(&item.unit)
                         .bind(&item.note)
                         .bind(item.sort_order)
@@ -249,10 +287,22 @@ impl RecipeRepo for PgRecipeRepo {
                     .execute(&mut *tx)
                     .await?;
                 for item in items {
+                    let seasoning_id = match item.seasoning_id {
+                        Some(id) => id,
+                        None => {
+                            let name = item.name.as_deref().unwrap_or("未知调料");
+                            sqlx::query_scalar::<_, i32>(
+                                "INSERT INTO seasonings (name) VALUES ($1) ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name RETURNING id"
+                            )
+                            .bind(name)
+                            .fetch_one(&mut *tx)
+                            .await?
+                        }
+                    };
                     sqlx::query("INSERT INTO recipe_seasonings (recipe_id, seasoning_id, amount, unit, sort_order) VALUES ($1,$2,$3,$4,$5)")
                         .bind(recipe_id)
-                        .bind(item.seasoning_id)
-                        .bind(item.amount)
+                        .bind(seasoning_id)
+                        .bind(&item.amount)
                         .bind(&item.unit)
                         .bind(item.sort_order)
                         .execute(&mut *tx)

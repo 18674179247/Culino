@@ -16,6 +16,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.outlined.DateRange
 import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.FavoriteBorder
@@ -52,6 +53,7 @@ import com.culino.core.ui.component.LocalSharedTransitionScope
 import com.culino.feature.user.presentation.profile.ProfileIntent
 import com.culino.feature.recipe.presentation.create.RecipeCreateScreen
 import com.culino.feature.recipe.presentation.detail.RecipeDetailScreen
+import com.culino.feature.recipe.presentation.fridge.FridgeSearchScreen
 import com.culino.feature.recipe.presentation.list.RecipeListScreen
 import com.culino.feature.social.presentation.favorites.FavoritesScreen
 import com.culino.feature.user.presentation.login.LoginScreen
@@ -73,6 +75,7 @@ object Routes {
     const val SHOPPING_LISTS = "shopping_lists"
     const val SHOPPING_LIST_DETAIL = "shopping_list_detail/{listId}"
     const val MEAL_PLANS = "meal_plans"
+    const val FRIDGE_SEARCH = "fridge_search"
 
     fun recipeDetail(recipeId: String) = "recipe_detail/$recipeId"
     fun recipeEdit(recipeId: String) = "recipe_edit/$recipeId"
@@ -515,6 +518,23 @@ fun MainScreen(
                     onBack = { navController.popBackStack() }
                 )
             }
+
+            composable(
+                Routes.FRIDGE_SEARCH,
+                enterTransition = { slideInFromRight },
+                exitTransition = { slideOutToLeft },
+                popEnterTransition = { slideInFromLeft },
+                popExitTransition = { slideOutToRight }
+            ) {
+                val viewModel = remember { appComponent.fridgeSearchViewModel() }
+                FridgeSearchScreen(
+                    viewModel = viewModel,
+                    onBack = { navController.popBackStack() },
+                    onRecipeClick = { recipeId ->
+                        navController.navigate(Routes.recipeDetail(recipeId))
+                    }
+                )
+            }
         }
             }
         }
@@ -539,6 +559,7 @@ fun MainScreen(
                 Triple(Icons.Outlined.ShoppingCart, "购物清单", Routes.SHOPPING_LISTS),
                 Triple(Icons.Outlined.Star, "记录烹饪", Routes.COOKING_LOGS),
                 Triple(Icons.Outlined.Edit, "创建菜谱", Routes.RECIPE_CREATE),
+                Triple(Icons.Filled.Search, "冰箱找菜", Routes.FRIDGE_SEARCH),
             )
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,

@@ -13,6 +13,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -26,8 +27,10 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
+import com.culino.core.ui.component.CulinoBottomSheetHost
 import com.culino.core.ui.component.LocalNavAnimatedVisibilityScope
 import com.culino.core.ui.component.LocalSharedTransitionScope
+import com.culino.core.ui.component.rememberCulinoBottomSheetState
 import com.culino.feature.recipe.data.RecipeListItem
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -39,9 +42,15 @@ fun RecipeListScreen(
     enableSharedElement: Boolean = true
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val tags by viewModel.availableTags.collectAsState()
+    val filterIngredients by viewModel.availableIngredients.collectAsState()
+    val filterCategories by viewModel.availableCategories.collectAsState()
     val listState = rememberLazyListState()
     var isSearchActive by remember { mutableStateOf(false) }
     val focusRequester = remember { FocusRequester() }
+    val sheetState = rememberCulinoBottomSheetState()
+
+    CulinoBottomSheetHost(sheetState)
 
     LaunchedEffect(isSearchActive) {
         if (isSearchActive) {
@@ -117,6 +126,38 @@ fun RecipeListScreen(
                                 Icons.Default.Search,
                                 contentDescription = "搜索",
                                 tint = MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+                    }
+                    BadgedBox(
+                        badge = {
+                            if (uiState.isFilterActive) {
+                                Badge(containerColor = MaterialTheme.colorScheme.primary)
+                            }
+                        }
+                    ) {
+                        IconButton(onClick = {
+                            sheetState.show { dismiss ->
+                                SearchFilterContent(
+                                    tags = tags,
+                                    ingredients = filterIngredients,
+                                    categories = filterCategories,
+                                    selectedTagIds = uiState.selectedTagIds,
+                                    maxCookingTime = uiState.maxCookingTime,
+                                    selectedIngredientIds = uiState.selectedIngredientIds,
+                                    onApply = { tagIds, maxTime, ingredientIds ->
+                                        viewModel.updateFilters(tagIds, maxTime, ingredientIds)
+                                    },
+                                    onReset = { viewModel.clearFilters() },
+                                    dismiss = dismiss
+                                )
+                            }
+                        }) {
+                            Icon(
+                                Icons.Filled.MoreVert,
+                                contentDescription = "筛选",
+                                tint = if (uiState.isFilterActive) MaterialTheme.colorScheme.primary
+                                else MaterialTheme.colorScheme.onSurface
                             )
                         }
                     }
