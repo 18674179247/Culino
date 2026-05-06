@@ -13,6 +13,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -26,6 +27,8 @@ import com.culino.core.ui.component.CulinoBottomSheetHost
 import com.culino.core.ui.component.rememberCulinoBottomSheetState
 import com.culino.core.ui.component.showError
 import com.culino.core.model.RecognizeRecipeResponse
+import com.culino.feature.ingredient.presentation.IngredientSelectorContent
+import com.culino.feature.ingredient.presentation.SeasoningSelectorContent
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -155,6 +158,13 @@ private fun RecipeForm(
     onPickRecipeImages: () -> Unit
 ) {
     val formState by viewModel.formState.collectAsState()
+    val ingredients by viewModel.availableIngredients.collectAsState()
+    val categories by viewModel.availableCategories.collectAsState()
+    val seasonings by viewModel.availableSeasonings.collectAsState()
+    val tags by viewModel.availableTags.collectAsState()
+    val sheetState = rememberCulinoBottomSheetState()
+
+    CulinoBottomSheetHost(sheetState)
 
     Column(
         modifier = Modifier
@@ -319,14 +329,117 @@ private fun RecipeForm(
             )
         }
 
+        // 标签选择
+        FormSectionCard(title = "标签") {
+            if (tags.isNotEmpty()) {
+                com.culino.core.ui.component.ChipFlowRow {
+                    tags.forEach { tag ->
+                        val selected = tag.id in formState.selectedTagIds
+                        FilterChip(
+                            selected = selected,
+                            onClick = { viewModel.toggleTag(tag.id) },
+                            label = { Text(tag.name) },
+                            colors = FilterChipDefaults.filterChipColors(
+                                selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                                selectedLabelColor = MaterialTheme.colorScheme.primary
+                            )
+                        )
+                    }
+                }
+                Spacer(Modifier.height(8.dp))
+            }
+            var showCreateTag by remember { mutableStateOf(false) }
+            var newTagName by remember { mutableStateOf("") }
+            if (showCreateTag) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    OutlinedTextField(
+                        value = newTagName,
+                        onValueChange = { newTagName = it },
+                        placeholder = { Text("标签名称") },
+                        modifier = Modifier.weight(1f),
+                        singleLine = true,
+                        shape = RoundedCornerShape(8.dp)
+                    )
+                    TextButton(onClick = {
+                        if (newTagName.isNotBlank()) {
+                            viewModel.createTag(newTagName.trim(), "custom")
+                            newTagName = ""
+                            showCreateTag = false
+                        }
+                    }) { Text("添加") }
+                    TextButton(onClick = { showCreateTag = false; newTagName = "" }) { Text("取消") }
+                }
+            } else {
+                TextButton(onClick = { showCreateTag = true }) {
+                    Icon(Icons.Default.Add, null, modifier = Modifier.size(16.dp))
+                    Spacer(Modifier.width(4.dp))
+                    Text("创建新标签")
+                }
+            }
+        }
+
         // 食材列表
         FormSectionCard(
             title = "食材列表",
             action = { IconButton(onClick = { viewModel.addIngredient() }) { Icon(Icons.Default.Add, "添加食材", tint = MaterialTheme.colorScheme.secondary) } }
         ) {
             formState.ingredients.forEachIndexed { index, ingredient ->
-                IngredientItem(ingredient, { viewModel.updateIngredientName(index, it) }, { viewModel.updateIngredientAmount(index, it) }, { viewModel.removeIngredient(index) })
+                IngredientItem(
+                    ingredient = ingredient,
+                    onNameChange = { viewModel.updateIngredientName(index, it) },
+                    onAmountChange = { viewModel.updateIngredientAmount(index, it) },
+                    onDelete = { viewModel.removeIngredient(index) },
+                    onSelect = {
+                        sheetState.show { dismiss ->
+                            IngredientSelectorContent(
+                                ingredients = ingredients,
+                                categories = categories,
+                                onSelect = { selected ->
+                                    viewModel.selectIngredient(index, selected.id, selected.name)
+                                },
+                                onCustom = { name ->
+                                    viewModel.updateIngredientName(index, name)
+                                },
+                                dismiss = dismiss
+                            )
+                        }
+                    }
+                )
                 if (index < formState.ingredients.lastIndex) Spacer(Modifier.height(8.dp))
+            }
+        }
+
+        // 调料列表
+        FormSectionCard(
+            title = "调料列表",
+            action = { IconButton(onClick = { viewModel.addSeasoning() }) { Icon(Icons.Default.Add, "添加调料", tint = MaterialTheme.colorScheme.secondary) } }
+        ) {
+            formState.seasonings.forEachIndexed { index, seasoning ->
+                SeasoningItem(
+                    seasoning = seasoning,
+                    onNameChange = { viewModel.updateSeasoningName(index, it) },
+                    onAmountChange = { viewModel.updateSeasoningAmount(index, it) },
+                    onDelete = { viewModel.removeSeasoning(index) },
+                    onSelect = {
+                        sheetState.show { dismiss ->
+                            SeasoningSelectorContent(
+                                seasonings = seasonings,
+                                onSelect = { selected ->
+                                    viewModel.selectSeasoning(index, selected.id, selected.name)
+                                },
+                                onCustom = { name ->
+                                    viewModel.updateSeasoningName(index, name)
+                                },
+                                dismiss = dismiss
+                            )
+                        }
+                    }
+                )
+                if (index < formState.seasonings.lastIndex) Spacer(Modifier.height(8.dp))
             }
         }
 
@@ -374,11 +487,58 @@ private fun FormSectionCard(
 }
 
 @Composable
-private fun IngredientItem(ingredient: IngredientInput, onNameChange: (String) -> Unit, onAmountChange: (String) -> Unit, onDelete: () -> Unit) {
+private fun IngredientItem(
+    ingredient: IngredientInput,
+    onNameChange: (String) -> Unit,
+    onAmountChange: (String) -> Unit,
+    onDelete: () -> Unit,
+    onSelect: () -> Unit
+) {
     Surface(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(8.dp), color = MaterialTheme.colorScheme.surfaceVariant) {
         Row(modifier = Modifier.padding(8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-            OutlinedTextField(value = ingredient.name, onValueChange = onNameChange, label = { Text("名称") }, modifier = Modifier.weight(1f), singleLine = true, shape = RoundedCornerShape(8.dp))
+            OutlinedTextField(
+                value = ingredient.name,
+                onValueChange = onNameChange,
+                label = { Text("名称") },
+                modifier = Modifier.weight(1f),
+                singleLine = true,
+                shape = RoundedCornerShape(8.dp),
+                trailingIcon = {
+                    IconButton(onClick = onSelect, modifier = Modifier.size(24.dp)) {
+                        Icon(Icons.Default.Search, "选择", modifier = Modifier.size(18.dp))
+                    }
+                }
+            )
             OutlinedTextField(value = ingredient.amount, onValueChange = onAmountChange, label = { Text("用量") }, modifier = Modifier.weight(1f), singleLine = true, shape = RoundedCornerShape(8.dp))
+            IconButton(onClick = onDelete) { Icon(Icons.Default.Delete, "删除", tint = MaterialTheme.colorScheme.error.copy(alpha = 0.7f)) }
+        }
+    }
+}
+
+@Composable
+private fun SeasoningItem(
+    seasoning: SeasoningInput,
+    onNameChange: (String) -> Unit,
+    onAmountChange: (String) -> Unit,
+    onDelete: () -> Unit,
+    onSelect: () -> Unit
+) {
+    Surface(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(8.dp), color = MaterialTheme.colorScheme.surfaceVariant) {
+        Row(modifier = Modifier.padding(8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+            OutlinedTextField(
+                value = seasoning.name,
+                onValueChange = onNameChange,
+                label = { Text("名称") },
+                modifier = Modifier.weight(1f),
+                singleLine = true,
+                shape = RoundedCornerShape(8.dp),
+                trailingIcon = {
+                    IconButton(onClick = onSelect, modifier = Modifier.size(24.dp)) {
+                        Icon(Icons.Default.Search, "选择", modifier = Modifier.size(18.dp))
+                    }
+                }
+            )
+            OutlinedTextField(value = seasoning.amount, onValueChange = onAmountChange, label = { Text("用量") }, modifier = Modifier.weight(1f), singleLine = true, shape = RoundedCornerShape(8.dp))
             IconButton(onClick = onDelete) { Icon(Icons.Default.Delete, "删除", tint = MaterialTheme.colorScheme.error.copy(alpha = 0.7f)) }
         }
     }

@@ -118,8 +118,8 @@ impl NutritionService {
         ingredients
             .iter()
             .map(|i| {
-                if let Some(amount) = i.amount {
-                    format!("{} {}克", i.name, amount)
+                if let Some(ref amount) = i.amount {
+                    format!("{} {}", i.name, amount)
                 } else {
                     format!("{} 适量", i.name)
                 }
@@ -133,8 +133,8 @@ impl NutritionService {
         seasonings
             .iter()
             .map(|s| {
-                if let Some(amount) = s.amount {
-                    format!("{} {}克", s.name, amount)
+                if let Some(ref amount) = s.amount {
+                    format!("{} {}", s.name, amount)
                 } else {
                     format!("{} 适量", s.name)
                 }
@@ -213,7 +213,7 @@ struct RecipeRow {
 #[allow(dead_code)]
 struct IngredientRow {
     name: String,
-    amount: Option<Decimal>,
+    amount: Option<String>,
     unit: Option<String>,
 }
 
@@ -221,7 +221,7 @@ struct IngredientRow {
 #[allow(dead_code)]
 struct SeasoningRow {
     name: String,
-    amount: Option<Decimal>,
+    amount: Option<String>,
     unit: Option<String>,
 }
 

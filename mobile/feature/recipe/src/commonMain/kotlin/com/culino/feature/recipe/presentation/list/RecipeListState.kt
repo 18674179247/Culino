@@ -16,5 +16,9 @@ data class RecipeListUiState(
     val state: RecipeListState = RecipeListState.Loading,
     val searchKeyword: String = "",
     val selectedDifficulty: String? = null,
-    val isRefreshing: Boolean = false
+    val isRefreshing: Boolean = false,
+    val selectedTagIds: List<Int> = emptyList(),
+    val maxCookingTime: Int? = null,
+    val selectedIngredientIds: List<Int> = emptyList(),
+    val isFilterActive: Boolean = false
 )

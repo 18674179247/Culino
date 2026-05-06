@@ -18,6 +18,7 @@ kotlin {
             implementation(projects.core.network)
             implementation(projects.core.ui)
             implementation(projects.feature.social)
+            implementation(projects.feature.ingredient)
 
             implementation(compose.runtime)
             implementation(compose.foundation)

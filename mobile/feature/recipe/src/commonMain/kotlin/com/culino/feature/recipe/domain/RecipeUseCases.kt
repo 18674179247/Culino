@@ -9,8 +9,11 @@ class SearchRecipesUseCase(private val repository: RecipeRepository) {
         keyword: String? = null,
         difficulty: String? = null,
         authorId: String? = null,
-        page: Int = 1
-    ) = repository.searchRecipes(keyword, difficulty, authorId, page)
+        page: Int = 1,
+        maxCookingTime: Int? = null,
+        tagIds: List<Int>? = null,
+        ingredientIds: List<Int>? = null
+    ) = repository.searchRecipes(keyword, difficulty, authorId, page, maxCookingTime = maxCookingTime, tagIds = tagIds, ingredientIds = ingredientIds)
 }
 
 class GetRecipeDetailUseCase(private val repository: RecipeRepository) {

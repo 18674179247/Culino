@@ -77,5 +77,6 @@ data class RecognizeRecipeResponse(
     val ingredients: List<RecognizedIngredient> = emptyList(),
     val seasonings: List<RecognizedIngredient> = emptyList(),
     val steps: List<String> = emptyList(),
+    val tags: List<String> = emptyList(),
     val confidence: Double = 0.0
 )

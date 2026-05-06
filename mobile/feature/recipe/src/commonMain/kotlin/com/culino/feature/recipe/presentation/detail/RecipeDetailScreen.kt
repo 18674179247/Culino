@@ -177,6 +177,26 @@ fun RecipeDetailScreen(
                             }
                         }
 
+                        if (detail.tags.isNotEmpty()) {
+                            item {
+                                AnimatedVisibility(
+                                    visible = contentVisible,
+                                    enter = fadeIn(tween(300, delayMillis = 200)) + slideInVertically(tween(300, delayMillis = 200)) { 30 }
+                                ) {
+                                    SectionCard(title = "标签", modifier = Modifier.padding(horizontal = 16.dp)) {
+                                        com.culino.core.ui.component.ChipFlowRow {
+                                            detail.tags.forEach { tag ->
+                                                SuggestionChip(
+                                                    onClick = {},
+                                                    label = { Text(tag.tagName) }
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
                         if (detail.ingredients.isNotEmpty()) {
                             item {
                                 AnimatedVisibility(
@@ -187,7 +207,7 @@ fun RecipeDetailScreen(
                                         detail.ingredients.forEach { ing ->
                                             Row(Modifier.fillMaxWidth().padding(vertical = 6.dp), horizontalArrangement = Arrangement.SpaceBetween) {
                                                 Text(ing.ingredientName, style = MaterialTheme.typography.bodyMedium)
-                                                Text(ing.amount, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Medium)
+                                                Text(ing.amount ?: "", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Medium)
                                             }
                                         }
                                     }
@@ -205,7 +225,7 @@ fun RecipeDetailScreen(
                                         detail.seasonings.forEach { s ->
                                             Row(Modifier.fillMaxWidth().padding(vertical = 6.dp), horizontalArrangement = Arrangement.SpaceBetween) {
                                                 Text(s.seasoningName, style = MaterialTheme.typography.bodyMedium)
-                                                Text(s.amount, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Medium)
+                                                Text(s.amount ?: "", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Medium)
                                             }
                                         }
                                     }

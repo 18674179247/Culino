@@ -80,6 +80,14 @@ impl RecognitionService {
                         .collect()
                 })
                 .unwrap_or_default(),
+            tags: parsed["tags"]
+                .as_array()
+                .map(|arr| {
+                    arr.iter()
+                        .filter_map(|v| v.as_str().map(String::from))
+                        .collect()
+                })
+                .unwrap_or_default(),
             confidence: parsed["confidence"].as_f64().unwrap_or(0.0),
         })
     }

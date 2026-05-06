@@ -28,6 +28,7 @@ kotlin {
             implementation(project(":feature:recipe"))
             implementation(project(":feature:social"))
             implementation(project(":feature:tool"))
+            implementation(project(":feature:ingredient"))
             implementation(compose.runtime)
             implementation(compose.foundation)
             implementation(compose.material3)

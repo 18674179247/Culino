@@ -18,6 +18,7 @@ import com.culino.feature.recipe.domain.*
 import com.culino.feature.recipe.presentation.list.RecipeListViewModel
 import com.culino.feature.recipe.presentation.detail.RecipeDetailViewModel
 import com.culino.feature.recipe.presentation.create.RecipeCreateViewModel
+import com.culino.feature.recipe.presentation.fridge.FridgeSearchViewModel
 import com.culino.feature.social.data.*
 import com.culino.feature.social.presentation.favorites.FavoritesViewModel
 import com.culino.feature.social.presentation.cookinglog.CookingLogViewModel
@@ -25,6 +26,9 @@ import com.culino.feature.tool.data.*
 import com.culino.feature.tool.presentation.shoppinglist.ShoppingListViewModel
 import com.culino.feature.tool.presentation.shoppinglist.ShoppingListDetailViewModel
 import com.culino.feature.tool.presentation.mealplan.MealPlanViewModel
+import com.culino.feature.ingredient.data.IngredientApi
+import com.culino.feature.ingredient.data.IngredientApiImpl
+import com.culino.feature.ingredient.data.IngredientRepository
 
 class AppComponent(dataStorePath: String) {
 
@@ -61,17 +65,22 @@ class AppComponent(dataStorePath: String) {
     private val toolApi: ToolApi by lazy { ToolApiImpl(apiClient) }
     private val toolRepository: ToolRepository by lazy { ToolRepositoryImpl(toolApi) }
 
+    // Ingredient feature
+    private val ingredientApi: IngredientApi by lazy { IngredientApiImpl(apiClient) }
+    val ingredientRepository by lazy { IngredientRepository(ingredientApi) }
+
     fun loginViewModel() = LoginViewModel(loginUseCase)
     fun registerViewModel() = RegisterViewModel(registerUseCase)
     fun profileViewModel() = ProfileViewModel(getProfileUseCase, imageUploadApi, socialRepository, recipeRepository)
 
-    fun recipeListViewModel(authorId: String? = null) = RecipeListViewModel(searchRecipesUseCase, getRandomRecipesUseCase, authorId)
+    fun recipeListViewModel(authorId: String? = null) = RecipeListViewModel(searchRecipesUseCase, getRandomRecipesUseCase, ingredientRepository, authorId)
     fun recipeDetailViewModel() = RecipeDetailViewModel(getRecipeDetailUseCase, recipeRepository, socialRepository)
-    fun recipeCreateViewModel() = RecipeCreateViewModel(recipeRepository, imageUploadApi, aiApiService)
+    fun recipeCreateViewModel() = RecipeCreateViewModel(recipeRepository, imageUploadApi, aiApiService, ingredientRepository)
 
     fun favoritesViewModel() = FavoritesViewModel(socialRepository)
     fun cookingLogViewModel() = CookingLogViewModel(socialRepository)
     fun shoppingListViewModel() = ShoppingListViewModel(toolRepository)
     fun shoppingListDetailViewModel() = ShoppingListDetailViewModel(toolRepository)
     fun mealPlanViewModel() = MealPlanViewModel(toolRepository)
+    fun fridgeSearchViewModel() = FridgeSearchViewModel(ingredientRepository, searchRecipesUseCase)
 }
