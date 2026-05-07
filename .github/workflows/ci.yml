@@ -2,17 +2,24 @@ name: CI
 
 on:
   push:
-    branches: [main, master]
+    branches: [main]
+    paths:
+      - 'backend/**'
   pull_request:
-    branches: [main, master]
+    branches: [main]
+    paths:
+      - 'backend/**'
 
 env:
   CARGO_TERM_COLOR: always
   DATABASE_URL: postgres://culino:culino_password@localhost:5432/culino_db
 
 jobs:
-  check:
+  backend-check:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
 
     services:
       postgres:
@@ -37,6 +44,8 @@ jobs:
           components: clippy, rustfmt
 
       - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: backend
 
       - name: Check formatting
         run: cargo fmt --all -- --check
