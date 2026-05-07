@@ -1,5 +1,5 @@
-use anyhow::{Context, Result};
 use crate::model::RecipeComment;
+use anyhow::{Context, Result};
 use sqlx::PgPool;
 use uuid::Uuid;
 
@@ -69,13 +69,12 @@ impl CommentRepo {
     }
 
     pub async fn delete(pool: &PgPool, comment_id: Uuid, user_id: Uuid) -> Result<bool> {
-        let result =
-            sqlx::query("DELETE FROM recipe_comments WHERE id = $1 AND user_id = $2")
-                .bind(comment_id)
-                .bind(user_id)
-                .execute(pool)
-                .await
-                .context("Failed to delete comment")?;
+        let result = sqlx::query("DELETE FROM recipe_comments WHERE id = $1 AND user_id = $2")
+            .bind(comment_id)
+            .bind(user_id)
+            .execute(pool)
+            .await
+            .context("Failed to delete comment")?;
         Ok(result.rows_affected() > 0)
     }
 

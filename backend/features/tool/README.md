@@ -13,6 +13,7 @@
 | GET | `/api/v1/tool/shopping-lists/{id}` | 获取清单详情（含清单项） | 是 |
 | DELETE | `/api/v1/tool/shopping-lists/{id}` | 删除购物清单 | 是 |
 | POST | `/api/v1/tool/shopping-lists/{id}/items` | 添加清单项 | 是 |
+| POST | `/api/v1/tool/shopping-lists/{id}/items/batch` | 批量添加清单项 | 是 |
 | PUT | `/api/v1/tool/shopping-lists/{list_id}/items/{item_id}` | 更新清单项 | 是 |
 | DELETE | `/api/v1/tool/shopping-lists/{list_id}/items/{item_id}` | 删除清单项 | 是 |
 

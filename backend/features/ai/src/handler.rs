@@ -1,6 +1,6 @@
 use axum::{
-    Json,
     extract::{Path, Query, State},
+    Json,
 };
 use uuid::Uuid;
 
@@ -65,7 +65,9 @@ pub async fn get_nutrition(
         .get_nutrition(recipe_id)
         .await
         .map_err(|e| culino_common::error::AppError::Internal(e))?
-        .ok_or_else(|| culino_common::error::AppError::NotFound("Nutrition data not found".into()))?;
+        .ok_or_else(|| {
+            culino_common::error::AppError::NotFound("Nutrition data not found".into())
+        })?;
 
     ApiResponse::ok(nutrition)
 }

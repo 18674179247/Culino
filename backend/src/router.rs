@@ -2,10 +2,10 @@
 //!
 //! 挂载 Swagger UI 和所有业务模块，添加中间件层。
 
-use axum::Router;
 use axum::extract::DefaultBodyLimit;
 use axum::http::{HeaderName, Method, StatusCode};
 use axum::response::Json;
+use axum::Router;
 use culino_common::config::{AppConfig, RunMode};
 use culino_common::state::AppState;
 use serde_json::json;
@@ -61,7 +61,10 @@ fn ai_routes() -> Router<AppState> {
             axum::routing::get(culino_ai::get_preference_profile),
         )
         // 行为日志
-        .route("/behavior/log", axum::routing::post(culino_ai::log_behavior))
+        .route(
+            "/behavior/log",
+            axum::routing::post(culino_ai::log_behavior),
+        )
         // AI 菜谱识别
         .route(
             "/recipe/recognize",
@@ -125,10 +128,10 @@ pub fn build_router(state: AppState, doc: utoipa::openapi::OpenApi) -> Router {
             axum::routing::post(culino_user::handler::register),
         )
         .route("/login", axum::routing::post(culino_user::handler::login));
-        // 暂时注释掉限流
-        // .layer(GovernorLayer {
-        //     config: rate_limit_config.into(),
-        // });
+    // 暂时注释掉限流
+    // .layer(GovernorLayer {
+    //     config: rate_limit_config.into(),
+    // });
 
     // 用户其他路由（不限流）
     let user_other = Router::new()

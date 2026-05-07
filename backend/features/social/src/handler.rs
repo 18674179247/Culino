@@ -6,8 +6,8 @@ use crate::model::*;
 use crate::repo::cooking_log_repo::{CookingLogRepo, PgCookingLogRepo};
 use crate::repo::favorite_repo::{FavoriteRepo, PgFavoriteRepo};
 use axum::{
-    Json,
     extract::{Path, Query, State},
+    Json,
 };
 use culino_common::auth::AuthUser;
 use culino_common::response::{ApiResponse, ApiResult};
@@ -254,9 +254,8 @@ pub async fn delete_comment(
     auth: AuthUser,
     Path(id): Path<Uuid>,
 ) -> ApiResult<bool> {
-    let deleted =
-        crate::repo::comment_repo::CommentRepo::delete(&state.pool, id, auth.user_id)
-            .await
-            .map_err(|e| culino_common::error::AppError::Internal(e))?;
+    let deleted = crate::repo::comment_repo::CommentRepo::delete(&state.pool, id, auth.user_id)
+        .await
+        .map_err(|e| culino_common::error::AppError::Internal(e))?;
     ApiResponse::ok(deleted)
 }

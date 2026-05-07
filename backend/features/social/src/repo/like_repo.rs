@@ -36,13 +36,12 @@ impl LikeRepo {
     }
 
     pub async fn count(pool: &PgPool, recipe_id: Uuid) -> Result<i64> {
-        let count = sqlx::query_scalar::<_, i64>(
-            "SELECT COUNT(*) FROM recipe_likes WHERE recipe_id = $1",
-        )
-        .bind(recipe_id)
-        .fetch_one(pool)
-        .await
-        .context("Failed to count likes")?;
+        let count =
+            sqlx::query_scalar::<_, i64>("SELECT COUNT(*) FROM recipe_likes WHERE recipe_id = $1")
+                .bind(recipe_id)
+                .fetch_one(pool)
+                .await
+                .context("Failed to count likes")?;
         Ok(count)
     }
 
