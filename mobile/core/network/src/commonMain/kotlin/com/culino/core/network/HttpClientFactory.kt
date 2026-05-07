@@ -39,6 +39,14 @@ fun createHttpClient(tokenProvider: TokenProvider): HttpClient {
             }
         }
 
+        HttpResponseValidator {
+            validateResponse { response ->
+                if (response.status == HttpStatusCode.Unauthorized) {
+                    tokenProvider.notifyAuthExpired()
+                }
+            }
+        }
+
         install(Logging) {
             logger = object : Logger {
                 override fun log(message: String) {

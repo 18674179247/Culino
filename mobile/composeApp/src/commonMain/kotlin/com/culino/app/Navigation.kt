@@ -117,6 +117,14 @@ fun CulinoNavHost(
         startDestination = if (token != null) Routes.MAIN else Routes.LOGIN
     }
 
+    LaunchedEffect(Unit) {
+        appComponent.tokenProvider.authExpiredEvent.collect {
+            navController.navigate(Routes.LOGIN) {
+                popUpTo(0) { inclusive = true }
+            }
+        }
+    }
+
     if (startDestination == null) {
         return
     }
@@ -212,8 +220,7 @@ fun MainScreen(
             Box {
                 NavigationBar(
                     containerColor = MaterialTheme.colorScheme.surface,
-                    tonalElevation = 0.dp,
-                    modifier = Modifier.height(56.dp)
+                    tonalElevation = 0.dp
                 ) {
                     val leftItems = bottomNavItems.take(2)
                     val rightItems = bottomNavItems.drop(2)
