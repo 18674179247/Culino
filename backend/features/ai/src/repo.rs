@@ -32,7 +32,7 @@ impl BehaviorLogger for AiRepo {
         self.log_user_behavior(user_id, recipe_id, action_type, action_value)
             .await
             .map(|_| ())
-            .map_err(|e| AppError::Internal(e))
+            .map_err(AppError::Internal)
     }
 }
 
