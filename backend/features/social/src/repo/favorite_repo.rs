@@ -52,10 +52,10 @@ impl FavoriteRepo for PgFavoriteRepo {
         let row = sqlx::query_as::<_, Favorite>(
             "INSERT INTO favorites (user_id, recipe_id) VALUES ($1, $2) ON CONFLICT DO NOTHING RETURNING *",
         )
-        .bind(user_id)
-        .bind(recipe_id)
-        .fetch_optional(&self.pool)
-        .await?;
+            .bind(user_id)
+            .bind(recipe_id)
+            .fetch_optional(&self.pool)
+            .await?;
         match row {
             Some(f) => Ok(f),
             None => {

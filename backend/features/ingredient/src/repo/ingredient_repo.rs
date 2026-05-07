@@ -58,18 +58,18 @@ impl IngredientRepo for PgIngredientRepo {
         let row = sqlx::query_as::<_, Ingredient>(
             "INSERT INTO ingredients (name, category_id, unit, image) VALUES ($1, $2, $3, $4) RETURNING *",
         )
-        .bind(&req.name)
-        .bind(req.category_id)
-        .bind(&req.unit)
-        .bind(&req.image)
-        .fetch_one(&self.pool)
-        .await
-        .map_err(|e| match e {
-            sqlx::Error::Database(ref db_err) if db_err.is_unique_violation() => {
-                AppError::Conflict("ingredient already exists".into())
-            }
-            _ => AppError::from(e),
-        })?;
+            .bind(&req.name)
+            .bind(req.category_id)
+            .bind(&req.unit)
+            .bind(&req.image)
+            .fetch_one(&self.pool)
+            .await
+            .map_err(|e| match e {
+                sqlx::Error::Database(ref db_err) if db_err.is_unique_violation() => {
+                    AppError::Conflict("ingredient already exists".into())
+                }
+                _ => AppError::from(e),
+            })?;
         Ok(row)
     }
 
@@ -78,13 +78,13 @@ impl IngredientRepo for PgIngredientRepo {
         let row = sqlx::query_as::<_, Ingredient>(
             "UPDATE ingredients SET name = COALESCE($2, name), category_id = COALESCE($3, category_id), unit = COALESCE($4, unit), image = COALESCE($5, image) WHERE id = $1 RETURNING *",
         )
-        .bind(id)
-        .bind(&req.name)
-        .bind(req.category_id)
-        .bind(&req.unit)
-        .bind(&req.image)
-        .fetch_one(&self.pool)
-        .await?;
+            .bind(id)
+            .bind(&req.name)
+            .bind(req.category_id)
+            .bind(&req.unit)
+            .bind(&req.image)
+            .fetch_one(&self.pool)
+            .await?;
         Ok(row)
     }
 

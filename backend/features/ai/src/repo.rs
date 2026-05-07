@@ -32,7 +32,7 @@ impl BehaviorLogger for AiRepo {
         self.log_user_behavior(user_id, recipe_id, action_type, action_value)
             .await
             .map(|_| ())
-            .map_err(|e| AppError::Internal(e.into()))
+            .map_err(AppError::Internal)
     }
 }
 
@@ -88,12 +88,12 @@ impl AiRepo {
             "#,
         )
         .bind(nutrition.recipe_id)
-        .bind(&nutrition.calories)
-        .bind(&nutrition.protein)
-        .bind(&nutrition.fat)
-        .bind(&nutrition.carbohydrate)
-        .bind(&nutrition.fiber)
-        .bind(&nutrition.sodium)
+        .bind(nutrition.calories)
+        .bind(nutrition.protein)
+        .bind(nutrition.fat)
+        .bind(nutrition.carbohydrate)
+        .bind(nutrition.fiber)
+        .bind(nutrition.sodium)
         .bind(&nutrition.analysis_text)
         .bind(nutrition.health_score)
         .bind(&nutrition.health_tags)
@@ -162,7 +162,7 @@ impl AiRepo {
         .bind(preference.difficulty_preference)
         .bind(preference.total_favorites)
         .bind(preference.total_cooking_logs)
-        .bind(&preference.avg_rating)
+        .bind(preference.avg_rating)
         .execute(&self.pool)
         .await
         .context("Failed to upsert user preference")?;
@@ -187,7 +187,7 @@ impl AiRepo {
         .bind(rec.user_id)
         .bind(rec.recipe_id)
         .bind(&rec.recommendation_type)
-        .bind(&rec.score)
+        .bind(rec.score)
         .bind(&rec.reason)
         .fetch_one(&self.pool)
         .await

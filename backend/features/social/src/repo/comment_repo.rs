@@ -1,5 +1,5 @@
-use anyhow::{Context, Result};
 use crate::model::RecipeComment;
+use anyhow::{Context, Result};
 use sqlx::PgPool;
 use uuid::Uuid;
 
@@ -23,12 +23,12 @@ impl CommentRepo {
             LIMIT $2 OFFSET $3
             "#,
         )
-        .bind(recipe_id)
-        .bind(page_size)
-        .bind(offset)
-        .fetch_all(pool)
-        .await
-        .context("Failed to list comments")?;
+            .bind(recipe_id)
+            .bind(page_size)
+            .bind(offset)
+            .fetch_all(pool)
+            .await
+            .context("Failed to list comments")?;
 
         let total = sqlx::query_scalar::<_, i64>(
             "SELECT COUNT(*) FROM recipe_comments WHERE recipe_id = $1",
@@ -59,23 +59,22 @@ impl CommentRepo {
             JOIN users u ON i.user_id = u.id
             "#,
         )
-        .bind(user_id)
-        .bind(recipe_id)
-        .bind(content)
-        .fetch_one(pool)
-        .await
-        .context("Failed to create comment")?;
+            .bind(user_id)
+            .bind(recipe_id)
+            .bind(content)
+            .fetch_one(pool)
+            .await
+            .context("Failed to create comment")?;
         Ok(comment)
     }
 
     pub async fn delete(pool: &PgPool, comment_id: Uuid, user_id: Uuid) -> Result<bool> {
-        let result =
-            sqlx::query("DELETE FROM recipe_comments WHERE id = $1 AND user_id = $2")
-                .bind(comment_id)
-                .bind(user_id)
-                .execute(pool)
-                .await
-                .context("Failed to delete comment")?;
+        let result = sqlx::query("DELETE FROM recipe_comments WHERE id = $1 AND user_id = $2")
+            .bind(comment_id)
+            .bind(user_id)
+            .execute(pool)
+            .await
+            .context("Failed to delete comment")?;
         Ok(result.rows_affected() > 0)
     }
 

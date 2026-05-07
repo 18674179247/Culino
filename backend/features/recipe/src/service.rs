@@ -92,13 +92,12 @@ impl RecipeService {
         });
 
         // 获取点赞数
-        let like_count = sqlx::query_scalar::<_, i64>(
-            "SELECT COUNT(*) FROM recipe_likes WHERE recipe_id = $1",
-        )
-        .bind(id)
-        .fetch_one(&self.pool)
-        .await
-        .unwrap_or(0);
+        let like_count =
+            sqlx::query_scalar::<_, i64>("SELECT COUNT(*) FROM recipe_likes WHERE recipe_id = $1")
+                .bind(id)
+                .fetch_one(&self.pool)
+                .await
+                .unwrap_or(0);
 
         // 获取评论数
         let comment_count = sqlx::query_scalar::<_, i64>(

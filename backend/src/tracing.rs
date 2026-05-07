@@ -11,7 +11,7 @@ pub fn init_tracing(config: &AppConfig) -> WorkerGuard {
         "culino_backend={level},culino_common={level},culino_user={level},culino_recipe={level},culino_ingredient={level},culino_social={level},culino_tool={level},culino_upload={level},tower_http=debug",
         level = config.log_level
     ))
-    .unwrap_or_else(|_| tracing_subscriber::EnvFilter::new("debug"));
+        .unwrap_or_else(|_| tracing_subscriber::EnvFilter::new("debug"));
 
     let stdout_layer = tracing_subscriber::fmt::layer().with_target(true);
 

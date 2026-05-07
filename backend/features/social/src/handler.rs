@@ -189,7 +189,7 @@ pub async fn toggle_like(
 ) -> ApiResult<bool> {
     let liked = crate::repo::like_repo::LikeRepo::toggle(&state.pool, auth.user_id, recipe_id)
         .await
-        .map_err(|e| culino_common::error::AppError::Internal(e))?;
+        .map_err(culino_common::error::AppError::Internal)?;
     ApiResponse::ok(liked)
 }
 
@@ -211,7 +211,7 @@ pub async fn list_comments(
     let (comments, total) =
         crate::repo::comment_repo::CommentRepo::list(&state.pool, recipe_id, page, page_size)
             .await
-            .map_err(|e| culino_common::error::AppError::Internal(e))?;
+            .map_err(culino_common::error::AppError::Internal)?;
     ApiResponse::ok(CommentListResp {
         data: comments,
         total,
@@ -239,7 +239,7 @@ pub async fn create_comment(
         &req.content,
     )
     .await
-    .map_err(|e| culino_common::error::AppError::Internal(e))?;
+    .map_err(culino_common::error::AppError::Internal)?;
     ApiResponse::ok(comment)
 }
 
@@ -254,9 +254,8 @@ pub async fn delete_comment(
     auth: AuthUser,
     Path(id): Path<Uuid>,
 ) -> ApiResult<bool> {
-    let deleted =
-        crate::repo::comment_repo::CommentRepo::delete(&state.pool, id, auth.user_id)
-            .await
-            .map_err(|e| culino_common::error::AppError::Internal(e))?;
+    let deleted = crate::repo::comment_repo::CommentRepo::delete(&state.pool, id, auth.user_id)
+        .await
+        .map_err(culino_common::error::AppError::Internal)?;
     ApiResponse::ok(deleted)
 }

@@ -146,7 +146,10 @@ pub async fn update_shopping_item(
 }
 
 /// 删除购物清单项
-#[utoipa::path(delete, path = "/api/v1/tool/shopping-lists/{list_id}/items/{item_id}", tag = "购物清单",
+#[utoipa::path(
+    delete,
+    path = "/api/v1/tool/shopping-lists/{list_id}/items/{item_id}",
+    tag = "购物清单",
     security(("bearer" = [])),
     params(
         ("list_id" = Uuid, Path, description = "购物清单ID"),
@@ -271,9 +274,9 @@ pub async fn batch_add_shopping_items(
 ) -> ApiResult<Vec<ShoppingListItem>> {
     tracing::info!("批量添加购物项: list_id={}, count={}", id, req.items.len());
     let repo = PgShoppingRepo::new(state.pool.clone());
-    repo.find_by_id(id, auth.user_id)
-        .await?
-        .ok_or_else(|| culino_common::error::AppError::NotFound("shopping list not found".into()))?;
+    repo.find_by_id(id, auth.user_id).await?.ok_or_else(|| {
+        culino_common::error::AppError::NotFound("shopping list not found".into())
+    })?;
     let items = repo.batch_add_items(id, &req.items).await?;
     ApiResponse::ok(items)
 }

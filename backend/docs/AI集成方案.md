@@ -7,19 +7,19 @@
 创建了以下数据表：
 
 1. **recipe_nutrition** - 菜谱营养分析表
-   - 营养成分：热量、蛋白质、脂肪、碳水、纤维、钠
-   - AI 分析：健康评分、健康标签、适合人群、注意事项
+    - 营养成分：热量、蛋白质、脂肪、碳水、纤维、钠
+    - AI 分析：健康评分、健康标签、适合人群、注意事项
 
 2. **user_preferences** - 用户偏好画像表
-   - 偏好数据：喜欢的菜系、口味、食材、标签
-   - 用户特征：饮食限制、健康目标、烹饪时间偏好
+    - 偏好数据：喜欢的菜系、口味、食材、标签
+    - 用户特征：饮食限制、健康目标、烹饪时间偏好
 
 3. **ai_recommendations** - AI 推荐记录表
-   - 推荐类型：个性化、相似、热门、健康目标
-   - 推荐分数和理由
+    - 推荐类型：个性化、相似、热门、健康目标
+    - 推荐分数和理由
 
 4. **user_behavior_logs** - 用户行为日志表
-   - 行为类型：浏览、收藏、烹饪、评分、搜索
+    - 行为类型：浏览、收藏、烹饪、评分、搜索
 
 ### 阶段 2：AI 模块开发 ✅
 
@@ -28,37 +28,41 @@
 #### 核心服务
 
 1. **NutritionService** - 营养分析服务
-   - 调用 DeepSeek API 分析菜谱营养成分
-   - 自动生成健康评分和建议
+    - 调用 DeepSeek API 分析菜谱营养成分
+    - 自动生成健康评分和建议
 
 2. **RecommendationService** - 智能推荐系统
-   - 个性化推荐：基于用户偏好
-   - 相似推荐：基于标签相似度
-   - 热门推荐：基于收藏和评分
-   - 健康目标推荐：基于营养标签
+    - 个性化推荐：基于用户偏好
+    - 相似推荐：基于标签相似度
+    - 热门推荐：基于收藏和评分
+    - 健康目标推荐：基于营养标签
 
 3. **PreferenceService** - 用户偏好分析
-   - 分析收藏菜谱的标签分布
-   - 统计食材偏好
-   - 计算烹饪时间和难度偏好
+    - 分析收藏菜谱的标签分布
+    - 统计食材偏好
+    - 计算烹饪时间和难度偏好
 
 #### API 端点
 
 **营养分析：**
+
 - `POST /api/v1/ai/nutrition/analyze/{recipe_id}` - 触发营养分析
 - `GET /api/v1/ai/nutrition/{recipe_id}` - 获取营养信息
 
 **推荐系统：**
+
 - `GET /api/v1/ai/recommend/personalized` - 个性化推荐（需登录）
 - `GET /api/v1/ai/recommend/similar/{recipe_id}` - 相似菜谱推荐
 - `GET /api/v1/ai/recommend/trending` - 热门推荐
 - `GET /api/v1/ai/recommend/health/{goal}` - 健康目标推荐（需登录）
 
 **用户偏好：**
+
 - `POST /api/v1/ai/preference/analyze` - 分析用户偏好（需登录）
 - `GET /api/v1/ai/preference/profile` - 获取用户偏好画像（需登录）
 
 **行为日志：**
+
 - `POST /api/v1/ai/behavior/log` - 记录用户行为（需登录）
 
 ## 🚀 使用指南
@@ -167,7 +171,8 @@ pub async fn create(...) -> ApiResult<RecipeDetail> {
 
 ### 3. 记录用户行为
 
-行为日志通过 `BehaviorLogger` trait（定义在 common）注入 `AppState`，由 `culino-ai` 实现。业务模块（如 social）通过 `state.behavior_logger` 异步记录，无需直接依赖 AI 模块：
+行为日志通过 `BehaviorLogger` trait（定义在 common）注入 `AppState`，由 `culino-ai` 实现。业务模块（如 social）通过
+`state.behavior_logger` 异步记录，无需直接依赖 AI 模块：
 
 ```rust
 // common/src/behavior.rs
@@ -192,6 +197,7 @@ fn spawn_behavior_log(state: &AppState, user_id: Uuid, recipe_id: Uuid,
 ```
 
 自动记录的行为：
+
 - 收藏菜谱 → `action_type: "favorite"`
 - 取消收藏 → `action_type: "unfavorite"`
 - 创建烹饪记录 → `action_type: "cook"`（含评分）
@@ -222,6 +228,7 @@ HealthTags(tags = nutrition.healthTags)
 ### 2. 推荐页面
 
 创建推荐页面，展示：
+
 - "为你推荐"（个性化）
 - "相似菜谱"（基于当前浏览）
 - "热门菜谱"（趋势）
@@ -230,6 +237,7 @@ HealthTags(tags = nutrition.healthTags)
 ### 3. 用户偏好页面
 
 展示用户的：
+
 - 喜欢的菜系分布
 - 喜欢的食材
 - 烹饪习惯统计
@@ -237,56 +245,56 @@ HealthTags(tags = nutrition.healthTags)
 ## 🎯 功能特点
 
 1. **自动化营养分析**
-   - 基于 DeepSeek V4 AI 模型
-   - 自动计算营养成分
-   - 生成健康建议
+    - 基于 DeepSeek V4 AI 模型
+    - 自动计算营养成分
+    - 生成健康建议
 
 2. **智能推荐系统**
-   - 多维度推荐策略
-   - 基于用户行为学习
-   - 实时更新推荐
+    - 多维度推荐策略
+    - 基于用户行为学习
+    - 实时更新推荐
 
 3. **用户偏好分析**
-   - 自动分析用户喜好
-   - 无需手动设置
-   - 持续优化
+    - 自动分析用户喜好
+    - 无需手动设置
+    - 持续优化
 
 4. **行为追踪**
-   - 记录用户所有交互
-   - 用于改进推荐算法
-   - 支持数据分析
+    - 记录用户所有交互
+    - 用于改进推荐算法
+    - 支持数据分析
 
 ## ⚠️ 注意事项
 
 1. **API Key 安全**
-   - 不要将 API Key 提交到版本控制
-   - 生产环境使用环境变量
+    - 不要将 API Key 提交到版本控制
+    - 生产环境使用环境变量
 
 2. **性能考虑**
-   - 营养分析是异步执行的
-   - 首次分析可能需要几秒钟
-   - 结果会被缓存
+    - 营养分析是异步执行的
+    - 首次分析可能需要几秒钟
+    - 结果会被缓存
 
 3. **成本控制**
-   - DeepSeek API 按调用次数计费
-   - 建议设置缓存策略
-   - 避免重复分析
+    - DeepSeek API 按调用次数计费
+    - 建议设置缓存策略
+    - 避免重复分析
 
 ## 📈 未来优化方向
 
 1. **批量分析**
-   - 支持批量分析多个菜谱
-   - 提高效率
+    - 支持批量分析多个菜谱
+    - 提高效率
 
 2. **缓存优化**
-   - Redis 缓存热门推荐
-   - 减少数据库查询
+    - Redis 缓存热门推荐
+    - 减少数据库查询
 
 3. **推荐算法优化**
-   - ✅ 时间衰减因子（已实现：新菜谱 30 天内有曝光加分）
-   - 引入协同过滤
-   - 考虑季节性因素
+    - ✅ 时间衰减因子（已实现：新菜谱 30 天内有曝光加分）
+    - 引入协同过滤
+    - 考虑季节性因素
 
 4. **A/B 测试**
-   - 测试不同推荐策略
-   - 优化推荐效果
+    - 测试不同推荐策略
+    - 优化推荐效果

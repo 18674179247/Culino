@@ -49,9 +49,9 @@ impl CookingLogRepo for PgCookingLogRepo {
         let rows = sqlx::query_as::<_, CookingLog>(
             "SELECT * FROM cooking_logs WHERE user_id = $1 ORDER BY cooked_at DESC, created_at DESC",
         )
-        .bind(user_id)
-        .fetch_all(&self.pool)
-        .await?;
+            .bind(user_id)
+            .fetch_all(&self.pool)
+            .await?;
         Ok(rows)
     }
 
@@ -64,13 +64,13 @@ impl CookingLogRepo for PgCookingLogRepo {
         let row = sqlx::query_as::<_, CookingLog>(
             "INSERT INTO cooking_logs (recipe_id, user_id, rating, note, cooked_at) VALUES ($1,$2,$3,$4,COALESCE($5, CURRENT_DATE)) RETURNING *",
         )
-        .bind(req.recipe_id)
-        .bind(user_id)
-        .bind(req.rating)
-        .bind(&req.note)
-        .bind(req.cooked_at)
-        .fetch_one(&self.pool)
-        .await?;
+            .bind(req.recipe_id)
+            .bind(user_id)
+            .bind(req.rating)
+            .bind(&req.note)
+            .bind(req.cooked_at)
+            .fetch_one(&self.pool)
+            .await?;
         Ok(row)
     }
 
@@ -84,13 +84,13 @@ impl CookingLogRepo for PgCookingLogRepo {
         let row = sqlx::query_as::<_, CookingLog>(
             "UPDATE cooking_logs SET rating = COALESCE($3, rating), note = COALESCE($4, note), updated_at = now() WHERE id = $1 AND user_id = $2 RETURNING *",
         )
-        .bind(id)
-        .bind(user_id)
-        .bind(req.rating)
-        .bind(&req.note)
-        .fetch_optional(&self.pool)
-        .await?
-        .ok_or_else(|| AppError::NotFound("cooking log not found".into()))?;
+            .bind(id)
+            .bind(user_id)
+            .bind(req.rating)
+            .bind(&req.note)
+            .fetch_optional(&self.pool)
+            .await?
+            .ok_or_else(|| AppError::NotFound("cooking log not found".into()))?;
         Ok(row)
     }
 

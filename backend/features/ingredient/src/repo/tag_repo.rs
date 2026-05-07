@@ -73,13 +73,13 @@ impl TagRepo for PgTagRepo {
         let row = sqlx::query_as::<_, Tag>(
             "UPDATE tags SET name = COALESCE($2, name), type = COALESCE($3, type), color = COALESCE($4, color), sort_order = COALESCE($5, sort_order) WHERE id = $1 RETURNING *",
         )
-        .bind(id)
-        .bind(&req.name)
-        .bind(&req.tag_type)
-        .bind(&req.color)
-        .bind(req.sort_order)
-        .fetch_one(&self.pool)
-        .await?;
+            .bind(id)
+            .bind(&req.name)
+            .bind(&req.tag_type)
+            .bind(&req.color)
+            .bind(req.sort_order)
+            .fetch_one(&self.pool)
+            .await?;
         Ok(row)
     }
 

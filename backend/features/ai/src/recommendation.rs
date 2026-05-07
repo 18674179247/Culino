@@ -150,10 +150,10 @@ impl RecommendationService {
             LIMIT $1
             "#
         )
-        .bind(limit)
-        .fetch_all(self.repo.pool())
-        .await
-        .context("Failed to fetch trending recipes")?;
+            .bind(limit)
+            .fetch_all(self.repo.pool())
+            .await
+            .context("Failed to fetch trending recipes")?;
 
         let recommendations = recipes
             .into_iter()
@@ -347,19 +347,17 @@ impl RecommendationService {
         // 难度匹配
         if let (Some(recipe_diff), Some(pref_diff)) =
             (recipe.difficulty, preference.difficulty_preference)
+            && (recipe_diff - pref_diff).abs() <= 1
         {
-            if (recipe_diff - pref_diff).abs() <= 1 {
-                reasons.push("烹饪难度适合您".into());
-            }
+            reasons.push("烹饪难度适合您".into());
         }
 
         // 烹饪时间匹配
         if let (Some(recipe_time), Some(pref_time)) =
             (recipe.cooking_time, preference.avg_cooking_time)
+            && (recipe_time - pref_time).abs() <= 15
         {
-            if (recipe_time - pref_time).abs() <= 15 {
-                reasons.push("制作时间符合您的习惯".into());
-            }
+            reasons.push("制作时间符合您的习惯".into());
         }
 
         // 兜底

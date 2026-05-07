@@ -81,11 +81,11 @@ impl UserRepo for PgUserRepo {
         let user = sqlx::query_as::<_, User>(
             "UPDATE users SET nickname = COALESCE($2, nickname), avatar = COALESCE($3, avatar), updated_at = now() WHERE id = $1 RETURNING *",
         )
-        .bind(id)
-        .bind(&data.nickname)
-        .bind(&data.avatar)
-        .fetch_one(&self.pool)
-        .await?;
+            .bind(id)
+            .bind(&data.nickname)
+            .bind(&data.avatar)
+            .fetch_one(&self.pool)
+            .await?;
         Ok(user)
     }
 
@@ -102,9 +102,9 @@ impl UserRepo for PgUserRepo {
         let perms = sqlx::query_as::<_, Permission>(
             "SELECT p.* FROM permissions p JOIN role_permissions rp ON p.id = rp.permission_id WHERE rp.role_id = $1",
         )
-        .bind(role_id)
-        .fetch_all(&self.pool)
-        .await?;
+            .bind(role_id)
+            .fetch_all(&self.pool)
+            .await?;
         Ok(perms)
     }
 }

@@ -65,12 +65,12 @@ impl SeasoningRepo for PgSeasoningRepo {
         let row = sqlx::query_as::<_, Seasoning>(
             "UPDATE seasonings SET name = COALESCE($2, name), unit = COALESCE($3, unit), image = COALESCE($4, image) WHERE id = $1 RETURNING *",
         )
-        .bind(id)
-        .bind(&req.name)
-        .bind(&req.unit)
-        .bind(&req.image)
-        .fetch_one(&self.pool)
-        .await?;
+            .bind(id)
+            .bind(&req.name)
+            .bind(&req.unit)
+            .bind(&req.image)
+            .fetch_one(&self.pool)
+            .await?;
         Ok(row)
     }
 
