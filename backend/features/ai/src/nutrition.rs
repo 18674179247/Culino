@@ -28,9 +28,7 @@ impl NutritionService {
         force: bool,
     ) -> Result<RecipeNutrition> {
         // 如果不强制重新分析，先检查缓存
-        if !force
-            && let Some(cached) = self.repo.get_nutrition(recipe_id).await?
-        {
+        if !force && let Some(cached) = self.repo.get_nutrition(recipe_id).await? {
             tracing::info!("Using cached nutrition for recipe {}", recipe_id);
             return Ok(cached);
         }
