@@ -1,5 +1,8 @@
 package com.culino.core.network
 
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlin.io.encoding.Base64
 import kotlin.io.encoding.ExperimentalEncodingApi
 
@@ -7,6 +10,17 @@ interface TokenProvider {
     suspend fun getToken(): String?
     suspend fun saveToken(token: String)
     suspend fun clearToken()
+    val authExpiredEvent: Flow<Unit>
+    suspend fun notifyAuthExpired()
+}
+
+object AuthExpiredBus {
+    private val _events = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
+    val events: Flow<Unit> = _events.asSharedFlow()
+
+    fun emit() {
+        _events.tryEmit(Unit)
+    }
 }
 
 @OptIn(ExperimentalEncodingApi::class)
