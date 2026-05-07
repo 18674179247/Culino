@@ -2,10 +2,10 @@
 //!
 //! 挂载 Swagger UI 和所有业务模块，添加中间件层。
 
+use axum::Router;
 use axum::extract::DefaultBodyLimit;
 use axum::http::{HeaderName, Method, StatusCode};
 use axum::response::Json;
-use axum::Router;
 use culino_common::config::{AppConfig, RunMode};
 use culino_common::state::AppState;
 use serde_json::json;

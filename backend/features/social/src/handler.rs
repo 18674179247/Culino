@@ -6,8 +6,8 @@ use crate::model::*;
 use crate::repo::cooking_log_repo::{CookingLogRepo, PgCookingLogRepo};
 use crate::repo::favorite_repo::{FavoriteRepo, PgFavoriteRepo};
 use axum::{
-    extract::{Path, Query, State},
     Json,
+    extract::{Path, Query, State},
 };
 use culino_common::auth::AuthUser;
 use culino_common::response::{ApiResponse, ApiResult};
