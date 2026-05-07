@@ -221,7 +221,7 @@ impl DeepSeekClient {
   "steps": [],
   "confidence": 0.0
 }"#
-                .to_string()
+            .to_string()
         };
 
         self.chat_completion(prompt).await

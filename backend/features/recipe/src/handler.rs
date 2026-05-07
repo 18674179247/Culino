@@ -5,8 +5,8 @@
 use crate::model::*;
 use crate::service::RecipeService;
 use axum::{
-    extract::{Path, Query, State},
     Json,
+    extract::{Path, Query, State},
 };
 use culino_common::auth::AuthUser;
 use culino_common::pagination::PaginatedResponse;

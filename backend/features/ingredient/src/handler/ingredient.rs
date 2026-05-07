@@ -5,8 +5,8 @@
 use crate::model::*;
 use crate::repo::ingredient_repo::{IngredientRepo, PgIngredientRepo};
 use axum::{
-    extract::{Path, State},
     Json,
+    extract::{Path, State},
 };
 use culino_common::auth::AuthUser;
 use culino_common::error::AppError;

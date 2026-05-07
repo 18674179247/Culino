@@ -6,8 +6,8 @@ use crate::model::*;
 use crate::repo::meal_plan_repo::{MealPlanRepo, PgMealPlanRepo};
 use crate::repo::shopping_repo::{PgShoppingRepo, ShoppingRepo};
 use axum::{
-    extract::{Path, Query, State},
     Json,
+    extract::{Path, Query, State},
 };
 use culino_common::auth::AuthUser;
 use culino_common::error::AppError;

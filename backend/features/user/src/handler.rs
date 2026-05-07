@@ -3,9 +3,9 @@
 //! 处理用户注册、登录、登出、获取个人信息、更新个人资料等接口。
 
 use axum::http::HeaderMap;
-use axum::{extract::State, Json};
+use axum::{Json, extract::State};
 
-use culino_common::auth::{encode_jwt, hash_password, verify_password, AuthUser};
+use culino_common::auth::{AuthUser, encode_jwt, hash_password, verify_password};
 use culino_common::error::AppError;
 use culino_common::redis::{revoke_token, save_token};
 use culino_common::response::{ApiResponse, ApiResult};

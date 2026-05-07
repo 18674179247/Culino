@@ -3,9 +3,9 @@
 //! 通过 rust-s3 crate 对接 RustFS/MinIO 等 S3 兼容存储。
 
 use anyhow::Context;
-use s3::creds::Credentials;
 use s3::Bucket;
 use s3::Region;
+use s3::creds::Credentials;
 
 use crate::config::AppConfig;
 use crate::error::AppError;
@@ -24,7 +24,7 @@ pub fn create_s3_bucket(config: &AppConfig) -> Result<Box<Bucket>, AppError> {
         None,
         None,
     )
-        .context("S3 凭证创建失败")?;
+    .context("S3 凭证创建失败")?;
 
     let bucket = Bucket::new(&config.s3_bucket, region, credentials)
         .context("S3 Bucket 创建失败")?

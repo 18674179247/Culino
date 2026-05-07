@@ -103,8 +103,8 @@ impl IngredientRepo for PgIngredientRepo {
         let rows = sqlx::query_as::<_, IngredientCategory>(
             "SELECT * FROM ingredient_categories ORDER BY sort_order",
         )
-            .fetch_all(&self.pool)
-            .await?;
+        .fetch_all(&self.pool)
+        .await?;
         Ok(rows)
     }
 }

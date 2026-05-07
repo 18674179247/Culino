@@ -5,8 +5,8 @@
 use crate::model::*;
 use crate::repo::seasoning_repo::{PgSeasoningRepo, SeasoningRepo};
 use axum::{
-    extract::{Path, State},
     Json,
+    extract::{Path, State},
 };
 use culino_common::auth::AuthUser;
 use culino_common::response::{ApiResponse, ApiResult};

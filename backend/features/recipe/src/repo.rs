@@ -199,9 +199,9 @@ impl RecipeRepo for PgRecipeRepo {
         let steps = sqlx::query_as::<_, RecipeStep>(
             "SELECT * FROM recipe_steps WHERE recipe_id = $1 ORDER BY step_number",
         )
-            .bind(id)
-            .fetch_all(&self.pool)
-            .await?;
+        .bind(id)
+        .fetch_all(&self.pool)
+        .await?;
 
         let tags = sqlx::query_as::<_, RecipeTag>("SELECT rt.recipe_id, rt.tag_id, t.name as tag_name FROM recipe_tags rt JOIN tags t ON t.id = rt.tag_id WHERE rt.recipe_id = $1")
             .bind(id)

@@ -33,10 +33,10 @@ impl CommentRepo {
         let total = sqlx::query_scalar::<_, i64>(
             "SELECT COUNT(*) FROM recipe_comments WHERE recipe_id = $1",
         )
-            .bind(recipe_id)
-            .fetch_one(pool)
-            .await
-            .context("Failed to count comments")?;
+        .bind(recipe_id)
+        .fetch_one(pool)
+        .await
+        .context("Failed to count comments")?;
 
         Ok((comments, total))
     }
@@ -82,10 +82,10 @@ impl CommentRepo {
         let count = sqlx::query_scalar::<_, i64>(
             "SELECT COUNT(*) FROM recipe_comments WHERE recipe_id = $1",
         )
-            .bind(recipe_id)
-            .fetch_one(pool)
-            .await
-            .context("Failed to count comments")?;
+        .bind(recipe_id)
+        .fetch_one(pool)
+        .await
+        .context("Failed to count comments")?;
         Ok(count)
     }
 }

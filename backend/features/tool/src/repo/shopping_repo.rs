@@ -71,9 +71,9 @@ impl ShoppingRepo for PgShoppingRepo {
         let rows = sqlx::query_as::<_, ShoppingList>(
             "SELECT * FROM shopping_lists WHERE user_id = $1 ORDER BY created_at DESC",
         )
-            .bind(user_id)
-            .fetch_all(&self.pool)
-            .await?;
+        .bind(user_id)
+        .fetch_all(&self.pool)
+        .await?;
         Ok(rows)
     }
 
@@ -85,10 +85,10 @@ impl ShoppingRepo for PgShoppingRepo {
         let row = sqlx::query_as::<_, ShoppingList>(
             "INSERT INTO shopping_lists (user_id, title) VALUES ($1, $2) RETURNING *",
         )
-            .bind(user_id)
-            .bind(&req.title)
-            .fetch_one(&self.pool)
-            .await?;
+        .bind(user_id)
+        .bind(&req.title)
+        .fetch_one(&self.pool)
+        .await?;
         Ok(row)
     }
 
@@ -101,10 +101,10 @@ impl ShoppingRepo for PgShoppingRepo {
         let list = match sqlx::query_as::<_, ShoppingList>(
             "SELECT * FROM shopping_lists WHERE id = $1 AND user_id = $2",
         )
-            .bind(id)
-            .bind(user_id)
-            .fetch_optional(&self.pool)
-            .await?
+        .bind(id)
+        .bind(user_id)
+        .fetch_optional(&self.pool)
+        .await?
         {
             Some(l) => l,
             None => return Ok(None),
@@ -113,9 +113,9 @@ impl ShoppingRepo for PgShoppingRepo {
         let items = sqlx::query_as::<_, ShoppingListItem>(
             "SELECT * FROM shopping_list_items WHERE list_id = $1 ORDER BY sort_order",
         )
-            .bind(id)
-            .fetch_all(&self.pool)
-            .await?;
+        .bind(id)
+        .fetch_all(&self.pool)
+        .await?;
 
         Ok(Some(ShoppingListDetail { list, items }))
     }

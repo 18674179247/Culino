@@ -23,9 +23,9 @@ where
     ) -> std::pin::Pin<
         Box<
             dyn std::future::Future<
-                Output=Result<(T, sqlx::Transaction<'a, sqlx::Postgres>), AppError>,
-            > + Send
-            + 'a,
+                    Output = Result<(T, sqlx::Transaction<'a, sqlx::Postgres>), AppError>,
+                > + Send
+                + 'a,
         >,
     >,
 {

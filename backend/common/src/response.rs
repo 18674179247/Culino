@@ -4,8 +4,8 @@
 //! - 成功：`{ "ok": true, "data": ..., "error": null }`
 //! - 失败：`{ "ok": false, "data": null, "error": { "code": "NOT_FOUND", "message": "..." } }`
 
-use axum::response::{IntoResponse, Response};
 use axum::Json;
+use axum::response::{IntoResponse, Response};
 use serde::Serialize;
 
 use crate::error::AppError;

@@ -62,17 +62,17 @@ impl UserRepo for PgUserRepo {
         let user = sqlx::query_as::<_, User>(
             "INSERT INTO users (username, nickname, password_hash) VALUES ($1, $2, $3) RETURNING *",
         )
-            .bind(&data.username)
-            .bind(&data.nickname)
-            .bind(&data.password_hash)
-            .fetch_one(&self.pool)
-            .await
-            .map_err(|e| match e {
-                sqlx::Error::Database(ref db_err) if db_err.is_unique_violation() => {
-                    AppError::Conflict("username already exists".into())
-                }
-                _ => AppError::from(e),
-            })?;
+        .bind(&data.username)
+        .bind(&data.nickname)
+        .bind(&data.password_hash)
+        .fetch_one(&self.pool)
+        .await
+        .map_err(|e| match e {
+            sqlx::Error::Database(ref db_err) if db_err.is_unique_violation() => {
+                AppError::Conflict("username already exists".into())
+            }
+            _ => AppError::from(e),
+        })?;
         Ok(user)
     }
 

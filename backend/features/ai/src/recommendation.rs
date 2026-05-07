@@ -218,11 +218,11 @@ impl RecommendationService {
             LIMIT $2
             "#,
         )
-            .bind(&target_tags)
-            .bind(limit)
-            .fetch_all(self.repo.pool())
-            .await
-            .context("Failed to fetch health goal recipes")?;
+        .bind(&target_tags)
+        .bind(limit)
+        .fetch_all(self.repo.pool())
+        .await
+        .context("Failed to fetch health goal recipes")?;
 
         let recommendations = recipes
             .into_iter()
@@ -282,12 +282,12 @@ impl RecommendationService {
             LIMIT $3
             "#,
         )
-            .bind(&favorite_tags)
-            .bind(user_id)
-            .bind(limit * 2) // 多查询一些，后续过滤
-            .fetch_all(self.repo.pool())
-            .await
-            .context("Failed to query recipes by preference")?;
+        .bind(&favorite_tags)
+        .bind(user_id)
+        .bind(limit * 2) // 多查询一些，后续过滤
+        .fetch_all(self.repo.pool())
+        .await
+        .context("Failed to query recipes by preference")?;
 
         Ok(recipes)
     }
@@ -378,10 +378,10 @@ impl RecommendationService {
             WHERE rt.recipe_id = $1
             "#,
         )
-            .bind(recipe_id)
-            .fetch_all(self.repo.pool())
-            .await
-            .context("Failed to fetch recipe tags")?;
+        .bind(recipe_id)
+        .fetch_all(self.repo.pool())
+        .await
+        .context("Failed to fetch recipe tags")?;
 
         Ok(tags)
     }
@@ -412,13 +412,13 @@ impl RecommendationService {
             LIMIT $4
             "#,
         )
-            .bind(recipe_id)
-            .bind(tags)
-            .bind(tags.len() as i64)
-            .bind(limit)
-            .fetch_all(self.repo.pool())
-            .await
-            .context("Failed to query similar recipes")?;
+        .bind(recipe_id)
+        .bind(tags)
+        .bind(tags.len() as i64)
+        .bind(limit)
+        .fetch_all(self.repo.pool())
+        .await
+        .context("Failed to query similar recipes")?;
 
         Ok(recipes)
     }

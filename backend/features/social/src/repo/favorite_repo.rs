@@ -41,9 +41,9 @@ impl FavoriteRepo for PgFavoriteRepo {
              FROM favorites f LEFT JOIN recipes r ON f.recipe_id = r.id \
              WHERE f.user_id = $1 ORDER BY f.created_at DESC",
         )
-            .bind(user_id)
-            .fetch_all(&self.pool)
-            .await?;
+        .bind(user_id)
+        .fetch_all(&self.pool)
+        .await?;
         Ok(rows)
     }
 
@@ -63,10 +63,10 @@ impl FavoriteRepo for PgFavoriteRepo {
                 let f = sqlx::query_as::<_, Favorite>(
                     "SELECT * FROM favorites WHERE user_id = $1 AND recipe_id = $2",
                 )
-                    .bind(user_id)
-                    .bind(recipe_id)
-                    .fetch_one(&self.pool)
-                    .await?;
+                .bind(user_id)
+                .bind(recipe_id)
+                .fetch_one(&self.pool)
+                .await?;
                 Ok(f)
             }
         }
