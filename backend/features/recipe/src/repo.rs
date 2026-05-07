@@ -89,13 +89,12 @@ impl RecipeRepo for PgRecipeRepo {
                         Some(id) => id,
                         None => {
                             let name = item.name.as_deref().unwrap_or("未知食材");
-                            let row = sqlx::query_scalar::<_, i32>(
+                            sqlx::query_scalar::<_, i32>(
                                 "INSERT INTO ingredients (name) VALUES ($1) ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name RETURNING id"
                             )
                                 .bind(name)
                                 .fetch_one(&mut *tx)
-                                .await?;
-                            row
+                                .await?
                         }
                     };
                     sqlx::query("INSERT INTO recipe_ingredients (recipe_id, ingredient_id, amount, unit, note, sort_order) VALUES ($1,$2,$3,$4,$5,$6)")
@@ -117,13 +116,12 @@ impl RecipeRepo for PgRecipeRepo {
                         Some(id) => id,
                         None => {
                             let name = item.name.as_deref().unwrap_or("未知调料");
-                            let row = sqlx::query_scalar::<_, i32>(
+                            sqlx::query_scalar::<_, i32>(
                                 "INSERT INTO seasonings (name) VALUES ($1) ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name RETURNING id"
                             )
                                 .bind(name)
                                 .fetch_one(&mut *tx)
-                                .await?;
-                            row
+                                .await?
                         }
                     };
                     sqlx::query("INSERT INTO recipe_seasonings (recipe_id, seasoning_id, amount, unit, sort_order) VALUES ($1,$2,$3,$4,$5)")
