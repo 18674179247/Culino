@@ -6,13 +6,13 @@
 use anyhow::Context;
 use axum::extract::FromRequestParts;
 use axum::http::request::Parts;
-use jsonwebtoken::{DecodingKey, EncodingKey, Header, Validation, decode, encode};
+use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, Validation};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use argon2::{
+    password_hash::{rand_core::OsRng, PasswordHash, PasswordHasher, PasswordVerifier, SaltString},
     Argon2,
-    password_hash::{PasswordHash, PasswordHasher, PasswordVerifier, SaltString, rand_core::OsRng},
 };
 
 use crate::error::AppError;
@@ -62,7 +62,7 @@ pub fn encode_jwt(secret: &str, user_id: Uuid, role_code: &str) -> Result<String
         &claims,
         &EncodingKey::from_secret(secret.as_bytes()),
     )
-    .context("JWT 编码失败")?)
+        .context("JWT 编码失败")?)
 }
 
 /// 解码并验证 JWT Token
@@ -72,8 +72,8 @@ pub fn decode_jwt(secret: &str, token: &str) -> Result<Claims, AppError> {
         &DecodingKey::from_secret(secret.as_bytes()),
         &Validation::default(),
     )
-    .map(|data| data.claims)
-    .map_err(|_| AppError::Unauthorized("invalid token".into()))
+        .map(|data| data.claims)
+        .map_err(|_| AppError::Unauthorized("invalid token".into()))
 }
 
 /// 从请求头中提取 Bearer Token 并解析为 AuthUser

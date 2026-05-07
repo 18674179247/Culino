@@ -59,11 +59,11 @@ impl MealPlanRepo for PgMealPlanRepo {
         let rows = sqlx::query_as::<_, MealPlan>(
             "SELECT * FROM meal_plans WHERE user_id = $1 AND plan_date BETWEEN $2 AND $3 ORDER BY plan_date, meal_type",
         )
-        .bind(user_id)
-        .bind(start)
-        .bind(end)
-        .fetch_all(&self.pool)
-        .await?;
+            .bind(user_id)
+            .bind(start)
+            .bind(end)
+            .fetch_all(&self.pool)
+            .await?;
         Ok(rows)
     }
 
@@ -72,19 +72,19 @@ impl MealPlanRepo for PgMealPlanRepo {
         let row = sqlx::query_as::<_, MealPlan>(
             "INSERT INTO meal_plans (user_id, recipe_id, plan_date, meal_type, note) VALUES ($1,$2,$3,$4,$5) RETURNING *",
         )
-        .bind(user_id)
-        .bind(req.recipe_id)
-        .bind(req.plan_date)
-        .bind(req.meal_type)
-        .bind(&req.note)
-        .fetch_one(&self.pool)
-        .await
-        .map_err(|e| match e {
-            sqlx::Error::Database(ref db_err) if db_err.is_unique_violation() => {
-                AppError::Conflict("meal plan already exists for this date and meal type".into())
-            }
-            _ => AppError::from(e),
-        })?;
+            .bind(user_id)
+            .bind(req.recipe_id)
+            .bind(req.plan_date)
+            .bind(req.meal_type)
+            .bind(&req.note)
+            .fetch_one(&self.pool)
+            .await
+            .map_err(|e| match e {
+                sqlx::Error::Database(ref db_err) if db_err.is_unique_violation() => {
+                    AppError::Conflict("meal plan already exists for this date and meal type".into())
+                }
+                _ => AppError::from(e),
+            })?;
         Ok(row)
     }
 
@@ -98,13 +98,13 @@ impl MealPlanRepo for PgMealPlanRepo {
         let row = sqlx::query_as::<_, MealPlan>(
             "UPDATE meal_plans SET recipe_id = COALESCE($3, recipe_id), note = COALESCE($4, note) WHERE id = $1 AND user_id = $2 RETURNING *",
         )
-        .bind(id)
-        .bind(user_id)
-        .bind(req.recipe_id)
-        .bind(&req.note)
-        .fetch_optional(&self.pool)
-        .await?
-        .ok_or_else(|| AppError::NotFound("meal plan not found".into()))?;
+            .bind(id)
+            .bind(user_id)
+            .bind(req.recipe_id)
+            .bind(&req.note)
+            .fetch_optional(&self.pool)
+            .await?
+            .ok_or_else(|| AppError::NotFound("meal plan not found".into()))?;
         Ok(row)
     }
 

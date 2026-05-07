@@ -68,17 +68,17 @@ impl RecipeRepo for PgRecipeRepo {
             let recipe = sqlx::query_as::<_, Recipe>(
                 "INSERT INTO recipes (title, description, cover_image, difficulty, cooking_time, prep_time, servings, source, author_id) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING *"
             )
-            .bind(&req.title)
-            .bind(&req.description)
-            .bind(&req.cover_image)
-            .bind(req.difficulty)
-            .bind(req.cooking_time)
-            .bind(req.prep_time)
-            .bind(req.servings)
-            .bind(&req.source)
-            .bind(author_id)
-            .fetch_one(&mut *tx)
-            .await?;
+                .bind(&req.title)
+                .bind(&req.description)
+                .bind(&req.cover_image)
+                .bind(req.difficulty)
+                .bind(req.cooking_time)
+                .bind(req.prep_time)
+                .bind(req.servings)
+                .bind(&req.source)
+                .bind(author_id)
+                .fetch_one(&mut *tx)
+                .await?;
 
             let recipe_id = recipe.id;
 
@@ -92,9 +92,9 @@ impl RecipeRepo for PgRecipeRepo {
                             let row = sqlx::query_scalar::<_, i32>(
                                 "INSERT INTO ingredients (name) VALUES ($1) ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name RETURNING id"
                             )
-                            .bind(name)
-                            .fetch_one(&mut *tx)
-                            .await?;
+                                .bind(name)
+                                .fetch_one(&mut *tx)
+                                .await?;
                             row
                         }
                     };
@@ -120,9 +120,9 @@ impl RecipeRepo for PgRecipeRepo {
                             let row = sqlx::query_scalar::<_, i32>(
                                 "INSERT INTO seasonings (name) VALUES ($1) ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name RETURNING id"
                             )
-                            .bind(name)
-                            .fetch_one(&mut *tx)
-                            .await?;
+                                .bind(name)
+                                .fetch_one(&mut *tx)
+                                .await?;
                             row
                         }
                     };
@@ -185,23 +185,23 @@ impl RecipeRepo for PgRecipeRepo {
         let ingredients = sqlx::query_as::<_, RecipeIngredient>(
             "SELECT ri.id, ri.recipe_id, ri.ingredient_id, i.name as ingredient_name, ri.amount, ri.unit, ri.note, ri.sort_order FROM recipe_ingredients ri JOIN ingredients i ON i.id = ri.ingredient_id WHERE ri.recipe_id = $1 ORDER BY ri.sort_order",
         )
-        .bind(id)
-        .fetch_all(&self.pool)
-        .await?;
+            .bind(id)
+            .fetch_all(&self.pool)
+            .await?;
 
         let seasonings = sqlx::query_as::<_, RecipeSeasoning>(
             "SELECT rs.id, rs.recipe_id, rs.seasoning_id, s.name as seasoning_name, rs.amount, rs.unit, rs.sort_order FROM recipe_seasonings rs JOIN seasonings s ON s.id = rs.seasoning_id WHERE rs.recipe_id = $1 ORDER BY rs.sort_order",
         )
-        .bind(id)
-        .fetch_all(&self.pool)
-        .await?;
+            .bind(id)
+            .fetch_all(&self.pool)
+            .await?;
 
         let steps = sqlx::query_as::<_, RecipeStep>(
             "SELECT * FROM recipe_steps WHERE recipe_id = $1 ORDER BY step_number",
         )
-        .bind(id)
-        .fetch_all(&self.pool)
-        .await?;
+            .bind(id)
+            .fetch_all(&self.pool)
+            .await?;
 
         let tags = sqlx::query_as::<_, RecipeTag>("SELECT rt.recipe_id, rt.tag_id, t.name as tag_name FROM recipe_tags rt JOIN tags t ON t.id = rt.tag_id WHERE rt.recipe_id = $1")
             .bind(id)
@@ -233,19 +233,19 @@ impl RecipeRepo for PgRecipeRepo {
             let recipe = sqlx::query_as::<_, Recipe>(
                 "UPDATE recipes SET title = COALESCE($3, title), description = COALESCE($4, description), cover_image = COALESCE($5, cover_image), difficulty = COALESCE($6, difficulty), cooking_time = COALESCE($7, cooking_time), prep_time = COALESCE($8, prep_time), servings = COALESCE($9, servings), source = COALESCE($10, source), updated_at = now() WHERE id = $1 AND author_id = $2 RETURNING *"
             )
-            .bind(id)
-            .bind(author_id)
-            .bind(&req.title)
-            .bind(&req.description)
-            .bind(&req.cover_image)
-            .bind(req.difficulty)
-            .bind(req.cooking_time)
-            .bind(req.prep_time)
-            .bind(req.servings)
-            .bind(&req.source)
-            .fetch_optional(&mut *tx)
-            .await?
-            .ok_or_else(|| AppError::NotFound("recipe not found or not owned by you".into()))?;
+                .bind(id)
+                .bind(author_id)
+                .bind(&req.title)
+                .bind(&req.description)
+                .bind(&req.cover_image)
+                .bind(req.difficulty)
+                .bind(req.cooking_time)
+                .bind(req.prep_time)
+                .bind(req.servings)
+                .bind(&req.source)
+                .fetch_optional(&mut *tx)
+                .await?
+                .ok_or_else(|| AppError::NotFound("recipe not found or not owned by you".into()))?;
 
             let recipe_id = recipe.id;
 
@@ -263,9 +263,9 @@ impl RecipeRepo for PgRecipeRepo {
                             sqlx::query_scalar::<_, i32>(
                                 "INSERT INTO ingredients (name) VALUES ($1) ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name RETURNING id"
                             )
-                            .bind(name)
-                            .fetch_one(&mut *tx)
-                            .await?
+                                .bind(name)
+                                .fetch_one(&mut *tx)
+                                .await?
                         }
                     };
                     sqlx::query("INSERT INTO recipe_ingredients (recipe_id, ingredient_id, amount, unit, note, sort_order) VALUES ($1,$2,$3,$4,$5,$6)")
@@ -294,9 +294,9 @@ impl RecipeRepo for PgRecipeRepo {
                             sqlx::query_scalar::<_, i32>(
                                 "INSERT INTO seasonings (name) VALUES ($1) ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name RETURNING id"
                             )
-                            .bind(name)
-                            .fetch_one(&mut *tx)
-                            .await?
+                                .bind(name)
+                                .fetch_one(&mut *tx)
+                                .await?
                         }
                     };
                     sqlx::query("INSERT INTO recipe_seasonings (recipe_id, seasoning_id, amount, unit, sort_order) VALUES ($1,$2,$3,$4,$5)")
@@ -492,9 +492,9 @@ impl RecipeRepo for PgRecipeRepo {
                  ORDER BY random() \
                  LIMIT $1"
             )
-            .bind(count)
-            .fetch_all(&self.pool)
-            .await?
+                .bind(count)
+                .fetch_all(&self.pool)
+                .await?
         } else {
             // 大数据量时,先通过 random() 阈值筛选约 10% 的行,再从中随机排序取 N 条
             sqlx::query_as::<_, RecipeListItem>(
@@ -504,9 +504,9 @@ impl RecipeRepo for PgRecipeRepo {
                  ORDER BY random() \
                  LIMIT $1"
             )
-            .bind(count)
-            .fetch_all(&self.pool)
-            .await?
+                .bind(count)
+                .fetch_all(&self.pool)
+                .await?
         };
         Ok(items)
     }

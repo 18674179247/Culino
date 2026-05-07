@@ -10,11 +10,11 @@ impl LikeRepo {
         let exists = sqlx::query_scalar::<_, bool>(
             "SELECT EXISTS(SELECT 1 FROM recipe_likes WHERE user_id = $1 AND recipe_id = $2)",
         )
-        .bind(user_id)
-        .bind(recipe_id)
-        .fetch_one(pool)
-        .await
-        .context("Failed to check like")?;
+            .bind(user_id)
+            .bind(recipe_id)
+            .fetch_one(pool)
+            .await
+            .context("Failed to check like")?;
 
         if exists {
             sqlx::query("DELETE FROM recipe_likes WHERE user_id = $1 AND recipe_id = $2")
@@ -49,11 +49,11 @@ impl LikeRepo {
         let exists = sqlx::query_scalar::<_, bool>(
             "SELECT EXISTS(SELECT 1 FROM recipe_likes WHERE user_id = $1 AND recipe_id = $2)",
         )
-        .bind(user_id)
-        .bind(recipe_id)
-        .fetch_one(pool)
-        .await
-        .context("Failed to check like")?;
+            .bind(user_id)
+            .bind(recipe_id)
+            .fetch_one(pool)
+            .await
+            .context("Failed to check like")?;
         Ok(exists)
     }
 }

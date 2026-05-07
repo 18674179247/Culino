@@ -3,8 +3,8 @@
 //! 提供 Redis 连接创建、通用 KV 操作，以及 Token 专用的存储/验证/撤销功能。
 
 use anyhow::Context;
-use redis::AsyncCommands;
 use redis::aio::MultiplexedConnection;
+use redis::AsyncCommands;
 
 use crate::error::AppError;
 

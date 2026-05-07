@@ -46,17 +46,17 @@ impl SeasoningRepo for PgSeasoningRepo {
         let row = sqlx::query_as::<_, Seasoning>(
             "INSERT INTO seasonings (name, unit, image) VALUES ($1, $2, $3) RETURNING *",
         )
-        .bind(&req.name)
-        .bind(&req.unit)
-        .bind(&req.image)
-        .fetch_one(&self.pool)
-        .await
-        .map_err(|e| match e {
-            sqlx::Error::Database(ref db_err) if db_err.is_unique_violation() => {
-                AppError::Conflict("seasoning already exists".into())
-            }
-            _ => AppError::from(e),
-        })?;
+            .bind(&req.name)
+            .bind(&req.unit)
+            .bind(&req.image)
+            .fetch_one(&self.pool)
+            .await
+            .map_err(|e| match e {
+                sqlx::Error::Database(ref db_err) if db_err.is_unique_violation() => {
+                    AppError::Conflict("seasoning already exists".into())
+                }
+                _ => AppError::from(e),
+            })?;
         Ok(row)
     }
 
@@ -65,12 +65,12 @@ impl SeasoningRepo for PgSeasoningRepo {
         let row = sqlx::query_as::<_, Seasoning>(
             "UPDATE seasonings SET name = COALESCE($2, name), unit = COALESCE($3, unit), image = COALESCE($4, image) WHERE id = $1 RETURNING *",
         )
-        .bind(id)
-        .bind(&req.name)
-        .bind(&req.unit)
-        .bind(&req.image)
-        .fetch_one(&self.pool)
-        .await?;
+            .bind(id)
+            .bind(&req.name)
+            .bind(&req.unit)
+            .bind(&req.image)
+            .fetch_one(&self.pool)
+            .await?;
         Ok(row)
     }
 

@@ -23,20 +23,20 @@ impl CommentRepo {
             LIMIT $2 OFFSET $3
             "#,
         )
-        .bind(recipe_id)
-        .bind(page_size)
-        .bind(offset)
-        .fetch_all(pool)
-        .await
-        .context("Failed to list comments")?;
+            .bind(recipe_id)
+            .bind(page_size)
+            .bind(offset)
+            .fetch_all(pool)
+            .await
+            .context("Failed to list comments")?;
 
         let total = sqlx::query_scalar::<_, i64>(
             "SELECT COUNT(*) FROM recipe_comments WHERE recipe_id = $1",
         )
-        .bind(recipe_id)
-        .fetch_one(pool)
-        .await
-        .context("Failed to count comments")?;
+            .bind(recipe_id)
+            .fetch_one(pool)
+            .await
+            .context("Failed to count comments")?;
 
         Ok((comments, total))
     }
@@ -59,12 +59,12 @@ impl CommentRepo {
             JOIN users u ON i.user_id = u.id
             "#,
         )
-        .bind(user_id)
-        .bind(recipe_id)
-        .bind(content)
-        .fetch_one(pool)
-        .await
-        .context("Failed to create comment")?;
+            .bind(user_id)
+            .bind(recipe_id)
+            .bind(content)
+            .fetch_one(pool)
+            .await
+            .context("Failed to create comment")?;
         Ok(comment)
     }
 
@@ -82,10 +82,10 @@ impl CommentRepo {
         let count = sqlx::query_scalar::<_, i64>(
             "SELECT COUNT(*) FROM recipe_comments WHERE recipe_id = $1",
         )
-        .bind(recipe_id)
-        .fetch_one(pool)
-        .await
-        .context("Failed to count comments")?;
+            .bind(recipe_id)
+            .fetch_one(pool)
+            .await
+            .context("Failed to count comments")?;
         Ok(count)
     }
 }

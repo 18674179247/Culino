@@ -1,6 +1,6 @@
 use axum::{
-    Json,
     extract::{Path, Query, State},
+    Json,
 };
 use uuid::Uuid;
 
@@ -258,8 +258,8 @@ pub async fn log_behavior(
         &req.action_type,
         req.action_value,
     )
-    .await
-    .map_err(culino_common::error::AppError::Internal)?;
+        .await
+        .map_err(culino_common::error::AppError::Internal)?;
 
     ApiResponse::ok(true)
 }

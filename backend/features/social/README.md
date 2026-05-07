@@ -6,34 +6,34 @@
 
 ### 收藏
 
-| 方法 | 路径 | 说明 | 认证 |
-|------|------|------|------|
-| GET | `/api/v1/social/favorites` | 获取收藏列表（含菜谱摘要） | 是 |
-| POST | `/api/v1/social/favorites/{recipe_id}` | 收藏菜谱（幂等） | 是 |
-| DELETE | `/api/v1/social/favorites/{recipe_id}` | 取消收藏 | 是 |
+| 方法     | 路径                                     | 说明            | 认证 |
+|--------|----------------------------------------|---------------|----|
+| GET    | `/api/v1/social/favorites`             | 获取收藏列表（含菜谱摘要） | 是  |
+| POST   | `/api/v1/social/favorites/{recipe_id}` | 收藏菜谱（幂等）      | 是  |
+| DELETE | `/api/v1/social/favorites/{recipe_id}` | 取消收藏          | 是  |
 
 ### 烹饪记录
 
-| 方法 | 路径 | 说明 | 认证 |
-|------|------|------|------|
-| GET | `/api/v1/social/cooking-logs` | 获取烹饪记录 | 是 |
-| POST | `/api/v1/social/cooking-logs` | 创建烹饪记录 | 是 |
-| PUT | `/api/v1/social/cooking-logs/{id}` | 更新烹饪记录 | 是 |
-| DELETE | `/api/v1/social/cooking-logs/{id}` | 删除烹饪记录 | 是 |
+| 方法     | 路径                                 | 说明     | 认证 |
+|--------|------------------------------------|--------|----|
+| GET    | `/api/v1/social/cooking-logs`      | 获取烹饪记录 | 是  |
+| POST   | `/api/v1/social/cooking-logs`      | 创建烹饪记录 | 是  |
+| PUT    | `/api/v1/social/cooking-logs/{id}` | 更新烹饪记录 | 是  |
+| DELETE | `/api/v1/social/cooking-logs/{id}` | 删除烹饪记录 | 是  |
 
 ### 点赞
 
-| 方法 | 路径 | 说明 | 认证 |
-|------|------|------|------|
-| POST | `/api/v1/social/likes/{recipe_id}` | 点赞/取消点赞（Toggle） | 是 |
+| 方法   | 路径                                 | 说明              | 认证 |
+|------|------------------------------------|-----------------|----|
+| POST | `/api/v1/social/likes/{recipe_id}` | 点赞/取消点赞（Toggle） | 是  |
 
 ### 评论
 
-| 方法 | 路径 | 说明 | 认证 |
-|------|------|------|------|
-| GET | `/api/v1/social/comments/recipe/{recipe_id}` | 获取评论列表（分页） | 否 |
-| POST | `/api/v1/social/comments` | 发表评论 | 是 |
-| DELETE | `/api/v1/social/comments/{id}` | 删除评论（仅作者） | 是 |
+| 方法     | 路径                                           | 说明         | 认证 |
+|--------|----------------------------------------------|------------|----|
+| GET    | `/api/v1/social/comments/recipe/{recipe_id}` | 获取评论列表（分页） | 否  |
+| POST   | `/api/v1/social/comments`                    | 发表评论       | 是  |
+| DELETE | `/api/v1/social/comments/{id}`               | 删除评论（仅作者）  | 是  |
 
 ## 架构
 

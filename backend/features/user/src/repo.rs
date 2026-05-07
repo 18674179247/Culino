@@ -62,17 +62,17 @@ impl UserRepo for PgUserRepo {
         let user = sqlx::query_as::<_, User>(
             "INSERT INTO users (username, nickname, password_hash) VALUES ($1, $2, $3) RETURNING *",
         )
-        .bind(&data.username)
-        .bind(&data.nickname)
-        .bind(&data.password_hash)
-        .fetch_one(&self.pool)
-        .await
-        .map_err(|e| match e {
-            sqlx::Error::Database(ref db_err) if db_err.is_unique_violation() => {
-                AppError::Conflict("username already exists".into())
-            }
-            _ => AppError::from(e),
-        })?;
+            .bind(&data.username)
+            .bind(&data.nickname)
+            .bind(&data.password_hash)
+            .fetch_one(&self.pool)
+            .await
+            .map_err(|e| match e {
+                sqlx::Error::Database(ref db_err) if db_err.is_unique_violation() => {
+                    AppError::Conflict("username already exists".into())
+                }
+                _ => AppError::from(e),
+            })?;
         Ok(user)
     }
 
@@ -81,11 +81,11 @@ impl UserRepo for PgUserRepo {
         let user = sqlx::query_as::<_, User>(
             "UPDATE users SET nickname = COALESCE($2, nickname), avatar = COALESCE($3, avatar), updated_at = now() WHERE id = $1 RETURNING *",
         )
-        .bind(id)
-        .bind(&data.nickname)
-        .bind(&data.avatar)
-        .fetch_one(&self.pool)
-        .await?;
+            .bind(id)
+            .bind(&data.nickname)
+            .bind(&data.avatar)
+            .fetch_one(&self.pool)
+            .await?;
         Ok(user)
     }
 
@@ -102,9 +102,9 @@ impl UserRepo for PgUserRepo {
         let perms = sqlx::query_as::<_, Permission>(
             "SELECT p.* FROM permissions p JOIN role_permissions rp ON p.id = rp.permission_id WHERE rp.role_id = $1",
         )
-        .bind(role_id)
-        .fetch_all(&self.pool)
-        .await?;
+            .bind(role_id)
+            .fetch_all(&self.pool)
+            .await?;
         Ok(perms)
     }
 }

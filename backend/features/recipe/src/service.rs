@@ -78,11 +78,11 @@ impl RecipeService {
         let author = sqlx::query_as::<_, AuthorRow>(
             "SELECT id, username, nickname, avatar FROM users WHERE id = $1",
         )
-        .bind(detail.recipe.author_id)
-        .fetch_optional(&self.pool)
-        .await
-        .ok()
-        .flatten();
+            .bind(detail.recipe.author_id)
+            .fetch_optional(&self.pool)
+            .await
+            .ok()
+            .flatten();
 
         detail.author = author.map(|a| AuthorInfo {
             id: a.id,
@@ -103,10 +103,10 @@ impl RecipeService {
         let comment_count = sqlx::query_scalar::<_, i64>(
             "SELECT COUNT(*) FROM recipe_comments WHERE recipe_id = $1",
         )
-        .bind(id)
-        .fetch_one(&self.pool)
-        .await
-        .unwrap_or(0);
+            .bind(id)
+            .fetch_one(&self.pool)
+            .await
+            .unwrap_or(0);
 
         detail.like_count = Some(like_count);
         detail.comment_count = Some(comment_count);
@@ -125,11 +125,11 @@ impl RecipeService {
             WHERE recipe_id = $1
             "#,
         )
-        .bind(recipe_id)
-        .fetch_optional(&self.pool)
-        .await
-        .map_err(|e| AppError::Internal(e.into()))?
-        .ok_or_else(|| AppError::NotFound("nutrition not found".into()))?;
+            .bind(recipe_id)
+            .fetch_optional(&self.pool)
+            .await
+            .map_err(|e| AppError::Internal(e.into()))?
+            .ok_or_else(|| AppError::NotFound("nutrition not found".into()))?;
 
         Ok(RecipeNutritionInfo {
             calories: nutrition.calories.and_then(|d| d.to_f64()),

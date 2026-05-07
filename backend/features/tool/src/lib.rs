@@ -7,8 +7,8 @@ pub mod model;
 pub mod repo;
 
 use axum::{
-    Router,
     routing::{get, post, put},
+    Router,
 };
 use culino_common::state::AppState;
 use utoipa::OpenApi;

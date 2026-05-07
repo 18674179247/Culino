@@ -4,10 +4,10 @@
 
 ## API
 
-| 方法 | 路径 | 说明 | 认证 |
-|------|------|------|------|
-| POST | `/api/v1/upload/image` | 上传图片（multipart，≤15MB，image/*） | 是 |
-| DELETE | `/api/v1/upload/image` | 删除已上传的图片（仅自己的文件） | 是 |
+| 方法     | 路径                     | 说明                            | 认证 |
+|--------|------------------------|-------------------------------|----|
+| POST   | `/api/v1/upload/image` | 上传图片（multipart，≤15MB，image/*） | 是  |
+| DELETE | `/api/v1/upload/image` | 删除已上传的图片（仅自己的文件）              | 是  |
 
 支持格式：jpg / png / gif / webp / svg
 

@@ -5,6 +5,7 @@
 之前登录失败的根本原因是**限流配置过于严格**：
 
 ### 原始配置（已移除）
+
 ```rust
 let rate_limit_config = GovernorConfigBuilder::default()
     .per_second(5)      // 每秒只允许 5 次请求
@@ -14,6 +15,7 @@ let rate_limit_config = GovernorConfigBuilder::default()
 ```
 
 ### 问题表现
+
 - 开发测试时频繁登录，很容易超过限制
 - 触发 `429 Too Many Requests` 错误
 - 用户体验差，看起来像是登录功能坏了
@@ -32,6 +34,7 @@ let rate_limit_config = GovernorConfigBuilder::default()
 ```
 
 **改进点：**
+
 - ✅ 每秒请求数从 5 提升到 10
 - ✅ 突发容量从 10 提升到 20
 - ✅ 正常使用不会触发限流
@@ -40,6 +43,7 @@ let rate_limit_config = GovernorConfigBuilder::default()
 ### 2. 限流范围明确
 
 **仅对认证接口限流：**
+
 ```rust
 let user_auth = Router::new()
     .route("/register", axum::routing::post(culino_user::handler::register))
@@ -48,6 +52,7 @@ let user_auth = Router::new()
 ```
 
 **不限流的接口：**
+
 - `/api/v1/user/me` - 个人信息
 - `/api/v1/user/logout` - 登出
 - 所有其他业务接口（菜谱、食材、社交等）
@@ -89,6 +94,7 @@ IP: 192.168.1.101 -> 独立的令牌桶
 ## 验证测试
 
 ### 测试 1：正常登录
+
 ```bash
 # 连续 5 次登录 - 应该全部成功
 for i in {1..5}; do
@@ -101,6 +107,7 @@ done
 **预期结果：** 5 次都返回 200 或 401（密码错误），不会有 429
 
 ### 测试 2：触发限流
+
 ```bash
 # 连续 25 次快速请求
 for i in {1..25}; do
@@ -110,29 +117,34 @@ for i in {1..25}; do
 done
 ```
 
-**预期结果：** 
+**预期结果：**
+
 - 前 20 次：正常响应
 - 后 5 次：`429 Too Many Requests`
 
 ## 配置建议
 
 ### 开发环境（当前配置）
+
 ```rust
 .per_second(10)
 .burst_size(20)
 ```
+
 - 适合频繁测试
 - 不会影响开发体验
 
 ### 生产环境（可选调整）
 
 **高流量场景：**
+
 ```rust
 .per_second(20)
 .burst_size(50)
 ```
 
 **严格安全场景：**
+
 ```rust
 .per_second(5)
 .burst_size(10)

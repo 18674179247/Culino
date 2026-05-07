@@ -73,10 +73,10 @@ impl PreferenceService {
             ORDER BY count DESC
             "#,
         )
-        .bind(user_id)
-        .fetch_all(self.repo.pool())
-        .await
-        .context("Failed to analyze favorite tags")?;
+            .bind(user_id)
+            .fetch_all(self.repo.pool())
+            .await
+            .context("Failed to analyze favorite tags")?;
 
         let total = tags.iter().map(|t| t.count).sum::<i64>() as f64;
 
@@ -124,10 +124,10 @@ impl PreferenceService {
             WHERE user_id = $1
             "#,
         )
-        .bind(user_id)
-        .fetch_one(self.repo.pool())
-        .await
-        .context("Failed to analyze cooking logs")?;
+            .bind(user_id)
+            .fetch_one(self.repo.pool())
+            .await
+            .context("Failed to analyze cooking logs")?;
 
         Ok(CookingStatsAnalysis {
             total_favorites: stats.total_favorites.unwrap_or(0) as i32,
@@ -150,10 +150,10 @@ impl PreferenceService {
             LIMIT 20
             "#,
         )
-        .bind(user_id)
-        .fetch_all(self.repo.pool())
-        .await
-        .context("Failed to analyze favorite ingredients")?;
+            .bind(user_id)
+            .fetch_all(self.repo.pool())
+            .await
+            .context("Failed to analyze favorite ingredients")?;
 
         let total = ingredients.iter().map(|i| i.count).sum::<i64>() as f64;
 
@@ -188,10 +188,10 @@ impl PreferenceService {
             WHERE f.user_id = $1 AND r.cooking_time IS NOT NULL
             "#,
         )
-        .bind(user_id)
-        .fetch_one(self.repo.pool())
-        .await
-        .context("Failed to calculate time and difficulty")?;
+            .bind(user_id)
+            .fetch_one(self.repo.pool())
+            .await
+            .context("Failed to calculate time and difficulty")?;
 
         Ok((stats.avg_cooking_time, stats.avg_difficulty))
     }

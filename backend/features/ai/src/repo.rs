@@ -51,10 +51,10 @@ impl AiRepo {
         let nutrition = sqlx::query_as::<_, RecipeNutrition>(
             "SELECT * FROM recipe_nutrition WHERE recipe_id = $1",
         )
-        .bind(recipe_id)
-        .fetch_optional(&self.pool)
-        .await
-        .context("Failed to fetch nutrition")?;
+            .bind(recipe_id)
+            .fetch_optional(&self.pool)
+            .await
+            .context("Failed to fetch nutrition")?;
 
         Ok(nutrition)
     }
@@ -87,25 +87,25 @@ impl AiRepo {
                 updated_at = now()
             "#,
         )
-        .bind(nutrition.recipe_id)
-        .bind(nutrition.calories)
-        .bind(nutrition.protein)
-        .bind(nutrition.fat)
-        .bind(nutrition.carbohydrate)
-        .bind(nutrition.fiber)
-        .bind(nutrition.sodium)
-        .bind(&nutrition.analysis_text)
-        .bind(nutrition.health_score)
-        .bind(&nutrition.health_tags)
-        .bind(&nutrition.suitable_for)
-        .bind(&nutrition.cautions)
-        .bind(&nutrition.serving_size)
-        .bind(&nutrition.traffic_light)
-        .bind(&nutrition.overall_rating)
-        .bind(&nutrition.summary)
-        .execute(&self.pool)
-        .await
-        .context("Failed to upsert nutrition")?;
+            .bind(nutrition.recipe_id)
+            .bind(nutrition.calories)
+            .bind(nutrition.protein)
+            .bind(nutrition.fat)
+            .bind(nutrition.carbohydrate)
+            .bind(nutrition.fiber)
+            .bind(nutrition.sodium)
+            .bind(&nutrition.analysis_text)
+            .bind(nutrition.health_score)
+            .bind(&nutrition.health_tags)
+            .bind(&nutrition.suitable_for)
+            .bind(&nutrition.cautions)
+            .bind(&nutrition.serving_size)
+            .bind(&nutrition.traffic_light)
+            .bind(&nutrition.overall_rating)
+            .bind(&nutrition.summary)
+            .execute(&self.pool)
+            .await
+            .context("Failed to upsert nutrition")?;
 
         Ok(())
     }
@@ -119,10 +119,10 @@ impl AiRepo {
         let preference = sqlx::query_as::<_, UserPreference>(
             "SELECT * FROM user_preferences WHERE user_id = $1",
         )
-        .bind(user_id)
-        .fetch_optional(&self.pool)
-        .await
-        .context("Failed to fetch user preference")?;
+            .bind(user_id)
+            .fetch_optional(&self.pool)
+            .await
+            .context("Failed to fetch user preference")?;
 
         Ok(preference)
     }
@@ -151,21 +151,21 @@ impl AiRepo {
                 last_analyzed_at = now()
             "#,
         )
-        .bind(preference.user_id)
-        .bind(&preference.favorite_cuisines)
-        .bind(&preference.favorite_tastes)
-        .bind(&preference.favorite_ingredients)
-        .bind(&preference.favorite_tags)
-        .bind(&preference.dietary_restrictions)
-        .bind(&preference.health_goals)
-        .bind(preference.avg_cooking_time)
-        .bind(preference.difficulty_preference)
-        .bind(preference.total_favorites)
-        .bind(preference.total_cooking_logs)
-        .bind(preference.avg_rating)
-        .execute(&self.pool)
-        .await
-        .context("Failed to upsert user preference")?;
+            .bind(preference.user_id)
+            .bind(&preference.favorite_cuisines)
+            .bind(&preference.favorite_tastes)
+            .bind(&preference.favorite_ingredients)
+            .bind(&preference.favorite_tags)
+            .bind(&preference.dietary_restrictions)
+            .bind(&preference.health_goals)
+            .bind(preference.avg_cooking_time)
+            .bind(preference.difficulty_preference)
+            .bind(preference.total_favorites)
+            .bind(preference.total_cooking_logs)
+            .bind(preference.avg_rating)
+            .execute(&self.pool)
+            .await
+            .context("Failed to upsert user preference")?;
 
         Ok(())
     }
@@ -184,14 +184,14 @@ impl AiRepo {
             RETURNING id
             "#,
         )
-        .bind(rec.user_id)
-        .bind(rec.recipe_id)
-        .bind(&rec.recommendation_type)
-        .bind(rec.score)
-        .bind(&rec.reason)
-        .fetch_one(&self.pool)
-        .await
-        .context("Failed to create recommendation")?;
+            .bind(rec.user_id)
+            .bind(rec.recipe_id)
+            .bind(&rec.recommendation_type)
+            .bind(rec.score)
+            .bind(&rec.reason)
+            .fetch_one(&self.pool)
+            .await
+            .context("Failed to create recommendation")?;
 
         Ok(id)
     }
@@ -201,10 +201,10 @@ impl AiRepo {
         sqlx::query(
             "UPDATE ai_recommendations SET clicked = true, clicked_at = now() WHERE id = $1",
         )
-        .bind(recommendation_id)
-        .execute(&self.pool)
-        .await
-        .context("Failed to mark recommendation as clicked")?;
+            .bind(recommendation_id)
+            .execute(&self.pool)
+            .await
+            .context("Failed to mark recommendation as clicked")?;
 
         Ok(())
     }
@@ -223,11 +223,11 @@ impl AiRepo {
             LIMIT $2
             "#,
         )
-        .bind(user_id)
-        .bind(limit)
-        .fetch_all(&self.pool)
-        .await
-        .context("Failed to fetch recent recommendations")?;
+            .bind(user_id)
+            .bind(limit)
+            .fetch_all(&self.pool)
+            .await
+            .context("Failed to fetch recent recommendations")?;
 
         Ok(recommendations)
     }
@@ -251,13 +251,13 @@ impl AiRepo {
             RETURNING id
             "#,
         )
-        .bind(user_id)
-        .bind(recipe_id)
-        .bind(action_type)
-        .bind(action_value)
-        .fetch_one(&self.pool)
-        .await
-        .context("Failed to log user behavior")?;
+            .bind(user_id)
+            .bind(recipe_id)
+            .bind(action_type)
+            .bind(action_value)
+            .fetch_one(&self.pool)
+            .await
+            .context("Failed to log user behavior")?;
 
         Ok(id)
     }
@@ -276,10 +276,10 @@ impl AiRepo {
             WHERE user_id = $1
             "#,
         )
-        .bind(user_id)
-        .fetch_one(&self.pool)
-        .await
-        .context("Failed to fetch user behavior stats")?;
+            .bind(user_id)
+            .fetch_one(&self.pool)
+            .await
+            .context("Failed to fetch user behavior stats")?;
 
         Ok(stats)
     }

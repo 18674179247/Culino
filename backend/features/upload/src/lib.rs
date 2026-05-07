@@ -5,14 +5,14 @@
 pub mod handler;
 pub mod model;
 
-use axum::{Router, extract::DefaultBodyLimit, routing::post};
+use axum::{extract::DefaultBodyLimit, routing::post, Router};
 use culino_common::state::AppState;
 use utoipa::OpenApi;
 
 #[derive(OpenApi)]
 #[openapi(
-    paths(handler::upload_image, handler::delete_image,),
-    components(schemas(model::UploadResponse, model::DeleteImageReq,))
+    paths(handler::upload_image, handler::delete_image, ),
+    components(schemas(model::UploadResponse, model::DeleteImageReq, ))
 )]
 pub struct UploadApi;
 

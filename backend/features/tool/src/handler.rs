@@ -6,8 +6,8 @@ use crate::model::*;
 use crate::repo::meal_plan_repo::{MealPlanRepo, PgMealPlanRepo};
 use crate::repo::shopping_repo::{PgShoppingRepo, ShoppingRepo};
 use axum::{
-    Json,
     extract::{Path, Query, State},
+    Json,
 };
 use culino_common::auth::AuthUser;
 use culino_common::error::AppError;
@@ -146,7 +146,10 @@ pub async fn update_shopping_item(
 }
 
 /// 删除购物清单项
-#[utoipa::path(delete, path = "/api/v1/tool/shopping-lists/{list_id}/items/{item_id}", tag = "购物清单",
+#[utoipa::path(
+    delete,
+    path = "/api/v1/tool/shopping-lists/{list_id}/items/{item_id}",
+    tag = "购物清单",
     security(("bearer" = [])),
     params(
         ("list_id" = Uuid, Path, description = "购物清单ID"),

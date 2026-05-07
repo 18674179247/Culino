@@ -85,10 +85,10 @@ impl NutritionService {
             ORDER BY ri.sort_order
             "#,
         )
-        .bind(recipe_id)
-        .fetch_all(self.repo.pool())
-        .await
-        .context("Failed to fetch ingredients")?;
+            .bind(recipe_id)
+            .fetch_all(self.repo.pool())
+            .await
+            .context("Failed to fetch ingredients")?;
 
         let seasonings = sqlx::query_as::<_, SeasoningRow>(
             r#"
@@ -99,10 +99,10 @@ impl NutritionService {
             ORDER BY rs.sort_order
             "#,
         )
-        .bind(recipe_id)
-        .fetch_all(self.repo.pool())
-        .await
-        .context("Failed to fetch seasonings")?;
+            .bind(recipe_id)
+            .fetch_all(self.repo.pool())
+            .await
+            .context("Failed to fetch seasonings")?;
 
         Ok(RecipeDetailForAnalysis {
             recipe,

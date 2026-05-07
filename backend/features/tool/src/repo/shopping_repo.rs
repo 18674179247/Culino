@@ -71,9 +71,9 @@ impl ShoppingRepo for PgShoppingRepo {
         let rows = sqlx::query_as::<_, ShoppingList>(
             "SELECT * FROM shopping_lists WHERE user_id = $1 ORDER BY created_at DESC",
         )
-        .bind(user_id)
-        .fetch_all(&self.pool)
-        .await?;
+            .bind(user_id)
+            .fetch_all(&self.pool)
+            .await?;
         Ok(rows)
     }
 
@@ -85,10 +85,10 @@ impl ShoppingRepo for PgShoppingRepo {
         let row = sqlx::query_as::<_, ShoppingList>(
             "INSERT INTO shopping_lists (user_id, title) VALUES ($1, $2) RETURNING *",
         )
-        .bind(user_id)
-        .bind(&req.title)
-        .fetch_one(&self.pool)
-        .await?;
+            .bind(user_id)
+            .bind(&req.title)
+            .fetch_one(&self.pool)
+            .await?;
         Ok(row)
     }
 
@@ -101,10 +101,10 @@ impl ShoppingRepo for PgShoppingRepo {
         let list = match sqlx::query_as::<_, ShoppingList>(
             "SELECT * FROM shopping_lists WHERE id = $1 AND user_id = $2",
         )
-        .bind(id)
-        .bind(user_id)
-        .fetch_optional(&self.pool)
-        .await?
+            .bind(id)
+            .bind(user_id)
+            .fetch_optional(&self.pool)
+            .await?
         {
             Some(l) => l,
             None => return Ok(None),
@@ -113,9 +113,9 @@ impl ShoppingRepo for PgShoppingRepo {
         let items = sqlx::query_as::<_, ShoppingListItem>(
             "SELECT * FROM shopping_list_items WHERE list_id = $1 ORDER BY sort_order",
         )
-        .bind(id)
-        .fetch_all(&self.pool)
-        .await?;
+            .bind(id)
+            .fetch_all(&self.pool)
+            .await?;
 
         Ok(Some(ShoppingListDetail { list, items }))
     }
@@ -141,12 +141,12 @@ impl ShoppingRepo for PgShoppingRepo {
         let row = sqlx::query_as::<_, ShoppingListItem>(
             "INSERT INTO shopping_list_items (list_id, name, amount, sort_order) VALUES ($1,$2,$3,$4) RETURNING *",
         )
-        .bind(list_id)
-        .bind(&req.name)
-        .bind(&req.amount)
-        .bind(req.sort_order)
-        .fetch_one(&self.pool)
-        .await?;
+            .bind(list_id)
+            .bind(&req.name)
+            .bind(&req.amount)
+            .bind(req.sort_order)
+            .fetch_one(&self.pool)
+            .await?;
         Ok(row)
     }
 
@@ -160,15 +160,15 @@ impl ShoppingRepo for PgShoppingRepo {
         let row = sqlx::query_as::<_, ShoppingListItem>(
             "UPDATE shopping_list_items SET name = COALESCE($2, name), amount = COALESCE($3, amount), is_checked = COALESCE($4, is_checked), sort_order = COALESCE($5, sort_order) WHERE id = $1 AND list_id = $6 RETURNING *",
         )
-        .bind(item_id)
-        .bind(&req.name)
-        .bind(&req.amount)
-        .bind(req.is_checked)
-        .bind(req.sort_order)
-        .bind(list_id)
-        .fetch_optional(&self.pool)
-        .await?
-        .ok_or_else(|| AppError::NotFound("shopping list item not found".into()))?;
+            .bind(item_id)
+            .bind(&req.name)
+            .bind(&req.amount)
+            .bind(req.is_checked)
+            .bind(req.sort_order)
+            .bind(list_id)
+            .fetch_optional(&self.pool)
+            .await?
+            .ok_or_else(|| AppError::NotFound("shopping list item not found".into()))?;
         Ok(row)
     }
 
@@ -194,12 +194,12 @@ impl ShoppingRepo for PgShoppingRepo {
             let row = sqlx::query_as::<_, ShoppingListItem>(
                 "INSERT INTO shopping_list_items (list_id, name, amount, sort_order) VALUES ($1, $2, $3, $4) RETURNING *"
             )
-            .bind(list_id)
-            .bind(&item.name)
-            .bind(item.amount.as_deref())
-            .bind(item.sort_order.unwrap_or(i as i32))
-            .fetch_one(&self.pool)
-            .await?;
+                .bind(list_id)
+                .bind(&item.name)
+                .bind(item.amount.as_deref())
+                .bind(item.sort_order.unwrap_or(i as i32))
+                .fetch_one(&self.pool)
+                .await?;
             result.push(row);
         }
         Ok(result)
@@ -209,9 +209,9 @@ impl ShoppingRepo for PgShoppingRepo {
         let unchecked: i64 = sqlx::query_scalar(
             "SELECT COUNT(*) FROM shopping_list_items WHERE list_id = $1 AND (is_checked = false OR is_checked IS NULL)"
         )
-        .bind(list_id)
-        .fetch_one(&self.pool)
-        .await?;
+            .bind(list_id)
+            .fetch_one(&self.pool)
+            .await?;
 
         if unchecked == 0 {
             sqlx::query("UPDATE shopping_lists SET status = 2 WHERE id = $1")

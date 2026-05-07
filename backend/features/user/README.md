@@ -4,13 +4,13 @@
 
 ## API
 
-| 方法 | 路径 | 说明 | 认证 |
-|------|------|------|------|
-| POST | `/api/v1/user/register` | 用户注册，返回 JWT Token | 否 |
-| POST | `/api/v1/user/login` | 用户登录，返回 JWT Token | 否 |
-| POST | `/api/v1/user/logout` | 用户登出，撤销 Token | 是 |
-| GET | `/api/v1/user/me` | 获取当前用户信息 | 是 |
-| PUT | `/api/v1/user/me` | 更新个人资料（昵称、头像） | 是 |
+| 方法   | 路径                      | 说明                | 认证 |
+|------|-------------------------|-------------------|----|
+| POST | `/api/v1/user/register` | 用户注册，返回 JWT Token | 否  |
+| POST | `/api/v1/user/login`    | 用户登录，返回 JWT Token | 否  |
+| POST | `/api/v1/user/logout`   | 用户登出，撤销 Token     | 是  |
+| GET  | `/api/v1/user/me`       | 获取当前用户信息          | 是  |
+| PUT  | `/api/v1/user/me`       | 更新个人资料（昵称、头像）     | 是  |
 
 ## 架构
 

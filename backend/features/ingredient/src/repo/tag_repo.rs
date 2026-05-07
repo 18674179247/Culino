@@ -53,18 +53,18 @@ impl TagRepo for PgTagRepo {
         let row = sqlx::query_as::<_, Tag>(
             "INSERT INTO tags (name, type, color, sort_order) VALUES ($1, $2, $3, $4) RETURNING *",
         )
-        .bind(&req.name)
-        .bind(&req.tag_type)
-        .bind(&req.color)
-        .bind(req.sort_order)
-        .fetch_one(&self.pool)
-        .await
-        .map_err(|e| match e {
-            sqlx::Error::Database(ref db_err) if db_err.is_unique_violation() => {
-                AppError::Conflict("tag already exists".into())
-            }
-            _ => AppError::from(e),
-        })?;
+            .bind(&req.name)
+            .bind(&req.tag_type)
+            .bind(&req.color)
+            .bind(req.sort_order)
+            .fetch_one(&self.pool)
+            .await
+            .map_err(|e| match e {
+                sqlx::Error::Database(ref db_err) if db_err.is_unique_violation() => {
+                    AppError::Conflict("tag already exists".into())
+                }
+                _ => AppError::from(e),
+            })?;
         Ok(row)
     }
 
@@ -73,13 +73,13 @@ impl TagRepo for PgTagRepo {
         let row = sqlx::query_as::<_, Tag>(
             "UPDATE tags SET name = COALESCE($2, name), type = COALESCE($3, type), color = COALESCE($4, color), sort_order = COALESCE($5, sort_order) WHERE id = $1 RETURNING *",
         )
-        .bind(id)
-        .bind(&req.name)
-        .bind(&req.tag_type)
-        .bind(&req.color)
-        .bind(req.sort_order)
-        .fetch_one(&self.pool)
-        .await?;
+            .bind(id)
+            .bind(&req.name)
+            .bind(&req.tag_type)
+            .bind(&req.color)
+            .bind(req.sort_order)
+            .fetch_one(&self.pool)
+            .await?;
         Ok(row)
     }
 
