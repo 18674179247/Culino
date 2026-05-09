@@ -1,13 +1,13 @@
 # Culino — 智能菜谱管理平台
 
-一个全栈菜谱管理应用，包含 Rust 后端服务和 Kotlin Multiplatform 移动端，支持 AI 驱动的营养分析与个性化推荐。
+一个全栈菜谱管理应用，包含 Rust 后端服务和 Kotlin Multiplatform 前端，支持 AI 驱动的营养分析与个性化推荐。
 
 ## 项目结构
 
 ```
 culino/
-├── backend/      # Rust 后端服务（Axum + PostgreSQL）
-└── mobile/       # KMP 移动端（Compose Multiplatform，Android / iOS）
+├── backend/       # Rust 后端服务（Axum + PostgreSQL）
+└── frontend/      # KMP 前端（Compose Multiplatform，Android / iOS / Web）
 ```
 
 ## 功能特性
@@ -34,7 +34,7 @@ culino/
 | API 文档 | Utoipa + Swagger UI |
 | 容器化 | Docker + Docker Compose |
 
-### 移动端
+### 前端
 
 | 组件 | 技术 |
 |------|------|
@@ -44,7 +44,7 @@ culino/
 | 依赖注入 | kotlin-inject |
 | 图片加载 | Coil 3 |
 | 导航 | Navigation Compose |
-| 本地存储 | DataStore |
+| 本地存储 | DataStore / localStorage (Web) |
 
 ## 快速开始
 
@@ -67,16 +67,19 @@ cargo run
 open http://localhost:3000/swagger-ui/
 ```
 
-### 移动端
+### 前端
 
 ```bash
-cd mobile
+cd frontend
 
 # Android
-./gradlew :composeApp:assembleDebug
+./gradlew :app:assembleDebug
 
 # iOS（需要 macOS + Xcode）
-# 通过 Xcode 打开 iOS 项目运行
+# 通过 Xcode 打开 app/iosApp/iosApp.xcodeproj 运行
+
+# Web
+./gradlew :app:wasmJsBrowserDevelopmentRun
 ```
 
 ## API 概览
@@ -95,26 +98,29 @@ cd mobile
 
 完整 API 文档请启动服务后访问 Swagger UI。
 
-## 移动端架构
+## 前端架构
 
-采用多模块 Clean Architecture：
+采用分层多模块架构,依赖方向:`feature → common → framework`：
 
 ```
-mobile/
-├── core/
-│   ├── common/       # 通用工具与扩展
-│   ├── model/        # 数据模型
-│   ├── network/      # 网络层（Ktor）
-│   ├── data/         # 数据持久化
-│   └── ui/           # 公共 UI 组件与主题
-├── feature/
-│   ├── user/         # 用户模块
-│   ├── recipe/       # 菜谱模块
-│   ├── social/       # 社交模块
-│   ├── ingredient/   # 食材模块
-│   ├── tool/         # 工具模块
-│   └── ai/           # AI 模块
-└── composeApp/       # 应用入口与导航
+frontend/
+├── app/                   # 应用壳(Android / iOS / Web 入口)
+│   └── iosApp/            # iOS Xcode 工程
+└── src/
+    ├── framework/         # 技术基建(不依赖业务)
+    │   ├── network/       # Ktor HttpClient、ApiClient、TokenProvider
+    │   └── storage/       # KeyValueStore(DataStore / localStorage)
+    ├── common/            # 跨 feature 通用
+    │   ├── util/          # AppResult、Constants、Extensions
+    │   ├── model/         # 业务数据模型
+    │   ├── api/           # 跨 feature 的业务 API(AI、图片上传)
+    │   └── ui/            # 公共组件与 Material 3 主题
+    └── feature/           # 业务功能(每个 feature 分 data/domain/presentation)
+        ├── user/          # 用户
+        ├── recipe/        # 菜谱
+        ├── social/        # 社交
+        ├── ingredient/    # 食材
+        └── tool/          # 工具
 ```
 
 每个 feature 模块分为 `data` → `domain` → `presentation` 三层。
@@ -124,7 +130,7 @@ mobile/
 - Rust 1.86+
 - Docker & Docker Compose
 - JDK 17+
-- Android Studio / Xcode（移动端开发）
+- Android Studio / Xcode（前端开发）
 
 ## 许可证
 

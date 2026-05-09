@@ -29,7 +29,7 @@ done
 
 # 运行前端
 echo "==> 构建并安装前端 Debug..."
-cd "$ROOT/mobile"
+cd "$ROOT/frontend"
 bash .run/android-debug.sh
 
 echo "==> 全部完成！后端 PID: $BACKEND_PID"
