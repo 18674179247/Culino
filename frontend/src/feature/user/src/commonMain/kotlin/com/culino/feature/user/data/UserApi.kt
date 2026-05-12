@@ -28,6 +28,12 @@ class UserApi(private val apiClient: ApiClient) {
             method = HttpMethod.Get
         }
 
+    suspend fun getMyStats(): AppResult<ApiResponse<UserStatsDto>> =
+        apiClient.safeRequest {
+            url { path("user/me/stats") }
+            method = HttpMethod.Get
+        }
+
     suspend fun updateProfile(request: UpdateProfileRequest): AppResult<ApiResponse<UserDto>> =
         apiClient.safeRequest {
             url { path("user/me") }

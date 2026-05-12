@@ -154,6 +154,10 @@ pub fn build_router(state: AppState, doc: utoipa::openapi::OpenApi) -> Router {
             "/me",
             axum::routing::get(culino_user::handler::me).put(culino_user::handler::update_profile),
         )
+        .route(
+            "/me/stats",
+            axum::routing::get(culino_user::handler::me_stats),
+        )
         .route("/logout", axum::routing::post(culino_user::handler::logout))
         .route(
             "/invite-codes",

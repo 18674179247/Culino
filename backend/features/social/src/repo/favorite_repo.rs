@@ -18,6 +18,8 @@ pub trait FavoriteRepo: Send + Sync {
     async fn add(&self, user_id: Uuid, recipe_id: Uuid) -> Result<Favorite, AppError>;
     /// 取消收藏
     async fn remove(&self, user_id: Uuid, recipe_id: Uuid) -> Result<(), AppError>;
+    /// 是否已收藏某菜谱
+    async fn is_favorited(&self, user_id: Uuid, recipe_id: Uuid) -> Result<bool, AppError>;
 }
 
 /// PostgreSQL 收藏仓储实现
@@ -80,5 +82,16 @@ impl FavoriteRepo for PgFavoriteRepo {
             .execute(&self.pool)
             .await?;
         Ok(())
+    }
+
+    async fn is_favorited(&self, user_id: Uuid, recipe_id: Uuid) -> Result<bool, AppError> {
+        let exists: Option<i32> = sqlx::query_scalar(
+            "SELECT 1 FROM favorites WHERE user_id = $1 AND recipe_id = $2 LIMIT 1",
+        )
+        .bind(user_id)
+        .bind(recipe_id)
+        .fetch_optional(&self.pool)
+        .await?;
+        Ok(exists.is_some())
     }
 }

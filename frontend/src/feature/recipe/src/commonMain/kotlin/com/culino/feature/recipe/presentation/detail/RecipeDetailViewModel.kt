@@ -66,10 +66,8 @@ class RecipeDetailViewModel(
 
     private fun checkIfFavorited(recipeId: String) {
         viewModelScope.launch {
-            when (val result = socialRepository.getFavorites()) {
-                is AppResult.Success -> {
-                    _isFavorited.value = result.data.any { it.recipeId == recipeId }
-                }
+            when (val result = socialRepository.isFavorited(recipeId)) {
+                is AppResult.Success -> _isFavorited.value = result.data
                 is AppResult.Error -> _isFavorited.value = false
             }
         }

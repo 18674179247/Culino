@@ -49,6 +49,22 @@ pub async fn list_favorites(
     ApiResponse::ok(rows)
 }
 
+/// 查询某菜谱是否已被当前用户收藏（避免详情页为判定而拉全量列表）
+#[utoipa::path(get, path = "/api/v1/social/favorites/{recipe_id}/check", tag = "收藏",
+    security(("bearer" = [])),
+    params(("recipe_id" = Uuid, Path, description = "菜谱ID")),
+    responses((status = 200, body = bool))
+)]
+pub async fn check_favorite(
+    State(state): State<AppState>,
+    auth: AuthUser,
+    Path(recipe_id): Path<Uuid>,
+) -> ApiResult<bool> {
+    let repo = PgFavoriteRepo::new(state.pool.clone());
+    let is_fav = repo.is_favorited(auth.user_id, recipe_id).await?;
+    ApiResponse::ok(is_fav)
+}
+
 /// 收藏菜谱（重复收藏不会报错，返回已有记录）
 #[utoipa::path(post, path = "/api/v1/social/favorites/{recipe_id}", tag = "收藏",
     security(("bearer" = [])),

@@ -29,3 +29,10 @@ fun UserDto.toDomain(): User = User(
     avatar = avatar,
     roleCode = roleCode
 )
+
+@Serializable
+data class UserStatsDto(
+    @SerialName("recipe_count") val recipeCount: Long,
+    @SerialName("favorite_count") val favoriteCount: Long,
+    @SerialName("cooking_log_count") val cookingLogCount: Long,
+)

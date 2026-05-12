@@ -276,3 +276,32 @@ pub async fn revoke_invite_code(
     tracing::info!("邀请码已吊销: code={}, by={}", code, auth.user_id);
     ApiResponse::ok(true)
 }
+
+/// 查询当前用户统计信息(菜谱数 / 收藏数 / 烹饪记录数)
+/// 替代前端用 list_favorites + list_cooking_logs + list_recipes 拉全量再 count 的反模式
+#[utoipa::path(get, path = "/api/v1/user/me/stats", tag = "用户",
+    security(("bearer" = [])),
+    responses((status = 200, body = UserStats))
+)]
+pub async fn me_stats(
+    State(state): State<AppState>,
+    auth: AuthUser,
+) -> ApiResult<UserStats> {
+    // 单行子查询,三个 COUNT 共用一次往返
+    let stats: (i64, i64, i64) = sqlx::query_as(
+        r#"
+        SELECT
+            (SELECT COUNT(*) FROM recipes WHERE author_id = $1 AND status = 1),
+            (SELECT COUNT(*) FROM favorites WHERE user_id = $1),
+            (SELECT COUNT(*) FROM cooking_logs WHERE user_id = $1)
+        "#,
+    )
+    .bind(auth.user_id)
+    .fetch_one(&state.pool)
+    .await?;
+    ApiResponse::ok(UserStats {
+        recipe_count: stats.0,
+        favorite_count: stats.1,
+        cooking_log_count: stats.2,
+    })
+}

@@ -5,6 +5,7 @@ import com.culino.framework.network.ApiResponse
 
 interface SocialRepository {
     suspend fun getFavorites(): AppResult<List<Favorite>>
+    suspend fun isFavorited(recipeId: String): AppResult<Boolean>
     suspend fun addFavorite(recipeId: String): AppResult<Favorite>
     suspend fun removeFavorite(recipeId: String): AppResult<Boolean>
     suspend fun getCookingLogs(): AppResult<List<CookingLog>>
@@ -20,6 +21,15 @@ interface SocialRepository {
 class SocialRepositoryImpl(private val api: SocialApi) : SocialRepository {
     override suspend fun getFavorites(): AppResult<List<Favorite>> = try {
         when (val response = api.getFavorites()) {
+            is ApiResponse.Success -> AppResult.Success(response.data)
+            is ApiResponse.Error -> AppResult.Error(response.message)
+        }
+    } catch (e: Exception) {
+        AppResult.Error(e.message ?: "Unknown error", e)
+    }
+
+    override suspend fun isFavorited(recipeId: String): AppResult<Boolean> = try {
+        when (val response = api.isFavorited(recipeId)) {
             is ApiResponse.Success -> AppResult.Success(response.data)
             is ApiResponse.Error -> AppResult.Error(response.message)
         }
