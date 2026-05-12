@@ -182,6 +182,18 @@ fun RecipeListScreen(
             }
 
             is RecipeListState.Success -> {
+                val shouldLoadMore by remember(listState, state.recipes.size, state.hasMore) {
+                    derivedStateOf {
+                        if (!state.hasMore) return@derivedStateOf false
+                        val lastVisible = listState.layoutInfo.visibleItemsInfo.lastOrNull()
+                            ?: return@derivedStateOf false
+                        // 剩余 3 个 item 时触发下一页
+                        lastVisible.index >= state.recipes.size - 3
+                    }
+                }
+                LaunchedEffect(shouldLoadMore) {
+                    if (shouldLoadMore) viewModel.loadMore()
+                }
                 LazyColumn(
                     state = listState,
                     modifier = Modifier.fillMaxSize().padding(padding),
@@ -202,7 +214,7 @@ fun RecipeListScreen(
                     }
 
                     if (state.hasMore) {
-                        item {
+                        item(key = "__load_more__") {
                             Box(
                                 modifier = Modifier.fillMaxWidth().padding(16.dp),
                                 contentAlignment = Alignment.Center
@@ -212,9 +224,6 @@ fun RecipeListScreen(
                                     color = MaterialTheme.colorScheme.primary,
                                     strokeWidth = 2.dp
                                 )
-                            }
-                            LaunchedEffect(Unit) {
-                                viewModel.loadMore()
                             }
                         }
                     }
