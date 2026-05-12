@@ -41,9 +41,10 @@ pub async fn list(State(state): State<AppState>, Query(q): Query<TagQuery>) -> A
 )]
 pub async fn create(
     State(state): State<AppState>,
-    _auth: AuthUser,
+    auth: AuthUser,
     Json(req): Json<CreateTagReq>,
 ) -> ApiResult<Tag> {
+    auth.require_admin()?;
     tracing::info!("创建标签: name={}, type={}", req.name, req.tag_type);
     let repo = PgTagRepo::new(state.pool.clone());
     let row = repo.create(&req).await?;
