@@ -44,9 +44,14 @@ pub struct AuthUser {
 }
 
 impl AuthUser {
+    /// 当前用户是否为管理员
+    pub fn is_admin(&self) -> bool {
+        self.role_code == "admin"
+    }
+
     /// 检查当前用户是否为管理员，否则返回 Forbidden
     pub fn require_admin(&self) -> Result<(), AppError> {
-        if self.role_code != "admin" {
+        if !self.is_admin() {
             return Err(AppError::Forbidden("insufficient permissions".into()));
         }
         Ok(())

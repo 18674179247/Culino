@@ -78,6 +78,16 @@ impl CommentRepo {
         Ok(result.rows_affected() > 0)
     }
 
+    /// 管理员删除评论,跳过 user_id 校验,用于处理违规内容
+    pub async fn delete_as_admin(pool: &PgPool, comment_id: Uuid) -> Result<bool> {
+        let result = sqlx::query("DELETE FROM recipe_comments WHERE id = $1")
+            .bind(comment_id)
+            .execute(pool)
+            .await
+            .context("Failed to delete comment as admin")?;
+        Ok(result.rows_affected() > 0)
+    }
+
     pub async fn count(pool: &PgPool, recipe_id: Uuid) -> Result<i64> {
         let count = sqlx::query_scalar::<_, i64>(
             "SELECT COUNT(*) FROM recipe_comments WHERE recipe_id = $1",

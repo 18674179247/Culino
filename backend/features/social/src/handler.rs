@@ -243,7 +243,7 @@ pub async fn create_comment(
     ApiResponse::ok(comment)
 }
 
-/// 删除评论（仅评论作者可删除）
+/// 删除评论（评论作者可删除;管理员可删除任意评论处理违规内容）
 #[utoipa::path(delete, path = "/api/v1/social/comments/{id}", tag = "社交",
     security(("bearer" = [])),
     params(("id" = Uuid, Path, description = "评论ID")),
@@ -254,8 +254,14 @@ pub async fn delete_comment(
     auth: AuthUser,
     Path(id): Path<Uuid>,
 ) -> ApiResult<bool> {
-    let deleted = crate::repo::comment_repo::CommentRepo::delete(&state.pool, id, auth.user_id)
-        .await
-        .map_err(culino_common::error::AppError::Internal)?;
+    let deleted = if auth.is_admin() {
+        crate::repo::comment_repo::CommentRepo::delete_as_admin(&state.pool, id)
+            .await
+            .map_err(culino_common::error::AppError::Internal)?
+    } else {
+        crate::repo::comment_repo::CommentRepo::delete(&state.pool, id, auth.user_id)
+            .await
+            .map_err(culino_common::error::AppError::Internal)?
+    };
     ApiResponse::ok(deleted)
 }
