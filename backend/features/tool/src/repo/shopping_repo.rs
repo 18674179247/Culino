@@ -39,10 +39,12 @@ pub trait ShoppingRepo: Send + Sync {
         &self,
         item_id: i32,
         list_id: Uuid,
+        user_id: Uuid,
         req: &UpdateShoppingItemReq,
     ) -> Result<ShoppingListItem, AppError>;
     /// 删除购物清单项
-    async fn delete_item(&self, item_id: i32, list_id: Uuid) -> Result<(), AppError>;
+    async fn delete_item(&self, item_id: i32, list_id: Uuid, user_id: Uuid)
+    -> Result<(), AppError>;
     /// 批量添加购物清单项
     async fn batch_add_items(
         &self,
@@ -150,15 +152,20 @@ impl ShoppingRepo for PgShoppingRepo {
         Ok(row)
     }
 
-    /// 更新购物清单项，使用 COALESCE 实现部分更新
+    /// 更新购物清单项，使用 COALESCE 实现部分更新。
+    /// WHERE 子句中通过子查询校验 list 归属用户，repo 层不再依赖调用方做归属检查。
     async fn update_item(
         &self,
         item_id: i32,
         list_id: Uuid,
+        user_id: Uuid,
         req: &UpdateShoppingItemReq,
     ) -> Result<ShoppingListItem, AppError> {
         let row = sqlx::query_as::<_, ShoppingListItem>(
-            "UPDATE shopping_list_items SET name = COALESCE($2, name), amount = COALESCE($3, amount), is_checked = COALESCE($4, is_checked), sort_order = COALESCE($5, sort_order) WHERE id = $1 AND list_id = $6 RETURNING *",
+            "UPDATE shopping_list_items SET name = COALESCE($2, name), amount = COALESCE($3, amount), is_checked = COALESCE($4, is_checked), sort_order = COALESCE($5, sort_order) \
+             WHERE id = $1 AND list_id = $6 \
+               AND EXISTS (SELECT 1 FROM shopping_lists WHERE id = $6 AND user_id = $7) \
+             RETURNING *",
         )
             .bind(item_id)
             .bind(&req.name)
@@ -166,18 +173,29 @@ impl ShoppingRepo for PgShoppingRepo {
             .bind(req.is_checked)
             .bind(req.sort_order)
             .bind(list_id)
+            .bind(user_id)
             .fetch_optional(&self.pool)
             .await?
             .ok_or_else(|| AppError::NotFound("shopping list item not found".into()))?;
         Ok(row)
     }
 
-    async fn delete_item(&self, item_id: i32, list_id: Uuid) -> Result<(), AppError> {
-        let result = sqlx::query("DELETE FROM shopping_list_items WHERE id = $1 AND list_id = $2")
-            .bind(item_id)
-            .bind(list_id)
-            .execute(&self.pool)
-            .await?;
+    async fn delete_item(
+        &self,
+        item_id: i32,
+        list_id: Uuid,
+        user_id: Uuid,
+    ) -> Result<(), AppError> {
+        let result = sqlx::query(
+            "DELETE FROM shopping_list_items \
+             WHERE id = $1 AND list_id = $2 \
+               AND EXISTS (SELECT 1 FROM shopping_lists WHERE id = $2 AND user_id = $3)",
+        )
+        .bind(item_id)
+        .bind(list_id)
+        .bind(user_id)
+        .execute(&self.pool)
+        .await?;
         if result.rows_affected() == 0 {
             return Err(AppError::NotFound("shopping list item not found".into()));
         }

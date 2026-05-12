@@ -19,6 +19,9 @@ use utoipa::OpenApi;
         handler::logout,
         handler::me,
         handler::update_profile,
+        handler::create_invite_code,
+        handler::list_invite_codes,
+        handler::revoke_invite_code,
     ),
     components(schemas(
         model::LoginReq,
@@ -26,6 +29,8 @@ use utoipa::OpenApi;
         model::UpdateProfileReq,
         model::UserResponse,
         model::TokenResponse,
+        model::InviteCode,
+        model::CreateInviteCodeReq,
     ))
 )]
 pub struct UserApi;

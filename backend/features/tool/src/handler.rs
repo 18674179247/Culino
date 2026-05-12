@@ -136,7 +136,9 @@ pub async fn update_shopping_item(
     repo.find_by_id(list_id, auth.user_id)
         .await?
         .ok_or_else(|| AppError::NotFound("shopping list not found".into()))?;
-    let item = repo.update_item(item_id, list_id, &req).await?;
+    let item = repo
+        .update_item(item_id, list_id, auth.user_id, &req)
+        .await?;
 
     if req.is_checked == Some(true) {
         repo.auto_complete_list(list_id).await?;
@@ -168,7 +170,7 @@ pub async fn delete_shopping_item(
     repo.find_by_id(list_id, auth.user_id)
         .await?
         .ok_or_else(|| AppError::NotFound("shopping list not found".into()))?;
-    repo.delete_item(item_id, list_id).await?;
+    repo.delete_item(item_id, list_id, auth.user_id).await?;
     ApiResponse::ok(true)
 }
 

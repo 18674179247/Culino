@@ -1,0 +1,96 @@
+services:
+  db:
+    image: postgres:16.4
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-culino}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD 必须在 .env 中设置}
+      POSTGRES_DB: ${POSTGRES_DB:-culino_db}
+    volumes:
+      - ${DATA_ROOT:-/data/culino}/pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-culino} -d ${POSTGRES_DB:-culino_db}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks: [culino-net]
+
+  redis:
+    image: redis:7.2-alpine
+    restart: always
+    command: >
+      redis-server
+      --requirepass ${REDIS_PASSWORD:?REDIS_PASSWORD 必须在 .env 中设置}
+      --appendonly yes
+      --maxmemory 512mb
+      --maxmemory-policy allkeys-lru
+    volumes:
+      - ${DATA_ROOT:-/data/culino}/redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks: [culino-net]
+
+  rustfs:
+    image: rustfs/rustfs:latest
+    restart: always
+    command: server /data --console-address ":9001"
+    environment:
+      RUSTFS_ROOT_USER: ${S3_ACCESS_KEY:?S3_ACCESS_KEY 必须在 .env 中设置}
+      RUSTFS_ROOT_PASSWORD: ${S3_SECRET_KEY:?S3_SECRET_KEY 必须在 .env 中设置}
+    ports:
+      # 控制台只暴露到本机，通过 SSH 隧道访问: ssh -L 9001:localhost:9001 user@server
+      - "127.0.0.1:9001:9001"
+    volumes:
+      - ${DATA_ROOT:-/data/culino}/rustfsdata:/data
+    networks: [culino-net]
+
+  app:
+    # 方案 A：服务器上 build（简单但慢）
+    build:
+      context: .
+      dockerfile: Dockerfile
+    # 方案 B：拉取预构建镜像（推荐生产用）。取消下行注释并注释上面 build 块：
+    # image: ${IMAGE_REGISTRY:-your-registry}/culino-backend:${IMAGE_TAG:-latest}
+    restart: always
+    ports:
+      # 只监听本机，强制走 Nginx 反向代理
+      - "127.0.0.1:3000:3000"
+    environment:
+      RUN_MODE: production
+      SERVER_ADDR: 0.0.0.0:3000
+      DATABASE_URL: postgres://${POSTGRES_USER:-culino}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-culino_db}
+      REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET 必须在 .env 中设置}
+      CORS_ORIGINS: ${CORS_ORIGINS:?CORS_ORIGINS 必须在 .env 中设置为正式域名}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      LOG_DIR: /app/logs
+      S3_ENDPOINT: http://rustfs:9000
+      S3_REGION: ${S3_REGION:-us-east-1}
+      S3_BUCKET: ${S3_BUCKET:-culino}
+      S3_ACCESS_KEY: ${S3_ACCESS_KEY}
+      S3_SECRET_KEY: ${S3_SECRET_KEY}
+      DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY:?DEEPSEEK_API_KEY 必须在 .env 中设置}
+      BOOTSTRAP_ADMIN_USERNAME: ${BOOTSTRAP_ADMIN_USERNAME:-}
+    volumes:
+      - ${DATA_ROOT:-/data/culino}/logs:/app/logs
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rustfs:
+        condition: service_started
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:3000/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    networks: [culino-net]
+
+networks:
+  culino-net:
+    driver: bridge
