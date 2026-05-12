@@ -7,6 +7,7 @@ import com.culino.feature.recipe.data.RecipeDetail
 import com.culino.feature.recipe.data.RecipeRepository
 import com.culino.feature.recipe.domain.GetRecipeDetailUseCase
 import com.culino.feature.social.data.*
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -74,28 +75,52 @@ class RecipeDetailViewModel(
         }
     }
 
+    // 同一菜谱的 toggle 正在飞行时,下一次点击先取消上一次,避免连点造成"点两次抵消了"的乱序结果
+    private var favoriteJob: Job? = null
+    private var likeJob: Job? = null
+
     fun toggleFavorite(recipeId: String) {
-        viewModelScope.launch {
-            val result = if (_isFavorited.value) {
+        val prev = _isFavorited.value
+        // 乐观 UI: 先翻转本地状态,给用户即时反馈
+        _isFavorited.value = !prev
+        favoriteJob?.cancel()
+        favoriteJob = viewModelScope.launch {
+            val result = if (prev) {
                 socialRepository.removeFavorite(recipeId)
             } else {
                 socialRepository.addFavorite(recipeId)
             }
-            when (result) {
-                is AppResult.Success -> _isFavorited.value = !_isFavorited.value
-                is AppResult.Error -> _actionError.value = result.message
+            if (result is AppResult.Error) {
+                // 回滚并提示,网络失败不让 UI 停留在错误状态
+                _isFavorited.value = prev
+                _actionError.value = result.message
             }
         }
     }
 
     fun toggleLike(recipeId: String) {
-        viewModelScope.launch {
+        val prevLiked = _isLiked.value
+        val prevCount = _likeCount.value
+        // 乐观 UI: 立即翻转并调整计数
+        _isLiked.value = !prevLiked
+        _likeCount.value = prevCount + if (prevLiked) -1 else 1
+        likeJob?.cancel()
+        likeJob = viewModelScope.launch {
             when (val result = socialRepository.toggleLike(recipeId)) {
                 is AppResult.Success -> {
-                    _isLiked.value = result.data
-                    _likeCount.value += if (result.data) 1 else -1
+                    // 以服务端权威结果为准,乐观值若与 server 不一致则对齐
+                    val serverLiked = result.data
+                    if (serverLiked != _isLiked.value) {
+                        _isLiked.value = serverLiked
+                        // 计数按 server 状态 vs 进入时基线计算
+                        _likeCount.value = prevCount + if (serverLiked == prevLiked) 0 else if (serverLiked) 1 else -1
+                    }
                 }
-                is AppResult.Error -> _actionError.value = result.message
+                is AppResult.Error -> {
+                    _isLiked.value = prevLiked
+                    _likeCount.value = prevCount
+                    _actionError.value = result.message
+                }
             }
         }
     }
