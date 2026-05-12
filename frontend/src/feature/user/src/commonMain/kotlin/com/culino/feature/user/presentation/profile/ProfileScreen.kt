@@ -36,7 +36,8 @@ fun ProfileScreen(
     onNavigateToFavorites: () -> Unit = {},
     onNavigateToCookingLogs: () -> Unit = {},
     onNavigateToShoppingLists: () -> Unit = {},
-    onNavigateToMealPlans: () -> Unit = {}
+    onNavigateToMealPlans: () -> Unit = {},
+    onNavigateToInviteCodes: () -> Unit = {}
 ) {
     val state by viewModel.state.collectAsState()
 
@@ -85,6 +86,11 @@ fun ProfileScreen(
                     onShoppingLists = onNavigateToShoppingLists,
                     onMealPlans = onNavigateToMealPlans
                 )
+
+                // Admin 专属入口
+                if (state.user?.isAdmin == true) {
+                    AdminSection(onNavigateToInviteCodes = onNavigateToInviteCodes)
+                }
 
                 // Profile info card
                 state.user?.let { user ->
@@ -296,5 +302,64 @@ private fun ProfileInfoRow(label: String, value: String) {
         Text(label, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         Spacer(Modifier.height(2.dp))
         Text(value, style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurface)
+    }
+}
+
+@Composable
+private fun AdminSection(onNavigateToInviteCodes: () -> Unit) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+    ) {
+        Column(modifier = Modifier.padding(vertical = 8.dp)) {
+            Text(
+                text = "管理员",
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.padding(start = 16.dp, top = 8.dp, bottom = 4.dp)
+            )
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable(onClick = onNavigateToInviteCodes)
+                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(40.dp)
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.primaryContainer),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        Icons.Outlined.ConfirmationNumber,
+                        contentDescription = null,
+                        modifier = Modifier.size(22.dp),
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                }
+                Spacer(Modifier.width(12.dp))
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        "邀请码管理",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Text(
+                        "生成、查看、吊销邀请码",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                Icon(
+                    Icons.Outlined.ChevronRight,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
     }
 }

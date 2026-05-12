@@ -1,5 +1,6 @@
 package com.culino.common.model
 
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -12,7 +13,8 @@ data class LoginRequest(
 data class RegisterRequest(
     val username: String,
     val password: String,
-    val nickname: String? = null
+    val nickname: String? = null,
+    @SerialName("invite_code") val inviteCode: String
 )
 
 @Serializable

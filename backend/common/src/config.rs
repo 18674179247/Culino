@@ -1,6 +1,8 @@
 //! 应用配置模块
 //!
 //! 从环境变量读取数据库连接、JWT 密钥、服务监听地址等配置。
+//! 关键密钥（JWT_SECRET、S3_ACCESS_KEY、S3_SECRET_KEY、DATABASE_URL）缺失时直接 panic，
+//! 避免使用可预测的默认值导致安全事故。
 
 use std::env;
 
@@ -22,7 +24,7 @@ pub struct AppConfig {
     pub jwt_secret: String,
     /// HTTP 服务监听地址
     pub server_addr: String,
-    /// CORS 允许的 Origin 列表，为空则允许所有
+    /// CORS 允许的 Origin 列表，生产环境必须显式配置
     pub cors_origins: Vec<String>,
     /// Redis 连接地址
     pub redis_url: String,
@@ -42,10 +44,17 @@ pub struct AppConfig {
     pub s3_secret_key: String,
     /// DeepSeek API Key
     pub deepseek_api_key: Option<String>,
+    /// 启动时自动提权为 admin 的用户名（仅当该用户已存在时生效）
+    pub bootstrap_admin_username: Option<String>,
+}
+
+/// 必填环境变量，缺失直接 panic
+fn require_env(key: &str) -> String {
+    env::var(key).unwrap_or_else(|_| panic!("环境变量 {key} 未设置"))
 }
 
 impl AppConfig {
-    /// 从环境变量加载配置，DATABASE_URL 为必填项
+    /// 从环境变量加载配置，关键密钥缺失直接 panic
     pub fn from_env() -> Self {
         let run_mode = match env::var("RUN_MODE")
             .unwrap_or_else(|_| "dev".into())
@@ -55,34 +64,40 @@ impl AppConfig {
             _ => RunMode::Dev,
         };
 
-        let jwt_secret = env::var("JWT_SECRET").unwrap_or_else(|_| "dev-secret-change-me".into());
-
-        if run_mode == RunMode::Production && jwt_secret == "dev-secret-change-me" {
-            panic!("生产环境必须设置 JWT_SECRET 环境变量");
+        let jwt_secret = require_env("JWT_SECRET");
+        if jwt_secret.len() < 32 {
+            panic!("JWT_SECRET 长度不足 32 字节，请使用 `openssl rand -base64 48` 生成强随机密钥");
         }
 
-        let cors_origins = env::var("CORS_ORIGINS")
+        let cors_origins: Vec<String> = env::var("CORS_ORIGINS")
             .unwrap_or_default()
             .split(',')
             .map(|s| s.trim().to_string())
             .filter(|s| !s.is_empty())
             .collect();
 
+        if run_mode == RunMode::Production && cors_origins.is_empty() {
+            panic!("生产环境必须显式配置 CORS_ORIGINS（逗号分隔的完整 Origin 列表）");
+        }
+
         Self {
             run_mode,
-            database_url: env::var("DATABASE_URL").expect("DATABASE_URL 环境变量未设置"),
+            database_url: require_env("DATABASE_URL"),
             jwt_secret,
             server_addr: env::var("SERVER_ADDR").unwrap_or_else(|_| "0.0.0.0:3000".into()),
             cors_origins,
-            redis_url: env::var("REDIS_URL").unwrap_or_else(|_| "redis://127.0.0.1:6379".into()),
-            log_level: env::var("LOG_LEVEL").unwrap_or_else(|_| "debug".into()),
+            redis_url: require_env("REDIS_URL"),
+            log_level: env::var("LOG_LEVEL").unwrap_or_else(|_| "info".into()),
             log_dir: env::var("LOG_DIR").unwrap_or_else(|_| "logs".into()),
-            s3_endpoint: env::var("S3_ENDPOINT").unwrap_or_else(|_| "http://127.0.0.1:9000".into()),
+            s3_endpoint: require_env("S3_ENDPOINT"),
             s3_region: env::var("S3_REGION").unwrap_or_else(|_| "us-east-1".into()),
             s3_bucket: env::var("S3_BUCKET").unwrap_or_else(|_| "culino".into()),
-            s3_access_key: env::var("S3_ACCESS_KEY").unwrap_or_else(|_| "minioadmin".into()),
-            s3_secret_key: env::var("S3_SECRET_KEY").unwrap_or_else(|_| "minioadmin".into()),
-            deepseek_api_key: env::var("DEEPSEEK_API_KEY").ok(),
+            s3_access_key: require_env("S3_ACCESS_KEY"),
+            s3_secret_key: require_env("S3_SECRET_KEY"),
+            deepseek_api_key: env::var("DEEPSEEK_API_KEY").ok().filter(|s| !s.is_empty()),
+            bootstrap_admin_username: env::var("BOOTSTRAP_ADMIN_USERNAME")
+                .ok()
+                .filter(|s| !s.is_empty()),
         }
     }
 

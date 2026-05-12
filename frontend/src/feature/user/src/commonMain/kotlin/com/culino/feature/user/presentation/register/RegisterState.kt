@@ -6,6 +6,7 @@ data class RegisterState(
     val username: String = "",
     val password: String = "",
     val nickname: String = "",
+    val inviteCode: String = "",
     val isLoading: Boolean = false,
     val error: String? = null,
     val registeredUser: User? = null
@@ -15,6 +16,7 @@ sealed interface RegisterIntent {
     data class UpdateUsername(val username: String) : RegisterIntent
     data class UpdatePassword(val password: String) : RegisterIntent
     data class UpdateNickname(val nickname: String) : RegisterIntent
+    data class UpdateInviteCode(val inviteCode: String) : RegisterIntent
     data object Submit : RegisterIntent
     data object ClearError : RegisterIntent
 }

@@ -40,4 +40,27 @@ class UserApi(private val apiClient: ApiClient) {
             url { path("user/logout") }
             method = HttpMethod.Post
         }
+
+    // -----------------------------
+    // 邀请码管理（仅 admin 可用，后端会校验 role_code）
+    // -----------------------------
+
+    suspend fun listInviteCodes(): AppResult<ApiResponse<List<InviteCode>>> =
+        apiClient.safeRequest {
+            url { path("user/invite-codes") }
+            method = HttpMethod.Get
+        }
+
+    suspend fun createInviteCode(request: CreateInviteCodeRequest): AppResult<ApiResponse<InviteCode>> =
+        apiClient.safeRequest {
+            url { path("user/invite-codes") }
+            method = HttpMethod.Post
+            setBody(request)
+        }
+
+    suspend fun revokeInviteCode(code: String): AppResult<ApiResponse<Boolean>> =
+        apiClient.safeRequest {
+            url { path("user/invite-codes/$code") }
+            method = HttpMethod.Delete
+        }
 }

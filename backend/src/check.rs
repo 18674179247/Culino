@@ -62,3 +62,49 @@ pub async fn migrate(pool: &PgPool) {
     sqlx::migrate!().run(pool).await.expect("数据库迁移失败");
     tracing::info!("数据库迁移完成");
 }
+
+/// 若配置了 BOOTSTRAP_ADMIN_USERNAME，则将该用户的 role_id 提升为 admin。
+/// 仅当用户已存在时生效，不存在则只记录一条 warn。
+pub async fn bootstrap_admin(pool: &PgPool, config: &AppConfig) {
+    let Some(ref username) = config.bootstrap_admin_username else {
+        return;
+    };
+
+    let admin_role: Option<(i32,)> = sqlx::query_as("SELECT id FROM roles WHERE code = 'admin'")
+        .fetch_optional(pool)
+        .await
+        .expect("查询 admin 角色失败");
+
+    let Some((admin_role_id,)) = admin_role else {
+        tracing::warn!("roles 表缺少 'admin' 角色，跳过自动提权");
+        return;
+    };
+
+    let updated = sqlx::query(
+        "UPDATE users SET role_id = $1 WHERE username = $2 AND role_id IS DISTINCT FROM $1",
+    )
+    .bind(admin_role_id)
+    .bind(username)
+    .execute(pool)
+    .await
+    .expect("提权 admin 失败");
+
+    if updated.rows_affected() > 0 {
+        tracing::info!("已将用户 {} 提权为 admin", username);
+    } else {
+        let exists: Option<(uuid::Uuid,)> =
+            sqlx::query_as("SELECT id FROM users WHERE username = $1")
+                .bind(username)
+                .fetch_optional(pool)
+                .await
+                .expect("查询用户失败");
+        if exists.is_none() {
+            tracing::warn!(
+                "BOOTSTRAP_ADMIN_USERNAME={} 尚未注册，请先注册后重启应用以自动提权",
+                username
+            );
+        } else {
+            tracing::debug!("用户 {} 已经是 admin", username);
+        }
+    }
+}

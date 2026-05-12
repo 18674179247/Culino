@@ -10,11 +10,11 @@ use culino_common::config::{AppConfig, RunMode};
 use culino_common::state::AppState;
 use serde_json::json;
 use std::time::Duration;
+use tower_governor::{GovernorLayer, governor::GovernorConfigBuilder};
 use tower_http::cors::{AllowOrigin, CorsLayer};
 use tower_http::request_id::{MakeRequestUuid, PropagateRequestIdLayer, SetRequestIdLayer};
 use tower_http::timeout::TimeoutLayer;
 use tower_http::trace::TraceLayer;
-// use tower_governor::{governor::GovernorConfigBuilder, GovernorLayer}; // 暂时禁用限流
 use utoipa_swagger_ui::SwaggerUi;
 
 /// 健康检查
@@ -81,7 +81,9 @@ fn ai_routes() -> Router<AppState> {
         ))
 }
 
-/// 构建 CORS 层，根据配置决定允许的 Origin
+/// 构建 CORS 层。
+/// - 生产：`cors_origins` 已在 config 中校验非空，此处直接使用白名单
+/// - 开发：若白名单为空则允许所有（兼容本地调试）
 fn build_cors(config: &AppConfig) -> CorsLayer {
     let cors = CorsLayer::new()
         .allow_methods([
@@ -97,6 +99,7 @@ fn build_cors(config: &AppConfig) -> CorsLayer {
         ]);
 
     if config.cors_origins.is_empty() {
+        // 仅 dev 走到这里（production 在 config 构造时已 panic）
         cors.allow_origin(AllowOrigin::any())
     } else {
         let origins: Vec<_> = config
@@ -112,44 +115,80 @@ fn build_cors(config: &AppConfig) -> CorsLayer {
 pub fn build_router(state: AppState, doc: utoipa::openapi::OpenApi) -> Router {
     let x_request_id = HeaderName::from_static("x-request-id");
 
-    // 限流配置：认证接口每个 IP 每秒 10 次请求，突发最多 20 次
-    // 这个配置足够宽松，不会影响正常登录，但能防止暴力破解
-    // 暂时注释掉以调试
-    // let rate_limit_config = GovernorConfigBuilder::default()
-    //     .per_second(10)
-    //     .burst_size(20)
-    //     .finish()
-    //     .unwrap();
+    // ---------- 限流配置 ----------
+    // 登录/注册：对抗暴力破解，每 IP 12 秒 1 次，突发 5（约 5/min 稳态）
+    let auth_governor = GovernorConfigBuilder::default()
+        .per_second(12)
+        .burst_size(5)
+        .finish()
+        .expect("auth rate limit config invalid");
 
-    // 用户认证路由（暂时禁用限流以调试）
-    let user_auth = Router::new()
+    // AI 接口：防刷 DeepSeek 配额，每 IP 6 秒 1 次，突发 5（约 10/min 稳态）
+    let ai_governor = GovernorConfigBuilder::default()
+        .per_second(6)
+        .burst_size(5)
+        .finish()
+        .expect("ai rate limit config invalid");
+
+    // 其他业务接口：全局宽松限流，每 IP 1 秒 1 次，突发 30
+    let global_governor = GovernorConfigBuilder::default()
+        .per_second(1)
+        .burst_size(30)
+        .finish()
+        .expect("global rate limit config invalid");
+
+    // 用户认证路由（公开：注册 / 登录）+ 严格限流
+    let user_public = Router::new()
         .route(
             "/register",
             axum::routing::post(culino_user::handler::register),
         )
-        .route("/login", axum::routing::post(culino_user::handler::login));
-    // 暂时注释掉限流
-    // .layer(GovernorLayer {
-    //     config: rate_limit_config.into(),
-    // });
+        .route("/login", axum::routing::post(culino_user::handler::login))
+        .layer(GovernorLayer {
+            config: std::sync::Arc::new(auth_governor),
+        });
 
-    // 用户其他路由（不限流）
-    let user_other = Router::new()
+    // 用户其他路由（需登录）
+    let user_protected = Router::new()
         .route(
             "/me",
             axum::routing::get(culino_user::handler::me).put(culino_user::handler::update_profile),
         )
-        .route("/logout", axum::routing::post(culino_user::handler::logout));
+        .route("/logout", axum::routing::post(culino_user::handler::logout))
+        .route(
+            "/invite-codes",
+            axum::routing::get(culino_user::handler::list_invite_codes)
+                .post(culino_user::handler::create_invite_code),
+        )
+        .route(
+            "/invite-codes/{code}",
+            axum::routing::delete(culino_user::handler::revoke_invite_code),
+        );
 
-    // v1 API 路由
-    let v1 = Router::new()
-        .nest("/user", user_auth.merge(user_other))
+    // v1 下受保护的路由（统一挂 auth 中间件 + 全局限流）
+    let v1_protected = Router::new()
+        .nest("/user", user_protected)
         .nest("/ingredient", culino_ingredient::routes())
         .nest("/recipe", culino_recipe::routes())
         .nest("/social", culino_social::routes())
         .nest("/tool", culino_tool::routes())
         .nest("/upload", culino_upload::routes())
-        .nest("/ai", ai_routes());
+        .nest(
+            "/ai",
+            ai_routes().layer(GovernorLayer {
+                config: std::sync::Arc::new(ai_governor),
+            }),
+        )
+        .layer(GovernorLayer {
+            config: std::sync::Arc::new(global_governor),
+        })
+        .layer(axum::middleware::from_fn_with_state(
+            state.clone(),
+            culino_common::auth::require_auth_middleware,
+        ));
+
+    // v1 合并公开和受保护
+    let v1 = Router::new().nest("/user", user_public).merge(v1_protected);
 
     let mut app = Router::new()
         .route("/health", axum::routing::get(health))

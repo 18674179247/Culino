@@ -1,7 +1,8 @@
 //! 用户模块 handler
 //!
-//! 处理用户注册、登录、登出、获取个人信息、更新个人资料等接口。
+//! 处理用户注册、登录、登出、获取个人信息、更新个人资料、邀请码管理等接口。
 
+use axum::extract::Path;
 use axum::http::HeaderMap;
 use axum::{Json, extract::State};
 
@@ -13,7 +14,12 @@ use culino_common::state::AppState;
 use validator::Validate;
 
 use crate::model::*;
-use crate::repo::{PgUserRepo, UserRepo};
+use crate::repo::{InviteCodeRepo, PgInviteCodeRepo, PgUserRepo, UserRepo};
+
+/// 生成邀请码：UUID 去掉连字符后取前 16 位，简短好记且碰撞概率极低
+fn generate_invite_code() -> String {
+    uuid::Uuid::new_v4().simple().to_string()[..16].to_string()
+}
 
 /// 用户注册：创建账号并返回 JWT Token
 #[utoipa::path(post, path = "/api/v1/user/register", tag = "用户",
@@ -29,12 +35,14 @@ pub async fn register(
 
     let repo = PgUserRepo::new(state.pool.clone());
     let password_hash = hash_password(&req.password)?;
+    let invite_code = req.invite_code.clone();
 
     let user = repo
-        .create(&CreateUser {
+        .create_with_invite(&CreateUser {
             username: req.username,
             nickname: req.nickname,
             password_hash,
+            invited_by: invite_code,
         })
         .await?;
 
@@ -75,12 +83,12 @@ pub async fn login(
     let repo = PgUserRepo::new(state.pool.clone());
 
     let user = repo.find_by_username(&req.username).await?.ok_or_else(|| {
-        tracing::warn!("登录失败，用户不存在: username={}", req.username);
+        tracing::warn!("登录失败: username={}", req.username);
         AppError::Unauthorized("invalid username or password".into())
     })?;
 
     if !verify_password(&req.password, &user.password_hash)? {
-        tracing::warn!("登录失败，密码错误: username={}", req.username);
+        tracing::warn!("登录失败: username={}", req.username);
         return Err(AppError::Unauthorized(
             "invalid username or password".into(),
         ));
@@ -194,4 +202,77 @@ pub async fn logout(
 
     tracing::info!("用户登出成功");
     ApiResponse::ok(())
+}
+
+// -----------------------------
+// 邀请码管理（仅 admin 可访问）
+// -----------------------------
+
+/// 管理员创建邀请码
+#[utoipa::path(post, path = "/api/v1/user/invite-codes", tag = "邀请码",
+    security(("bearer" = [])),
+    request_body = CreateInviteCodeReq,
+    responses((status = 200, body = InviteCode))
+)]
+pub async fn create_invite_code(
+    State(state): State<AppState>,
+    auth: AuthUser,
+    Json(req): Json<CreateInviteCodeReq>,
+) -> ApiResult<InviteCode> {
+    auth.require_admin()?;
+    req.validate()?;
+
+    let repo = PgInviteCodeRepo::new(state.pool.clone());
+    let code = generate_invite_code();
+    let max_uses = req.max_uses.unwrap_or(1);
+    let invite = repo
+        .create(
+            &code,
+            auth.user_id,
+            max_uses,
+            req.expires_at,
+            req.note.as_deref(),
+        )
+        .await?;
+
+    tracing::info!(
+        "邀请码创建: code={}, created_by={}, max_uses={}",
+        invite.code,
+        auth.user_id,
+        max_uses
+    );
+    ApiResponse::ok(invite)
+}
+
+/// 管理员查看所有邀请码
+#[utoipa::path(get, path = "/api/v1/user/invite-codes", tag = "邀请码",
+    security(("bearer" = [])),
+    responses((status = 200, body = Vec<InviteCode>))
+)]
+pub async fn list_invite_codes(
+    State(state): State<AppState>,
+    auth: AuthUser,
+) -> ApiResult<Vec<InviteCode>> {
+    auth.require_admin()?;
+    let repo = PgInviteCodeRepo::new(state.pool.clone());
+    let codes = repo.list().await?;
+    ApiResponse::ok(codes)
+}
+
+/// 管理员吊销邀请码
+#[utoipa::path(delete, path = "/api/v1/user/invite-codes/{code}", tag = "邀请码",
+    security(("bearer" = [])),
+    params(("code" = String, Path, description = "邀请码")),
+    responses((status = 200, body = Object))
+)]
+pub async fn revoke_invite_code(
+    State(state): State<AppState>,
+    auth: AuthUser,
+    Path(code): Path<String>,
+) -> ApiResult<bool> {
+    auth.require_admin()?;
+    let repo = PgInviteCodeRepo::new(state.pool.clone());
+    repo.revoke(&code).await?;
+    tracing::info!("邀请码已吊销: code={}, by={}", code, auth.user_id);
+    ApiResponse::ok(true)
 }

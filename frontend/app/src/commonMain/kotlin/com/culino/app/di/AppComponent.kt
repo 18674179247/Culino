@@ -10,6 +10,7 @@ import com.culino.framework.network.createHttpClient
 import com.culino.feature.user.data.UserApi
 import com.culino.feature.user.data.UserRepositoryImpl
 import com.culino.feature.user.domain.*
+import com.culino.feature.user.presentation.invite.InviteCodeViewModel
 import com.culino.feature.user.presentation.login.LoginViewModel
 import com.culino.feature.user.presentation.profile.ProfileViewModel
 import com.culino.feature.user.presentation.register.RegisterViewModel
@@ -49,6 +50,7 @@ class AppComponent(dataStorePath: String) {
     private val loginUseCase by lazy { LoginUseCase(userRepository) }
     private val registerUseCase by lazy { RegisterUseCase(userRepository) }
     private val getProfileUseCase by lazy { GetProfileUseCase(userRepository) }
+    private val inviteCodeUseCases by lazy { InviteCodeUseCases(userRepository) }
 
     // Recipe feature
     private val recipeApi: RecipeApi by lazy { RecipeApiImpl(apiClient) }
@@ -72,6 +74,7 @@ class AppComponent(dataStorePath: String) {
     fun loginViewModel() = LoginViewModel(loginUseCase)
     fun registerViewModel() = RegisterViewModel(registerUseCase)
     fun profileViewModel() = ProfileViewModel(getProfileUseCase, imageUploadApi, socialRepository, recipeRepository)
+    fun inviteCodeViewModel() = InviteCodeViewModel(inviteCodeUseCases)
 
     fun recipeListViewModel(authorId: String? = null) = RecipeListViewModel(searchRecipesUseCase, getRandomRecipesUseCase, ingredientRepository, authorId)
     fun recipeDetailViewModel() = RecipeDetailViewModel(getRecipeDetailUseCase, recipeRepository, socialRepository)

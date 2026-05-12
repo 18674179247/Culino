@@ -32,6 +32,7 @@ async fn main() {
         Command::Serve => {
             let (pool, redis, s3) = check::check(&config).await;
             check::migrate(&pool).await;
+            check::bootstrap_admin(&pool, &config).await;
             server::serve(config, pool, redis, s3).await;
         }
     }

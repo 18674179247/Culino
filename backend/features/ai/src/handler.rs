@@ -26,6 +26,7 @@ use crate::repo::AiRepo;
 )]
 pub async fn analyze_nutrition(
     State(state): State<AppState>,
+    _auth: AuthUser,
     Path(recipe_id): Path<Uuid>,
 ) -> ApiResult<NutritionAnalysisResp> {
     tracing::info!("Analyzing nutrition for recipe {}", recipe_id);
@@ -51,11 +52,13 @@ pub async fn analyze_nutrition(
 
 /// 获取菜谱营养信息
 #[utoipa::path(get, path = "/api/v1/ai/nutrition/{recipe_id}", tag = "AI",
+    security(("bearer" = [])),
     params(("recipe_id" = Uuid, Path, description = "菜谱ID")),
     responses((status = 200, body = RecipeNutrition))
 )]
 pub async fn get_nutrition(
     State(state): State<AppState>,
+    _auth: AuthUser,
     Path(recipe_id): Path<Uuid>,
 ) -> ApiResult<RecipeNutrition> {
     tracing::debug!("Getting nutrition for recipe {}", recipe_id);
@@ -105,6 +108,7 @@ pub async fn personalized_recommendations(
 
 /// 相似菜谱推荐
 #[utoipa::path(get, path = "/api/v1/ai/recommend/similar/{recipe_id}", tag = "AI",
+    security(("bearer" = [])),
     params(
         ("recipe_id" = Uuid, Path, description = "菜谱ID"),
         RecommendationQuery
@@ -113,6 +117,7 @@ pub async fn personalized_recommendations(
 )]
 pub async fn similar_recommendations(
     State(state): State<AppState>,
+    _auth: AuthUser,
     Path(recipe_id): Path<Uuid>,
     Query(query): Query<RecommendationQuery>,
 ) -> ApiResult<Vec<RecommendationItem>> {
@@ -131,11 +136,13 @@ pub async fn similar_recommendations(
 
 /// 热门推荐
 #[utoipa::path(get, path = "/api/v1/ai/recommend/trending", tag = "AI",
+    security(("bearer" = [])),
     params(RecommendationQuery),
     responses((status = 200, body = Vec<RecommendationItem>))
 )]
 pub async fn trending_recommendations(
     State(state): State<AppState>,
+    _auth: AuthUser,
     Query(query): Query<RecommendationQuery>,
 ) -> ApiResult<Vec<RecommendationItem>> {
     tracing::info!("Getting trending recommendations");
@@ -276,6 +283,7 @@ pub async fn log_behavior(
 )]
 pub async fn recognize_recipe(
     State(state): State<AppState>,
+    _auth: AuthUser,
     Json(req): Json<RecognizeRecipeReq>,
 ) -> ApiResult<RecognizeRecipeResp> {
     tracing::info!("Recognizing recipe from image: {}", req.image_url);

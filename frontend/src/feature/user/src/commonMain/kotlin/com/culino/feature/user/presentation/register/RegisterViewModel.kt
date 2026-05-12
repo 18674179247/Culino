@@ -17,11 +17,17 @@ class RegisterViewModel(
     private val _state = MutableStateFlow(RegisterState())
     val state: StateFlow<RegisterState> = _state.asStateFlow()
 
+    /**
+     * 暴露给 UI 做实时密码提示（仅作 hint，真实校验在 submit 时）。
+     */
+    fun passwordHint(password: String): String? = registerUseCase.validatePassword(password)
+
     fun onIntent(intent: RegisterIntent) {
         when (intent) {
             is RegisterIntent.UpdateUsername -> _state.update { it.copy(username = intent.username) }
             is RegisterIntent.UpdatePassword -> _state.update { it.copy(password = intent.password) }
             is RegisterIntent.UpdateNickname -> _state.update { it.copy(nickname = intent.nickname) }
+            is RegisterIntent.UpdateInviteCode -> _state.update { it.copy(inviteCode = intent.inviteCode) }
             is RegisterIntent.Submit -> submit()
             is RegisterIntent.ClearError -> _state.update { it.copy(error = null) }
         }
@@ -32,7 +38,13 @@ class RegisterViewModel(
         _state.update { it.copy(isLoading = true, error = null) }
         viewModelScope.launch {
             val nickname = current.nickname.ifBlank { null }
-            when (val result = registerUseCase(current.username, current.password, nickname)) {
+            val result = registerUseCase(
+                username = current.username,
+                password = current.password,
+                nickname = nickname,
+                inviteCode = current.inviteCode
+            )
+            when (result) {
                 is AppResult.Success -> _state.update {
                     it.copy(isLoading = false, registeredUser = result.data)
                 }

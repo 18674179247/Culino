@@ -26,8 +26,13 @@ class UserRepositoryImpl(
         }
     }
 
-    override suspend fun register(username: String, password: String, nickname: String?): AppResult<User> {
-        return when (val result = userApi.register(RegisterRequest(username, password, nickname))) {
+    override suspend fun register(
+        username: String,
+        password: String,
+        nickname: String?,
+        inviteCode: String
+    ): AppResult<User> {
+        return when (val result = userApi.register(RegisterRequest(username, password, nickname, inviteCode))) {
             is AppResult.Success -> {
                 val response = result.data
                 val authData = response.data
@@ -76,5 +81,53 @@ class UserRepositoryImpl(
         userApi.logout()
         tokenProvider.clearToken()
         return AppResult.Success(Unit)
+    }
+
+    override suspend fun listInviteCodes(): AppResult<List<InviteCode>> {
+        return when (val result = userApi.listInviteCodes()) {
+            is AppResult.Success -> {
+                val response = result.data
+                if (response.ok) {
+                    AppResult.Success(response.data ?: emptyList())
+                } else {
+                    AppResult.Error(response.error ?: "加载邀请码失败")
+                }
+            }
+            is AppResult.Error -> result
+        }
+    }
+
+    override suspend fun createInviteCode(
+        maxUses: Int?,
+        expiresAt: String?,
+        note: String?
+    ): AppResult<InviteCode> {
+        val req = CreateInviteCodeRequest(maxUses, expiresAt, note)
+        return when (val result = userApi.createInviteCode(req)) {
+            is AppResult.Success -> {
+                val response = result.data
+                val data = response.data
+                if (response.ok && data != null) {
+                    AppResult.Success(data)
+                } else {
+                    AppResult.Error(response.error ?: "创建邀请码失败")
+                }
+            }
+            is AppResult.Error -> result
+        }
+    }
+
+    override suspend fun revokeInviteCode(code: String): AppResult<Unit> {
+        return when (val result = userApi.revokeInviteCode(code)) {
+            is AppResult.Success -> {
+                val response = result.data
+                if (response.ok) {
+                    AppResult.Success(Unit)
+                } else {
+                    AppResult.Error(response.error ?: "吊销邀请码失败")
+                }
+            }
+            is AppResult.Error -> result
+        }
     }
 }

@@ -96,16 +96,34 @@ fun RegisterScreen(
                 CulinoTextField(
                     value = state.password,
                     onValueChange = { viewModel.onIntent(RegisterIntent.UpdatePassword(it)) },
-                    label = "密码（至少6位）",
+                    label = "密码（8-18 位，需含字母和数字）",
                     visualTransformation = PasswordVisualTransformation(),
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password)
                 )
+                // 密码强度即时提示（仅在用户已输入时显示）
+                val passwordHint = if (state.password.isNotEmpty()) viewModel.passwordHint(state.password) else null
+                if (passwordHint != null) {
+                    Spacer(Modifier.height(4.dp))
+                    Text(
+                        text = passwordHint,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
                 Spacer(Modifier.height(16.dp))
 
                 CulinoTextField(
                     value = state.nickname,
                     onValueChange = { viewModel.onIntent(RegisterIntent.UpdateNickname(it)) },
-                    label = "昵称（可选）"
+                    label = "昵称(可选)"
+                )
+                Spacer(Modifier.height(16.dp))
+
+                CulinoTextField(
+                    value = state.inviteCode,
+                    onValueChange = { viewModel.onIntent(RegisterIntent.UpdateInviteCode(it)) },
+                    label = "邀请码（向管理员索取）"
                 )
 
                 state.error?.let { error ->

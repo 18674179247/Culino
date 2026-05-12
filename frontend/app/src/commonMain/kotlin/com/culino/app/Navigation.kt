@@ -59,6 +59,7 @@ import com.culino.feature.social.presentation.favorites.FavoritesScreen
 import com.culino.feature.user.presentation.login.LoginScreen
 import com.culino.feature.user.presentation.profile.ProfileScreen
 import com.culino.feature.user.presentation.register.RegisterScreen
+import com.culino.feature.user.presentation.invite.InviteCodeScreen
 
 object Routes {
     const val LOGIN = "login"
@@ -76,6 +77,7 @@ object Routes {
     const val SHOPPING_LIST_DETAIL = "shopping_list_detail/{listId}"
     const val MEAL_PLANS = "meal_plans"
     const val FRIDGE_SEARCH = "fridge_search"
+    const val ADMIN_INVITE_CODES = "admin_invite_codes"
 
     fun recipeDetail(recipeId: String) = "recipe_detail/$recipeId"
     fun recipeEdit(recipeId: String) = "recipe_edit/$recipeId"
@@ -379,7 +381,8 @@ fun MainScreen(
                     },
                     onNavigateToCookingLogs = { navController.navigate(Routes.COOKING_LOGS) },
                     onNavigateToShoppingLists = { navController.navigate(Routes.SHOPPING_LISTS) },
-                    onNavigateToMealPlans = { navController.navigate(Routes.MEAL_PLANS) }
+                    onNavigateToMealPlans = { navController.navigate(Routes.MEAL_PLANS) },
+                    onNavigateToInviteCodes = { navController.navigate(Routes.ADMIN_INVITE_CODES) }
                 )
             }
 
@@ -540,6 +543,20 @@ fun MainScreen(
                     onRecipeClick = { recipeId ->
                         navController.navigate(Routes.recipeDetail(recipeId))
                     }
+                )
+            }
+
+            composable(
+                Routes.ADMIN_INVITE_CODES,
+                enterTransition = { slideInFromRight },
+                exitTransition = { slideOutToLeft },
+                popEnterTransition = { slideInFromLeft },
+                popExitTransition = { slideOutToRight }
+            ) {
+                val viewModel = remember { appComponent.inviteCodeViewModel() }
+                InviteCodeScreen(
+                    viewModel = viewModel,
+                    onBack = { navController.popBackStack() }
                 )
             }
         }
