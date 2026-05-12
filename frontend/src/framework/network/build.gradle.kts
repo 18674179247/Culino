@@ -14,8 +14,8 @@ kotlin {
 
     sourceSets {
         commonMain.dependencies {
-            implementation(project(":common:util"))
-            implementation(project(":common:model"))
+            implementation(projects.common.util)
+            implementation(projects.common.model)
             implementation(libs.ktor.client.core)
             implementation(libs.ktor.client.content.negotiation)
             implementation(libs.ktor.serialization.json)

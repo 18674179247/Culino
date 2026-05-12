@@ -14,9 +14,9 @@ kotlin {
 
     sourceSets {
         commonMain.dependencies {
-            implementation(project(":common:util"))
-            implementation(project(":common:model"))
-            implementation(project(":framework:network"))
+            implementation(projects.common.util)
+            implementation(projects.common.model)
+            implementation(projects.framework.network)
             implementation(libs.ktor.client.core)
             implementation(libs.ktor.client.content.negotiation)
             implementation(libs.kotlinx.coroutines.core)
