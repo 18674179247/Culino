@@ -171,7 +171,7 @@ impl RecipeRepo for PgRecipeRepo {
     }
 
     async fn find_by_id(&self, id: Uuid) -> Result<Option<RecipeDetail>, AppError> {
-        let recipe = match sqlx::query_as::<_, Recipe>("SELECT * FROM recipes WHERE id = $1")
+        let recipe = match sqlx::query_as::<_, Recipe>("SELECT * FROM recipes WHERE id = $1 AND status = 1")
             .bind(id)
             .fetch_optional(&self.pool)
             .await?
