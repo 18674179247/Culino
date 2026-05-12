@@ -43,12 +43,33 @@ pub struct PaginatedResponse<T: serde::Serialize> {
     pub page_size: i64,
 }
 
+/// 分页 ORDER BY 白名单
+///
+/// 避免向 `paginate_sql` 传入任意字符串。所有可用排序键都必须在此枚举中显式列出,
+/// 从而彻底杜绝 SQL 注入面。
+#[derive(Debug, Clone, Copy)]
+pub enum OrderBy {
+    /// `_inner.created_at DESC` — 创建时间倒序(最新优先)
+    CreatedAtDesc,
+    /// `_inner.created_at ASC` — 创建时间正序
+    CreatedAtAsc,
+    /// `_inner.id DESC` — 主键倒序
+    IdDesc,
+}
+
+impl OrderBy {
+    pub fn as_sql(self) -> &'static str {
+        match self {
+            OrderBy::CreatedAtDesc => "_inner.created_at DESC",
+            OrderBy::CreatedAtAsc => "_inner.created_at ASC",
+            OrderBy::IdDesc => "_inner.id DESC",
+        }
+    }
+}
+
 /// 将基础 SQL 包装为带 `COUNT(*) OVER() AS total_count` 的单次分页查询
 ///
-/// `order_by` 参数会直接拼接到 SQL 中，调用方必须传入硬编码字符串，
-/// 绝对不能传入用户输入，否则会导致 SQL 注入。
-///
-/// 为防范误用，此函数运行时检查 `order_by` 是否包含 `;` 或 `--`。
+/// `order_by` 使用白名单枚举,调用方无法传入用户输入,从根源杜绝注入。
 ///
 /// 生成形如：
 /// ```sql
@@ -59,16 +80,12 @@ pub struct PaginatedResponse<T: serde::Serialize> {
 /// ```
 pub fn paginate_sql(
     base_sql: &str,
-    order_by: &str,
+    order_by: OrderBy,
     limit_param: u32,
     offset_param: u32,
-) -> Result<String, crate::error::AppError> {
-    if order_by.contains(';') || order_by.contains("--") {
-        return Err(crate::error::AppError::Internal(anyhow::anyhow!(
-            "order_by 参数包含非法字符"
-        )));
-    }
-    Ok(format!(
-        "SELECT *, COUNT(*) OVER() AS total_count FROM ({base_sql}) AS _inner ORDER BY {order_by} LIMIT ${limit_param} OFFSET ${offset_param}"
-    ))
+) -> String {
+    format!(
+        "SELECT *, COUNT(*) OVER() AS total_count FROM ({base_sql}) AS _inner ORDER BY {} LIMIT ${limit_param} OFFSET ${offset_param}",
+        order_by.as_sql()
+    )
 }

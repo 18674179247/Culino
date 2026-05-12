@@ -7,7 +7,7 @@
 use anyhow::Context;
 use async_trait::async_trait;
 use culino_common::error::AppError;
-use culino_common::pagination::paginate_sql;
+use culino_common::pagination::{OrderBy, paginate_sql};
 use culino_common::tx::with_tx;
 use sqlx::PgPool;
 use uuid::Uuid;
@@ -441,10 +441,10 @@ impl RecipeRepo for PgRecipeRepo {
         );
         let data_sql = paginate_sql(
             &base_sql,
-            "_inner.created_at DESC",
+            OrderBy::CreatedAtDesc,
             param_index,
             param_index + 1,
-        )?;
+        );
 
         let mut query = sqlx::query_as::<_, RecipeListItemCounted>(&data_sql);
         if has_tags {
