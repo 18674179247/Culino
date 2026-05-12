@@ -30,10 +30,10 @@ fun createHttpClient(
                     token?.let { BearerTokens(it, "") }
                 }
 
-                refreshTokens {
-                    val token = tokenProvider.getToken()
-                    token?.let { BearerTokens(it, "") }
-                }
+                // 后端目前没有 refresh 接口,采用"一次 401 即登出"策略。
+                // 返回 null → Ktor 不重试,401 透传给 HttpResponseValidator,
+                // 后者调 notifyAuthExpired 触发登出流程。
+                refreshTokens { null }
 
                 sendWithoutRequest { request ->
                     !request.url.encodedPath.contains("/login") &&
