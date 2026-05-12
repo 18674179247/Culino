@@ -8,6 +8,7 @@ use anyhow::Context;
 use async_trait::async_trait;
 use culino_common::error::AppError;
 use culino_common::pagination::{OrderBy, paginate_sql};
+use culino_common::sql::escape_ilike;
 use culino_common::tx::with_tx;
 use sqlx::PgPool;
 use uuid::Uuid;
@@ -408,8 +409,10 @@ impl RecipeRepo for PgRecipeRepo {
 
         let has_keyword = params.keyword.as_ref().is_some_and(|k| !k.is_empty());
         if has_keyword {
+            // 使用 ESCAPE '\' 并对用户输入的 \ % _ 做字符级转义,防止通配符退化为全表扫描
             conditions.push(format!(
-                "(title ILIKE '%' || ${param_index} || '%' OR description ILIKE '%' || ${param_index} || '%')"
+                "(title ILIKE '%' || ${param_index} || '%' ESCAPE '\\' \
+                 OR description ILIKE '%' || ${param_index} || '%' ESCAPE '\\')"
             ));
             param_index += 1;
         }
@@ -454,7 +457,8 @@ impl RecipeRepo for PgRecipeRepo {
             query = query.bind(&ingredient_ids);
         }
         if has_keyword {
-            query = query.bind(params.keyword.as_deref().unwrap_or(""));
+            let escaped = escape_ilike(params.keyword.as_deref().unwrap_or(""));
+            query = query.bind(escaped);
         }
         if let Some(d) = params.difficulty {
             query = query.bind(d);

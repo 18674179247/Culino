@@ -14,6 +14,10 @@ pub struct PaginationParams {
 }
 
 impl PaginationParams {
+    /// 最大允许页码。避免攻击者通过 `page=1_000_000` 触发深度 OFFSET 扫描。
+    /// 10_000 * 100(最大 page_size) = 1_000_000 条上限,足够常规业务。
+    pub const MAX_PAGE: i64 = 10_000;
+
     /// 计算 SQL OFFSET 值
     pub fn offset(&self) -> i64 {
         (self.page() - 1) * self.limit()
@@ -24,9 +28,9 @@ impl PaginationParams {
         self.page_size.unwrap_or(20).clamp(1, 100)
     }
 
-    /// 获取当前页码，最小为 1
+    /// 获取当前页码，范围 [1, MAX_PAGE]
     pub fn page(&self) -> i64 {
-        self.page.unwrap_or(1).max(1)
+        self.page.unwrap_or(1).clamp(1, Self::MAX_PAGE)
     }
 }
 
