@@ -11,7 +11,10 @@ import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
 import kotlinx.serialization.json.Json
 
-fun createHttpClient(tokenProvider: TokenProvider): HttpClient {
+fun createHttpClient(
+    tokenProvider: TokenProvider,
+    debugLogging: Boolean = false
+): HttpClient {
     return HttpClient(createHttpEngine()) {
         install(ContentNegotiation) {
             json(Json {
@@ -53,7 +56,9 @@ fun createHttpClient(tokenProvider: TokenProvider): HttpClient {
                     io.github.aakira.napier.Napier.d(message, tag = "HTTP")
                 }
             }
-            level = LogLevel.HEADERS
+            level = if (debugLogging) LogLevel.INFO else LogLevel.NONE
+            // 防止 Authorization 在 HEADERS / ALL 级别下被打印
+            sanitizeHeader { it.equals(HttpHeaders.Authorization, ignoreCase = true) }
         }
 
         defaultRequest {
