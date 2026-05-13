@@ -3,10 +3,10 @@ package com.culino.framework.network
 import com.culino.common.util.Constants
 import io.ktor.client.*
 import io.ktor.client.plugins.*
-import io.ktor.client.plugins.auth.*
-import io.ktor.client.plugins.auth.providers.*
+import io.ktor.client.plugins.api.*
 import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.plugins.logging.*
+import io.ktor.client.request.*
 import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
 import kotlinx.serialization.json.Json
@@ -23,32 +23,17 @@ fun createHttpClient(
             })
         }
 
-        install(Auth) {
-            bearer {
-                loadTokens {
+        install(createClientPlugin("TokenAttach") {
+            onRequest { request, _ ->
+                val path = request.url.encodedPath
+                if (!path.contains("/login") && !path.contains("/register")) {
                     val token = tokenProvider.getToken()
-                    token?.let { BearerTokens(it, "") }
-                }
-
-                // 后端目前没有 refresh 接口,采用"一次 401 即登出"策略。
-                // 返回 null → Ktor 不重试,401 透传给 HttpResponseValidator,
-                // 后者调 notifyAuthExpired 触发登出流程。
-                refreshTokens { null }
-
-                sendWithoutRequest { request ->
-                    !request.url.encodedPath.contains("/login") &&
-                    !request.url.encodedPath.contains("/register")
+                    if (token != null) {
+                        request.bearerAuth(token)
+                    }
                 }
             }
-        }
-
-        HttpResponseValidator {
-            validateResponse { response ->
-                if (response.status == HttpStatusCode.Unauthorized) {
-                    tokenProvider.notifyAuthExpired()
-                }
-            }
-        }
+        })
 
         install(Logging) {
             logger = object : Logger {
@@ -57,7 +42,6 @@ fun createHttpClient(
                 }
             }
             level = if (debugLogging) LogLevel.INFO else LogLevel.NONE
-            // 防止 Authorization 在 HEADERS / ALL 级别下被打印
             sanitizeHeader { it.equals(HttpHeaders.Authorization, ignoreCase = true) }
         }
 

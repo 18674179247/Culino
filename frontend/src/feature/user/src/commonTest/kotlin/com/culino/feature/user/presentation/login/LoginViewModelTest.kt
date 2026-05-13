@@ -2,9 +2,11 @@ package com.culino.feature.user.presentation.login
 
 import app.cash.turbine.test
 import com.culino.common.util.AppResult
+import com.culino.common.model.InviteCode
 import com.culino.common.model.User
 import com.culino.feature.user.domain.LoginUseCase
 import com.culino.feature.user.domain.UserRepository
+import com.culino.feature.user.domain.UserStats
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -25,10 +27,14 @@ class LoginViewModelTest {
 
     private fun fakeRepo(result: AppResult<User> = AppResult.Success(fakeUser)) = object : UserRepository {
         override suspend fun login(username: String, password: String) = result
-        override suspend fun register(username: String, password: String, nickname: String?) = result
+        override suspend fun register(username: String, password: String, nickname: String?, inviteCode: String) = result
         override suspend fun getProfile() = result
+        override suspend fun getMyStats() = AppResult.Success(UserStats(0, 0, 0))
         override suspend fun updateProfile(nickname: String?, avatar: String?) = result
         override suspend fun logout() = AppResult.Success(Unit)
+        override suspend fun listInviteCodes() = AppResult.Success(emptyList<InviteCode>())
+        override suspend fun createInviteCode(maxUses: Int?, expiresAt: String?, note: String?) = AppResult.Error("not implemented")
+        override suspend fun revokeInviteCode(code: String) = AppResult.Success(Unit)
     }
 
     @BeforeTest

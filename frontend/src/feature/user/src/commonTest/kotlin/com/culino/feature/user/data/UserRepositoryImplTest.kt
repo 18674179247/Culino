@@ -46,7 +46,7 @@ class UserRepositoryImplTest {
                 contentType(ContentType.Application.Json)
             }
         }
-        return ApiClient(client)
+        return ApiClient(client, fakeTokenProvider)
     }
 
     @Test

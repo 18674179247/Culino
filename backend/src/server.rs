@@ -33,10 +33,13 @@ pub async fn serve(config: AppConfig, pool: PgPool, redis: MultiplexedConnection
 
     crate::banner::print_banner(&addr);
 
-    axum::serve(listener, app)
-        .with_graceful_shutdown(shutdown_signal())
-        .await
-        .unwrap();
+    axum::serve(
+        listener,
+        app.into_make_service_with_connect_info::<std::net::SocketAddr>(),
+    )
+    .with_graceful_shutdown(shutdown_signal())
+    .await
+    .unwrap();
 
     tracing::info!("服务已关闭");
 }

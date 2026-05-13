@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FF6B35"/>
+      <stop offset="100%" stop-color="#E8451A"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="url(#bg)"/>
+  <!-- Pot body - rounded bottom -->
+  <path d="M152 240 C152 240 152 380 256 380 C360 380 360 240 360 240 L152 240 Z" fill="white"/>
+  <!-- Pot rim -->
+  <rect x="136" y="224" width="240" height="24" rx="12" fill="white"/>
+  <!-- Pot handles -->
+  <rect x="112" y="228" width="32" height="16" rx="8" fill="white"/>
+  <rect x="368" y="228" width="32" height="16" rx="8" fill="white"/>
+  <!-- Lid -->
+  <path d="M168 220 Q256 180 344 220" stroke="white" stroke-width="16" stroke-linecap="round" fill="none"/>
+  <!-- Lid knob -->
+  <circle cx="256" cy="184" r="14" fill="white"/>
+  <!-- Steam -->
+  <path d="M220 148 C220 138 228 130 228 120" stroke="white" stroke-width="8" stroke-linecap="round" opacity="0.7" fill="none"/>
+  <path d="M256 138 C256 126 264 118 264 106" stroke="white" stroke-width="8" stroke-linecap="round" opacity="0.7" fill="none"/>
+  <path d="M292 148 C292 138 284 130 284 120" stroke="white" stroke-width="8" stroke-linecap="round" opacity="0.7" fill="none"/>
+</svg>
