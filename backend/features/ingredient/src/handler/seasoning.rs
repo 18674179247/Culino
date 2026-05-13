@@ -34,7 +34,6 @@ pub async fn create(
     _admin: AdminUser,
     Json(req): Json<CreateSeasoningReq>,
 ) -> ApiResult<Seasoning> {
-
     tracing::info!("创建调料: name={}", req.name);
     let repo = PgSeasoningRepo::new(state.pool.clone());
     let row = repo.create(&req).await?;
@@ -55,7 +54,6 @@ pub async fn update(
     Path(id): Path<i32>,
     Json(req): Json<UpdateSeasoningReq>,
 ) -> ApiResult<Seasoning> {
-
     tracing::info!("更新调料: id={}", id);
     let repo = PgSeasoningRepo::new(state.pool.clone());
     let row = repo.update(id, &req).await?;
@@ -73,7 +71,6 @@ pub async fn remove(
     _admin: AdminUser,
     Path(id): Path<i32>,
 ) -> ApiResult<bool> {
-
     tracing::info!("删除调料: id={}", id);
     let repo = PgSeasoningRepo::new(state.pool.clone());
     repo.delete(id).await?;

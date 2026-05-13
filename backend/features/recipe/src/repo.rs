@@ -172,14 +172,15 @@ impl RecipeRepo for PgRecipeRepo {
     }
 
     async fn find_by_id(&self, id: Uuid) -> Result<Option<RecipeDetail>, AppError> {
-        let recipe = match sqlx::query_as::<_, Recipe>("SELECT * FROM recipes WHERE id = $1 AND status = 1")
-            .bind(id)
-            .fetch_optional(&self.pool)
-            .await?
-        {
-            Some(r) => r,
-            None => return Ok(None),
-        };
+        let recipe =
+            match sqlx::query_as::<_, Recipe>("SELECT * FROM recipes WHERE id = $1 AND status = 1")
+                .bind(id)
+                .fetch_optional(&self.pool)
+                .await?
+            {
+                Some(r) => r,
+                None => return Ok(None),
+            };
 
         let ingredients = sqlx::query_as::<_, RecipeIngredient>(
             "SELECT ri.id, ri.recipe_id, ri.ingredient_id, i.name as ingredient_name, ri.amount, ri.unit, ri.note, ri.sort_order FROM recipe_ingredients ri JOIN ingredients i ON i.id = ri.ingredient_id WHERE ri.recipe_id = $1 ORDER BY ri.sort_order",

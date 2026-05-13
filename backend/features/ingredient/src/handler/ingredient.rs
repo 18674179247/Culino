@@ -53,7 +53,6 @@ pub async fn create(
     _admin: AdminUser,
     Json(req): Json<CreateIngredientReq>,
 ) -> ApiResult<Ingredient> {
-
     tracing::info!("创建食材: name={}", req.name);
     let repo = PgIngredientRepo::new(state.pool.clone());
     let row = repo.create(&req).await?;
@@ -74,7 +73,6 @@ pub async fn update(
     Path(id): Path<i32>,
     Json(req): Json<UpdateIngredientReq>,
 ) -> ApiResult<Ingredient> {
-
     tracing::info!("更新食材: id={}", id);
     let repo = PgIngredientRepo::new(state.pool.clone());
     let row = repo.update(id, &req).await?;
@@ -92,7 +90,6 @@ pub async fn remove(
     _admin: AdminUser,
     Path(id): Path<i32>,
 ) -> ApiResult<bool> {
-
     tracing::info!("删除食材: id={}", id);
     let repo = PgIngredientRepo::new(state.pool.clone());
     repo.delete(id).await?;

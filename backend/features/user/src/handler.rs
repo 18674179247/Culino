@@ -219,7 +219,6 @@ pub async fn create_invite_code(
     admin: AdminUser,
     Json(req): Json<CreateInviteCodeReq>,
 ) -> ApiResult<InviteCode> {
-    
     req.validate()?;
 
     let repo = PgInviteCodeRepo::new(state.pool.clone());
@@ -253,7 +252,6 @@ pub async fn list_invite_codes(
     State(state): State<AppState>,
     _admin: AdminUser,
 ) -> ApiResult<Vec<InviteCode>> {
-    
     let repo = PgInviteCodeRepo::new(state.pool.clone());
     let codes = repo.list().await?;
     ApiResponse::ok(codes)
@@ -270,7 +268,6 @@ pub async fn revoke_invite_code(
     admin: AdminUser,
     Path(code): Path<String>,
 ) -> ApiResult<bool> {
-    
     let repo = PgInviteCodeRepo::new(state.pool.clone());
     repo.revoke(&code).await?;
     tracing::info!("邀请码已吊销: code={}, by={}", code, admin.user_id);
@@ -283,10 +280,7 @@ pub async fn revoke_invite_code(
     security(("bearer" = [])),
     responses((status = 200, body = UserStats))
 )]
-pub async fn me_stats(
-    State(state): State<AppState>,
-    auth: AuthUser,
-) -> ApiResult<UserStats> {
+pub async fn me_stats(State(state): State<AppState>, auth: AuthUser) -> ApiResult<UserStats> {
     // 单行子查询,三个 COUNT 共用一次往返
     let stats: (i64, i64, i64) = sqlx::query_as(
         r#"

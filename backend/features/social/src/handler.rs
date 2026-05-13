@@ -185,8 +185,8 @@ pub async fn toggle_like(
     auth: AuthUser,
     Path(recipe_id): Path<Uuid>,
 ) -> ApiResult<bool> {
-    let liked = crate::repo::like_repo::LikeRepo::toggle(&state.pool, auth.user_id, recipe_id)
-        .await?;
+    let liked =
+        crate::repo::like_repo::LikeRepo::toggle(&state.pool, auth.user_id, recipe_id).await?;
     ApiResponse::ok(liked)
 }
 
@@ -208,8 +208,7 @@ pub async fn list_comments(
     let page_size = pagination.limit();
     let (comments, total) =
         crate::repo::comment_repo::CommentRepo::list(&state.pool, recipe_id, page, page_size)
-            .await
-            ?;
+            .await?;
     ApiResponse::ok(CommentListResp {
         data: comments,
         total,
@@ -236,8 +235,7 @@ pub async fn create_comment(
         req.recipe_id,
         &req.content,
     )
-    .await
-    ?;
+    .await?;
     ApiResponse::ok(comment)
 }
 
@@ -253,13 +251,9 @@ pub async fn delete_comment(
     Path(id): Path<Uuid>,
 ) -> ApiResult<bool> {
     let deleted = if auth.is_admin() {
-        crate::repo::comment_repo::CommentRepo::delete_as_admin(&state.pool, id)
-            .await
-            ?
+        crate::repo::comment_repo::CommentRepo::delete_as_admin(&state.pool, id).await?
     } else {
-        crate::repo::comment_repo::CommentRepo::delete(&state.pool, id, auth.user_id)
-            .await
-            ?
+        crate::repo::comment_repo::CommentRepo::delete(&state.pool, id, auth.user_id).await?
     };
     ApiResponse::ok(deleted)
 }

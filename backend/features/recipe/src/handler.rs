@@ -60,10 +60,7 @@ pub async fn create(
             Ok(Err(e)) => {
                 tracing::error!("菜谱营养分析失败: recipe_id={}, error={}", recipe_id, e)
             }
-            Err(_) => tracing::error!(
-                "菜谱营养分析超时(>60s): recipe_id={}",
-                recipe_id
-            ),
+            Err(_) => tracing::error!("菜谱营养分析超时(>60s): recipe_id={}", recipe_id),
         }
     });
 

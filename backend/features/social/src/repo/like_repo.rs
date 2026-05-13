@@ -17,11 +17,7 @@ impl LikeRepo {
     /// rows_affected() > 0 → 新增了一行,即用户之前未点赞,现在已点 → true;
     /// rows_affected() == 0 → 已存在同 (user_id, recipe_id) 行 → 本次应变为取消,
     /// 再 DELETE → false。整个流程不依赖"先 SELECT 再判断"的窗口,避免 race。
-    pub async fn toggle(
-        pool: &PgPool,
-        user_id: Uuid,
-        recipe_id: Uuid,
-    ) -> Result<bool, AppError> {
+    pub async fn toggle(pool: &PgPool, user_id: Uuid, recipe_id: Uuid) -> Result<bool, AppError> {
         let inserted = sqlx::query(
             "INSERT INTO recipe_likes (user_id, recipe_id) VALUES ($1, $2) ON CONFLICT DO NOTHING",
         )
@@ -52,11 +48,7 @@ impl LikeRepo {
         Ok(count)
     }
 
-    pub async fn is_liked(
-        pool: &PgPool,
-        user_id: Uuid,
-        recipe_id: Uuid,
-    ) -> Result<bool, AppError> {
+    pub async fn is_liked(pool: &PgPool, user_id: Uuid, recipe_id: Uuid) -> Result<bool, AppError> {
         let exists: bool = sqlx::query_scalar(
             "SELECT EXISTS(SELECT 1 FROM recipe_likes WHERE user_id = $1 AND recipe_id = $2)",
         )

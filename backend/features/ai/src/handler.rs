@@ -35,13 +35,9 @@ pub async fn analyze_nutrition(
         culino_common::error::AppError::Internal(anyhow::anyhow!("DeepSeek API key not configured"))
     })?;
 
-    let service = NutritionService::new(state.pool.clone(), api_key)
-        ?;
+    let service = NutritionService::new(state.pool.clone(), api_key)?;
 
-    let nutrition = service
-        .analyze_recipe_nutrition(recipe_id, false)
-        .await
-        ?;
+    let nutrition = service.analyze_recipe_nutrition(recipe_id, false).await?;
 
     ApiResponse::ok(NutritionAnalysisResp {
         recipe_id,
@@ -64,13 +60,9 @@ pub async fn get_nutrition(
     tracing::debug!("Getting nutrition for recipe {}", recipe_id);
 
     let repo = AiRepo::new(state.pool.clone());
-    let nutrition = repo
-        .get_nutrition(recipe_id)
-        .await
-        ?
-        .ok_or_else(|| {
-            culino_common::error::AppError::NotFound("Nutrition data not found".into())
-        })?;
+    let nutrition = repo.get_nutrition(recipe_id).await?.ok_or_else(|| {
+        culino_common::error::AppError::NotFound("Nutrition data not found".into())
+    })?;
 
     ApiResponse::ok(nutrition)
 }
@@ -100,8 +92,7 @@ pub async fn personalized_recommendations(
 
     let recommendations = service
         .personalized_recommendations(auth.user_id, limit)
-        .await
-        ?;
+        .await?;
 
     ApiResponse::ok(recommendations)
 }
@@ -126,10 +117,7 @@ pub async fn similar_recommendations(
     let service = RecommendationService::new(state.pool.clone());
     let limit = query.limit.unwrap_or(10).min(50);
 
-    let recommendations = service
-        .similar_recommendations(recipe_id, limit)
-        .await
-        ?;
+    let recommendations = service.similar_recommendations(recipe_id, limit).await?;
 
     ApiResponse::ok(recommendations)
 }
@@ -150,10 +138,7 @@ pub async fn trending_recommendations(
     let service = RecommendationService::new(state.pool.clone());
     let limit = query.limit.unwrap_or(10).min(50);
 
-    let recommendations = service
-        .trending_recommendations(limit)
-        .await
-        ?;
+    let recommendations = service.trending_recommendations(limit).await?;
 
     ApiResponse::ok(recommendations)
 }
@@ -180,8 +165,7 @@ pub async fn health_goal_recommendations(
 
     let recommendations = service
         .health_goal_recommendations(auth.user_id, &goal, limit)
-        .await
-        ?;
+        .await?;
 
     ApiResponse::ok(recommendations)
 }
@@ -203,10 +187,7 @@ pub async fn analyze_preference(
 
     let service = PreferenceService::new(state.pool.clone());
 
-    let preference = service
-        .analyze_user_preference(auth.user_id)
-        .await
-        ?;
+    let preference = service.analyze_user_preference(auth.user_id).await?;
 
     ApiResponse::ok(preference)
 }
@@ -226,8 +207,7 @@ pub async fn get_preference_profile(
 
     let preference = service
         .get_user_preference(auth.user_id)
-        .await
-        ?
+        .await?
         .ok_or_else(|| {
             culino_common::error::AppError::NotFound("User preference not found".into())
         })?;
@@ -265,8 +245,7 @@ pub async fn log_behavior(
         &req.action_type,
         req.action_value,
     )
-    .await
-    ?;
+    .await?;
 
     ApiResponse::ok(true)
 }
@@ -292,13 +271,11 @@ pub async fn recognize_recipe(
         culino_common::error::AppError::Internal(anyhow::anyhow!("DeepSeek API key not configured"))
     })?;
 
-    let service = crate::recognition::RecognitionService::new(api_key)
-        ?;
+    let service = crate::recognition::RecognitionService::new(api_key)?;
 
     let result = service
         .recognize_from_image(&req.image_url, req.existing_title.as_deref())
-        .await
-        ?;
+        .await?;
 
     ApiResponse::ok(result)
 }
@@ -324,13 +301,9 @@ pub async fn parse_shopping_text(
         culino_common::error::AppError::Internal(anyhow::anyhow!("DeepSeek API key not configured"))
     })?;
 
-    let client = crate::deepseek::DeepSeekClient::new(api_key)
-        ?;
+    let client = crate::deepseek::DeepSeekClient::new(api_key)?;
 
-    let raw = client
-        .parse_shopping_list(&req.text)
-        .await
-        ?;
+    let raw = client.parse_shopping_list(&req.text).await?;
 
     let items: Vec<ParsedShoppingItem> = serde_json::from_str(&raw).map_err(|e| {
         tracing::warn!("Failed to parse AI response: {}, raw: {}", e, raw);

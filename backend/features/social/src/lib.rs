@@ -47,10 +47,7 @@ pub fn routes() -> Router<AppState> {
     Router::new()
         // favorites
         .route("/favorites", get(handler::list_favorites))
-        .route(
-            "/favorites/{recipe_id}/check",
-            get(handler::check_favorite),
-        )
+        .route("/favorites/{recipe_id}/check", get(handler::check_favorite))
         .route(
             "/favorites/{recipe_id}",
             post(handler::add_favorite).delete(handler::remove_favorite),

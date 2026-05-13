@@ -77,12 +77,18 @@ impl From<sqlx::Error> for AppError {
                 if db_err.is_unique_violation() {
                     AppError::Conflict(format!(
                         "resource already exists{}",
-                        db_err.constraint().map(|c| format!(" ({c})")).unwrap_or_default()
+                        db_err
+                            .constraint()
+                            .map(|c| format!(" ({c})"))
+                            .unwrap_or_default()
                     ))
                 } else if db_err.is_foreign_key_violation() {
                     AppError::BadRequest(format!(
                         "referenced resource not found{}",
-                        db_err.constraint().map(|c| format!(" ({c})")).unwrap_or_default()
+                        db_err
+                            .constraint()
+                            .map(|c| format!(" ({c})"))
+                            .unwrap_or_default()
                     ))
                 } else if db_err.is_check_violation() {
                     AppError::BadRequest("value violates check constraint".into())

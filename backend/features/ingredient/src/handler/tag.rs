@@ -44,7 +44,6 @@ pub async fn create(
     _admin: AdminUser,
     Json(req): Json<CreateTagReq>,
 ) -> ApiResult<Tag> {
-
     tracing::info!("创建标签: name={}, type={}", req.name, req.tag_type);
     let repo = PgTagRepo::new(state.pool.clone());
     let row = repo.create(&req).await?;
@@ -65,7 +64,6 @@ pub async fn update(
     Path(id): Path<i32>,
     Json(req): Json<UpdateTagReq>,
 ) -> ApiResult<Tag> {
-
     tracing::info!("更新标签: id={}", id);
     let repo = PgTagRepo::new(state.pool.clone());
     let row = repo.update(id, &req).await?;
@@ -83,7 +81,6 @@ pub async fn remove(
     _admin: AdminUser,
     Path(id): Path<i32>,
 ) -> ApiResult<bool> {
-
     tracing::info!("删除标签: id={}", id);
     let repo = PgTagRepo::new(state.pool.clone());
     repo.delete(id).await?;

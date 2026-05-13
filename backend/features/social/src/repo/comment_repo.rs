@@ -31,12 +31,11 @@ impl CommentRepo {
             .fetch_all(pool)
             .await?;
 
-        let total: i64 = sqlx::query_scalar(
-            "SELECT COUNT(*) FROM recipe_comments WHERE recipe_id = $1",
-        )
-        .bind(recipe_id)
-        .fetch_one(pool)
-        .await?;
+        let total: i64 =
+            sqlx::query_scalar("SELECT COUNT(*) FROM recipe_comments WHERE recipe_id = $1")
+                .bind(recipe_id)
+                .fetch_one(pool)
+                .await?;
 
         Ok((comments, total))
     }
@@ -67,11 +66,7 @@ impl CommentRepo {
         Ok(comment)
     }
 
-    pub async fn delete(
-        pool: &PgPool,
-        comment_id: Uuid,
-        user_id: Uuid,
-    ) -> Result<bool, AppError> {
+    pub async fn delete(pool: &PgPool, comment_id: Uuid, user_id: Uuid) -> Result<bool, AppError> {
         let result = sqlx::query("DELETE FROM recipe_comments WHERE id = $1 AND user_id = $2")
             .bind(comment_id)
             .bind(user_id)
@@ -90,12 +85,11 @@ impl CommentRepo {
     }
 
     pub async fn count(pool: &PgPool, recipe_id: Uuid) -> Result<i64, AppError> {
-        let count: i64 = sqlx::query_scalar(
-            "SELECT COUNT(*) FROM recipe_comments WHERE recipe_id = $1",
-        )
-        .bind(recipe_id)
-        .fetch_one(pool)
-        .await?;
+        let count: i64 =
+            sqlx::query_scalar("SELECT COUNT(*) FROM recipe_comments WHERE recipe_id = $1")
+                .bind(recipe_id)
+                .fetch_one(pool)
+                .await?;
         Ok(count)
     }
 }
