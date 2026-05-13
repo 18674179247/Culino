@@ -222,8 +222,9 @@ pub async fn list_comments(
     Path(recipe_id): Path<Uuid>,
     Query(query): Query<CommentListQuery>,
 ) -> ApiResult<CommentListResp> {
-    let page = query.page.unwrap_or(1).max(1);
-    let page_size = query.page_size.unwrap_or(20).min(50);
+    let pagination = query.pagination();
+    let page = pagination.page();
+    let page_size = pagination.limit();
     let (comments, total) =
         crate::repo::comment_repo::CommentRepo::list(&state.pool, recipe_id, page, page_size)
             .await

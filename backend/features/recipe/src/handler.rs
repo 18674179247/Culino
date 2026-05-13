@@ -142,8 +142,9 @@ pub async fn search(
         params.difficulty
     );
     let svc = RecipeService::new(state.pool.clone());
-    let page = params.page.unwrap_or(1).max(1);
-    let page_size = params.page_size.unwrap_or(20).clamp(1, 100);
+    let pagination = params.pagination();
+    let page = pagination.page();
+    let page_size = pagination.limit();
     let (data, total) = svc.search(&params).await?;
     tracing::debug!("搜索结果: total={}, page={}", total, page);
     ApiResponse::ok(PaginatedResponse {

@@ -144,8 +144,20 @@ pub struct RecipeSearchParams {
     pub tag_ids: Option<String>,
     pub ingredient_ids: Option<String>,
     pub author_id: Option<Uuid>,
+    /// 页码,从 1 开始,默认 1,上限 10000
     pub page: Option<i64>,
+    /// 每页条数,默认 20,范围 [1,100]
     pub page_size: Option<i64>,
+}
+
+impl RecipeSearchParams {
+    /// 从字段构造 PaginationParams,复用 common 的 clamp 规则
+    pub fn pagination(&self) -> culino_common::pagination::PaginationParams {
+        culino_common::pagination::PaginationParams {
+            page: self.page,
+            page_size: self.page_size,
+        }
+    }
 }
 
 #[derive(Debug, FromRow, Serialize, utoipa::ToSchema)]

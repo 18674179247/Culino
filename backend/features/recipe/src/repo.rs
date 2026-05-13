@@ -434,9 +434,9 @@ impl RecipeRepo for PgRecipeRepo {
 
         let where_clause = conditions.join(" AND ");
 
-        let page = params.page.unwrap_or(1).max(1);
-        let page_size = params.page_size.unwrap_or(20).clamp(1, 100);
-        let offset = (page - 1) * page_size;
+        let pagination = params.pagination();
+        let page_size = pagination.limit();
+        let offset = pagination.offset();
 
         // 单次查询：用 COUNT(*) OVER() 同时获取数据和总数
         let base_sql = format!(
