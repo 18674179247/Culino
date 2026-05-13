@@ -36,12 +36,12 @@ pub async fn analyze_nutrition(
     })?;
 
     let service = NutritionService::new(state.pool.clone(), api_key)
-        .map_err(culino_common::error::AppError::Internal)?;
+        ?;
 
     let nutrition = service
         .analyze_recipe_nutrition(recipe_id, false)
         .await
-        .map_err(culino_common::error::AppError::Internal)?;
+        ?;
 
     ApiResponse::ok(NutritionAnalysisResp {
         recipe_id,
@@ -67,7 +67,7 @@ pub async fn get_nutrition(
     let nutrition = repo
         .get_nutrition(recipe_id)
         .await
-        .map_err(culino_common::error::AppError::Internal)?
+        ?
         .ok_or_else(|| {
             culino_common::error::AppError::NotFound("Nutrition data not found".into())
         })?;
@@ -101,7 +101,7 @@ pub async fn personalized_recommendations(
     let recommendations = service
         .personalized_recommendations(auth.user_id, limit)
         .await
-        .map_err(culino_common::error::AppError::Internal)?;
+        ?;
 
     ApiResponse::ok(recommendations)
 }
@@ -129,7 +129,7 @@ pub async fn similar_recommendations(
     let recommendations = service
         .similar_recommendations(recipe_id, limit)
         .await
-        .map_err(culino_common::error::AppError::Internal)?;
+        ?;
 
     ApiResponse::ok(recommendations)
 }
@@ -153,7 +153,7 @@ pub async fn trending_recommendations(
     let recommendations = service
         .trending_recommendations(limit)
         .await
-        .map_err(culino_common::error::AppError::Internal)?;
+        ?;
 
     ApiResponse::ok(recommendations)
 }
@@ -181,7 +181,7 @@ pub async fn health_goal_recommendations(
     let recommendations = service
         .health_goal_recommendations(auth.user_id, &goal, limit)
         .await
-        .map_err(culino_common::error::AppError::Internal)?;
+        ?;
 
     ApiResponse::ok(recommendations)
 }
@@ -206,7 +206,7 @@ pub async fn analyze_preference(
     let preference = service
         .analyze_user_preference(auth.user_id)
         .await
-        .map_err(culino_common::error::AppError::Internal)?;
+        ?;
 
     ApiResponse::ok(preference)
 }
@@ -227,7 +227,7 @@ pub async fn get_preference_profile(
     let preference = service
         .get_user_preference(auth.user_id)
         .await
-        .map_err(culino_common::error::AppError::Internal)?
+        ?
         .ok_or_else(|| {
             culino_common::error::AppError::NotFound("User preference not found".into())
         })?;
@@ -266,7 +266,7 @@ pub async fn log_behavior(
         req.action_value,
     )
     .await
-    .map_err(culino_common::error::AppError::Internal)?;
+    ?;
 
     ApiResponse::ok(true)
 }
@@ -293,12 +293,12 @@ pub async fn recognize_recipe(
     })?;
 
     let service = crate::recognition::RecognitionService::new(api_key)
-        .map_err(culino_common::error::AppError::Internal)?;
+        ?;
 
     let result = service
         .recognize_from_image(&req.image_url, req.existing_title.as_deref())
         .await
-        .map_err(culino_common::error::AppError::Internal)?;
+        ?;
 
     ApiResponse::ok(result)
 }
@@ -325,12 +325,12 @@ pub async fn parse_shopping_text(
     })?;
 
     let client = crate::deepseek::DeepSeekClient::new(api_key)
-        .map_err(culino_common::error::AppError::Internal)?;
+        ?;
 
     let raw = client
         .parse_shopping_list(&req.text)
         .await
-        .map_err(culino_common::error::AppError::Internal)?;
+        ?;
 
     let items: Vec<ParsedShoppingItem> = serde_json::from_str(&raw).map_err(|e| {
         tracing::warn!("Failed to parse AI response: {}, raw: {}", e, raw);
