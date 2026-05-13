@@ -1,7 +1,7 @@
 package com.culino.feature.recipe.data
 
 import com.culino.common.util.AppResult
-import com.culino.framework.network.ApiResponse
+import com.culino.framework.network.safeApiCall
 
 interface RecipeRepository {
     suspend fun searchRecipes(
@@ -36,60 +36,24 @@ class RecipeRepositoryImpl(private val api: RecipeApi) : RecipeRepository {
         maxCookingTime: Int?,
         tagIds: List<Int>?,
         ingredientIds: List<Int>?
-    ): AppResult<PaginatedResponse<RecipeListItem>> = try {
-        when (val response = api.searchRecipes(keyword, difficulty, authorId, page, pageSize, maxCookingTime, tagIds, ingredientIds)) {
-            is ApiResponse.Success -> AppResult.Success(response.data)
-            is ApiResponse.Error -> AppResult.Error(response.message)
-        }
-    } catch (e: Exception) {
-        AppResult.Error(e.message ?: "Unknown error", e)
+    ): AppResult<PaginatedResponse<RecipeListItem>> = safeApiCall {
+        api.searchRecipes(keyword, difficulty, authorId, page, pageSize, maxCookingTime, tagIds, ingredientIds)
     }
 
-    override suspend fun getRecipeDetail(id: String): AppResult<RecipeDetail> = try {
-        when (val response = api.getRecipeDetail(id)) {
-            is ApiResponse.Success -> AppResult.Success(response.data)
-            is ApiResponse.Error -> AppResult.Error(response.message)
-        }
-    } catch (e: Exception) {
-        AppResult.Error(e.message ?: "Unknown error", e)
-    }
+    override suspend fun getRecipeDetail(id: String): AppResult<RecipeDetail> =
+        safeApiCall { api.getRecipeDetail(id) }
 
-    override suspend fun createRecipe(request: CreateRecipeRequest): AppResult<RecipeDetail> = try {
-        when (val response = api.createRecipe(request)) {
-            is ApiResponse.Success -> AppResult.Success(response.data)
-            is ApiResponse.Error -> AppResult.Error(response.message)
-        }
-    } catch (e: Exception) {
-        AppResult.Error(e.message ?: "Unknown error", e)
-    }
+    override suspend fun createRecipe(request: CreateRecipeRequest): AppResult<RecipeDetail> =
+        safeApiCall { api.createRecipe(request) }
 
     override suspend fun updateRecipe(
         id: String,
         request: CreateRecipeRequest
-    ): AppResult<RecipeDetail> = try {
-        when (val response = api.updateRecipe(id, request)) {
-            is ApiResponse.Success -> AppResult.Success(response.data)
-            is ApiResponse.Error -> AppResult.Error(response.message)
-        }
-    } catch (e: Exception) {
-        AppResult.Error(e.message ?: "Unknown error", e)
-    }
+    ): AppResult<RecipeDetail> = safeApiCall { api.updateRecipe(id, request) }
 
-    override suspend fun deleteRecipe(id: String): AppResult<Boolean> = try {
-        when (val response = api.deleteRecipe(id)) {
-            is ApiResponse.Success -> AppResult.Success(response.data)
-            is ApiResponse.Error -> AppResult.Error(response.message)
-        }
-    } catch (e: Exception) {
-        AppResult.Error(e.message ?: "Unknown error", e)
-    }
+    override suspend fun deleteRecipe(id: String): AppResult<Boolean> =
+        safeApiCall { api.deleteRecipe(id) }
 
-    override suspend fun getRandomRecipes(count: Int): AppResult<List<RecipeListItem>> = try {
-        when (val response = api.getRandomRecipes(count)) {
-            is ApiResponse.Success -> AppResult.Success(response.data)
-            is ApiResponse.Error -> AppResult.Error(response.message)
-        }
-    } catch (e: Exception) {
-        AppResult.Error(e.message ?: "Unknown error", e)
-    }
+    override suspend fun getRandomRecipes(count: Int): AppResult<List<RecipeListItem>> =
+        safeApiCall { api.getRandomRecipes(count) }
 }

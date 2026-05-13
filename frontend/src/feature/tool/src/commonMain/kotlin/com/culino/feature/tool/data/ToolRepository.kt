@@ -1,7 +1,7 @@
 package com.culino.feature.tool.data
 
 import com.culino.common.util.AppResult
-import com.culino.framework.network.ApiResponse
+import com.culino.framework.network.safeApiCall
 
 interface ToolRepository {
     // Shopping Lists
@@ -26,136 +26,54 @@ interface ToolRepository {
 
 class ToolRepositoryImpl(private val api: ToolApi) : ToolRepository {
 
-    override suspend fun getShoppingLists(): AppResult<List<ShoppingList>> = try {
-        when (val response = api.getShoppingLists()) {
-            is ApiResponse.Success -> AppResult.Success(response.data)
-            is ApiResponse.Error -> AppResult.Error(response.message)
-        }
-    } catch (e: Exception) {
-        AppResult.Error(e.message ?: "Unknown error", e)
-    }
+    override suspend fun getShoppingLists(): AppResult<List<ShoppingList>> =
+        safeApiCall { api.getShoppingLists() }
 
-    override suspend fun createShoppingList(request: CreateShoppingListRequest): AppResult<ShoppingList> = try {
-        when (val response = api.createShoppingList(request)) {
-            is ApiResponse.Success -> AppResult.Success(response.data)
-            is ApiResponse.Error -> AppResult.Error(response.message)
-        }
-    } catch (e: Exception) {
-        AppResult.Error(e.message ?: "Unknown error", e)
-    }
+    override suspend fun createShoppingList(request: CreateShoppingListRequest): AppResult<ShoppingList> =
+        safeApiCall { api.createShoppingList(request) }
 
-    override suspend fun getShoppingListDetail(id: String): AppResult<ShoppingListDetail> = try {
-        when (val response = api.getShoppingListDetail(id)) {
-            is ApiResponse.Success -> AppResult.Success(response.data)
-            is ApiResponse.Error -> AppResult.Error(response.message)
-        }
-    } catch (e: Exception) {
-        AppResult.Error(e.message ?: "Unknown error", e)
-    }
+    override suspend fun getShoppingListDetail(id: String): AppResult<ShoppingListDetail> =
+        safeApiCall { api.getShoppingListDetail(id) }
 
-    override suspend fun deleteShoppingList(id: String): AppResult<Boolean> = try {
-        when (val response = api.deleteShoppingList(id)) {
-            is ApiResponse.Success -> AppResult.Success(response.data)
-            is ApiResponse.Error -> AppResult.Error(response.message)
-        }
-    } catch (e: Exception) {
-        AppResult.Error(e.message ?: "Unknown error", e)
-    }
+    override suspend fun deleteShoppingList(id: String): AppResult<Boolean> =
+        safeApiCall { api.deleteShoppingList(id) }
 
     override suspend fun addShoppingItem(
         listId: String,
         request: CreateShoppingItemRequest
-    ): AppResult<ShoppingListItem> = try {
-        when (val response = api.addShoppingItem(listId, request)) {
-            is ApiResponse.Success -> AppResult.Success(response.data)
-            is ApiResponse.Error -> AppResult.Error(response.message)
-        }
-    } catch (e: Exception) {
-        AppResult.Error(e.message ?: "Unknown error", e)
-    }
+    ): AppResult<ShoppingListItem> = safeApiCall { api.addShoppingItem(listId, request) }
 
     override suspend fun updateShoppingItem(
         listId: String,
         itemId: Int,
         request: UpdateShoppingItemRequest
-    ): AppResult<ShoppingListItem> = try {
-        when (val response = api.updateShoppingItem(listId, itemId, request)) {
-            is ApiResponse.Success -> AppResult.Success(response.data)
-            is ApiResponse.Error -> AppResult.Error(response.message)
-        }
-    } catch (e: Exception) {
-        AppResult.Error(e.message ?: "Unknown error", e)
-    }
+    ): AppResult<ShoppingListItem> = safeApiCall { api.updateShoppingItem(listId, itemId, request) }
 
-    override suspend fun deleteShoppingItem(listId: String, itemId: Int): AppResult<Boolean> = try {
-        when (val response = api.deleteShoppingItem(listId, itemId)) {
-            is ApiResponse.Success -> AppResult.Success(response.data)
-            is ApiResponse.Error -> AppResult.Error(response.message)
-        }
-    } catch (e: Exception) {
-        AppResult.Error(e.message ?: "Unknown error", e)
-    }
+    override suspend fun deleteShoppingItem(listId: String, itemId: Int): AppResult<Boolean> =
+        safeApiCall { api.deleteShoppingItem(listId, itemId) }
 
     override suspend fun batchAddItems(
         listId: String,
         items: List<CreateShoppingItemRequest>
-    ): AppResult<List<ShoppingListItem>> = try {
-        when (val response = api.batchAddItems(listId, BatchAddItemsRequest(items))) {
-            is ApiResponse.Success -> AppResult.Success(response.data)
-            is ApiResponse.Error -> AppResult.Error(response.message)
-        }
-    } catch (e: Exception) {
-        AppResult.Error(e.message ?: "Unknown error", e)
-    }
+    ): AppResult<List<ShoppingListItem>> =
+        safeApiCall { api.batchAddItems(listId, BatchAddItemsRequest(items)) }
 
-    override suspend fun parseShoppingText(text: String): AppResult<ParseShoppingTextResponse> = try {
-        when (val response = api.parseShoppingText(ParseShoppingTextRequest(text))) {
-            is ApiResponse.Success -> AppResult.Success(response.data)
-            is ApiResponse.Error -> AppResult.Error(response.message)
-        }
-    } catch (e: Exception) {
-        AppResult.Error(e.message ?: "Unknown error", e)
-    }
+    override suspend fun parseShoppingText(text: String): AppResult<ParseShoppingTextResponse> =
+        safeApiCall { api.parseShoppingText(ParseShoppingTextRequest(text)) }
 
     override suspend fun getMealPlans(
         startDate: String?,
         endDate: String?
-    ): AppResult<List<MealPlan>> = try {
-        when (val response = api.getMealPlans(startDate, endDate)) {
-            is ApiResponse.Success -> AppResult.Success(response.data)
-            is ApiResponse.Error -> AppResult.Error(response.message)
-        }
-    } catch (e: Exception) {
-        AppResult.Error(e.message ?: "Unknown error", e)
-    }
+    ): AppResult<List<MealPlan>> = safeApiCall { api.getMealPlans(startDate, endDate) }
 
-    override suspend fun createMealPlan(request: CreateMealPlanRequest): AppResult<MealPlan> = try {
-        when (val response = api.createMealPlan(request)) {
-            is ApiResponse.Success -> AppResult.Success(response.data)
-            is ApiResponse.Error -> AppResult.Error(response.message)
-        }
-    } catch (e: Exception) {
-        AppResult.Error(e.message ?: "Unknown error", e)
-    }
+    override suspend fun createMealPlan(request: CreateMealPlanRequest): AppResult<MealPlan> =
+        safeApiCall { api.createMealPlan(request) }
 
     override suspend fun updateMealPlan(
         id: String,
         request: UpdateMealPlanRequest
-    ): AppResult<MealPlan> = try {
-        when (val response = api.updateMealPlan(id, request)) {
-            is ApiResponse.Success -> AppResult.Success(response.data)
-            is ApiResponse.Error -> AppResult.Error(response.message)
-        }
-    } catch (e: Exception) {
-        AppResult.Error(e.message ?: "Unknown error", e)
-    }
+    ): AppResult<MealPlan> = safeApiCall { api.updateMealPlan(id, request) }
 
-    override suspend fun deleteMealPlan(id: String): AppResult<Boolean> = try {
-        when (val response = api.deleteMealPlan(id)) {
-            is ApiResponse.Success -> AppResult.Success(response.data)
-            is ApiResponse.Error -> AppResult.Error(response.message)
-        }
-    } catch (e: Exception) {
-        AppResult.Error(e.message ?: "Unknown error", e)
-    }
+    override suspend fun deleteMealPlan(id: String): AppResult<Boolean> =
+        safeApiCall { api.deleteMealPlan(id) }
 }
