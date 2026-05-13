@@ -16,14 +16,14 @@ kotlin {
 
     sourceSets {
         commonMain.dependencies {
-            implementation(project(":common:util"))
-            implementation(project(":common:model"))
-            implementation(project(":common:api"))
-            implementation(project(":common:ui"))
-            implementation(project(":framework:network"))
-            implementation(project(":framework:storage"))
-            implementation(project(":feature:social"))
-            implementation(project(":feature:recipe"))
+            implementation(projects.common.util)
+            implementation(projects.common.model)
+            implementation(projects.common.api)
+            implementation(projects.common.ui)
+            implementation(projects.framework.network)
+            implementation(projects.framework.storage)
+            implementation(projects.feature.social)
+            implementation(projects.feature.recipe)
             implementation(compose.runtime)
             implementation(compose.foundation)
             implementation(compose.material3)

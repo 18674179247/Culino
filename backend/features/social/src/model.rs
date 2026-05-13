@@ -86,8 +86,19 @@ pub struct CreateCommentReq {
 /// 评论列表查询参数
 #[derive(Debug, Deserialize, utoipa::IntoParams)]
 pub struct CommentListQuery {
+    /// 页码,从 1 开始,默认 1,上限 10000
     pub page: Option<i64>,
+    /// 每页条数,默认 20,范围 [1,100]
     pub page_size: Option<i64>,
+}
+
+impl CommentListQuery {
+    pub fn pagination(&self) -> culino_common::pagination::PaginationParams {
+        culino_common::pagination::PaginationParams {
+            page: self.page,
+            page_size: self.page_size,
+        }
+    }
 }
 
 /// 评论列表响应

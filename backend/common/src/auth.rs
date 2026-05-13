@@ -44,9 +44,14 @@ pub struct AuthUser {
 }
 
 impl AuthUser {
+    /// 当前用户是否为管理员
+    pub fn is_admin(&self) -> bool {
+        self.role_code == "admin"
+    }
+
     /// 检查当前用户是否为管理员，否则返回 Forbidden
     pub fn require_admin(&self) -> Result<(), AppError> {
-        if self.role_code != "admin" {
+        if !self.is_admin() {
             return Err(AppError::Forbidden("insufficient permissions".into()));
         }
         Ok(())
@@ -138,6 +143,35 @@ pub fn verify_password(password: &str, hash: &str) -> Result<bool, AppError> {
     Ok(argon2()
         .verify_password(password.as_bytes(), &parsed)
         .is_ok())
+}
+
+/// 已认证且为管理员的用户,作为 Axum 提取器使用。
+///
+/// 用法:handler 签名写 `admin: AdminUser` 即自动要求管理员身份,
+/// 省去 `auth.require_admin()?;` 的 12+ 处重复调用。
+#[derive(Debug, Clone)]
+pub struct AdminUser(pub AuthUser);
+
+impl FromRequestParts<AppState> for AdminUser {
+    type Rejection = AppError;
+
+    async fn from_request_parts(
+        parts: &mut Parts,
+        state: &AppState,
+    ) -> Result<Self, Self::Rejection> {
+        let auth = AuthUser::from_request_parts(parts, state).await?;
+        if !auth.is_admin() {
+            return Err(AppError::Forbidden("insufficient permissions".into()));
+        }
+        Ok(AdminUser(auth))
+    }
+}
+
+impl std::ops::Deref for AdminUser {
+    type Target = AuthUser;
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
 }
 
 /// 全局鉴权中间件：要求请求携带合法的 Bearer Token，未验证的 token 或已撤销的 token 一律拒绝。

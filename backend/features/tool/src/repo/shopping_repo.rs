@@ -6,6 +6,7 @@
 use crate::model::*;
 use async_trait::async_trait;
 use culino_common::error::AppError;
+use culino_common::tx::with_tx;
 use sqlx::PgPool;
 use uuid::Uuid;
 
@@ -207,20 +208,26 @@ impl ShoppingRepo for PgShoppingRepo {
         list_id: Uuid,
         items: &[AddShoppingItemReq],
     ) -> Result<Vec<ShoppingListItem>, AppError> {
-        let mut result = Vec::with_capacity(items.len());
-        for (i, item) in items.iter().enumerate() {
-            let row = sqlx::query_as::<_, ShoppingListItem>(
-                "INSERT INTO shopping_list_items (list_id, name, amount, sort_order) VALUES ($1, $2, $3, $4) RETURNING *"
-            )
-                .bind(list_id)
-                .bind(&item.name)
-                .bind(item.amount.as_deref())
-                .bind(item.sort_order.unwrap_or(i as i32))
-                .fetch_one(&self.pool)
-                .await?;
-            result.push(row);
-        }
-        Ok(result)
+        // 全部成功才提交,任何一项失败都 rollback,避免脏数据
+        with_tx(&self.pool, |mut tx| {
+            Box::pin(async move {
+                let mut result = Vec::with_capacity(items.len());
+                for (i, item) in items.iter().enumerate() {
+                    let row = sqlx::query_as::<_, ShoppingListItem>(
+                        "INSERT INTO shopping_list_items (list_id, name, amount, sort_order) VALUES ($1, $2, $3, $4) RETURNING *"
+                    )
+                        .bind(list_id)
+                        .bind(&item.name)
+                        .bind(item.amount.as_deref())
+                        .bind(item.sort_order.unwrap_or(i as i32))
+                        .fetch_one(&mut *tx)
+                        .await?;
+                    result.push(row);
+                }
+                Ok((result, tx))
+            })
+        })
+        .await
     }
 
     async fn auto_complete_list(&self, list_id: Uuid) -> Result<(), AppError> {

@@ -7,8 +7,8 @@ import com.culino.app.di.AppComponent
 import com.culino.common.ui.theme.CulinoTheme
 
 @Composable
-fun App(dataStorePath: String, fontFamily: FontFamily? = null) {
-    val appComponent = remember { AppComponent(dataStorePath) }
+fun App(dataStorePath: String, fontFamily: FontFamily? = null, debugLogging: Boolean = false) {
+    val appComponent = remember { AppComponent(dataStorePath, debugLogging) }
     CulinoTheme(fontFamily = fontFamily) {
         CulinoNavHost(appComponent = appComponent)
     }

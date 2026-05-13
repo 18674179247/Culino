@@ -31,13 +31,13 @@ import com.culino.feature.ingredient.data.IngredientApi
 import com.culino.feature.ingredient.data.IngredientApiImpl
 import com.culino.feature.ingredient.data.IngredientRepository
 
-class AppComponent(dataStorePath: String) {
+class AppComponent(dataStorePath: String, debugLogging: Boolean = false) {
 
     private val dataStore by lazy { createKeyValueStore(dataStorePath) }
     private val tokenStorage by lazy { TokenStorage(dataStore) }
     val tokenProvider: TokenProvider get() = tokenStorage
-    private val httpClient by lazy { createHttpClient(tokenProvider) }
-    private val apiClient by lazy { ApiClient(httpClient) }
+    private val httpClient by lazy { createHttpClient(tokenProvider, debugLogging) }
+    private val apiClient by lazy { ApiClient(httpClient, tokenProvider) }
     val imageUploadApi by lazy { ImageUploadApi(httpClient) }
     private val aiBaseUrl by lazy {
         com.culino.common.util.Constants.API_BASE_URL.removeSuffix("/").removeSuffix("api/v1").removeSuffix("/")

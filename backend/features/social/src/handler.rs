@@ -10,29 +10,11 @@ use axum::{
     extract::{Path, Query, State},
 };
 use culino_common::auth::AuthUser;
+use culino_common::behavior::spawn_behavior_log;
 use culino_common::response::{ApiResponse, ApiResult};
 use culino_common::state::AppState;
 use uuid::Uuid;
 use validator::Validate;
-
-/// 异步记录用户行为（fire-and-forget）
-fn spawn_behavior_log(
-    state: &AppState,
-    user_id: Uuid,
-    recipe_id: Uuid,
-    action: &'static str,
-    value: Option<serde_json::Value>,
-) {
-    if let Some(logger) = state.behavior_logger.clone() {
-        tokio::spawn(async move {
-            if let Err(e) = logger.log(user_id, recipe_id, action, value).await {
-                tracing::error!(
-                    "行为日志记录失败: user={user_id}, recipe={recipe_id}, action={action}, error={e}"
-                );
-            }
-        });
-    }
-}
 
 /// 获取当前用户的收藏列表
 #[utoipa::path(get, path = "/api/v1/social/favorites", tag = "收藏",
@@ -47,6 +29,22 @@ pub async fn list_favorites(
     let repo = PgFavoriteRepo::new(state.pool.clone());
     let rows: Vec<FavoriteWithTitle> = repo.list_by_user(auth.user_id).await?;
     ApiResponse::ok(rows)
+}
+
+/// 查询某菜谱是否已被当前用户收藏（避免详情页为判定而拉全量列表）
+#[utoipa::path(get, path = "/api/v1/social/favorites/{recipe_id}/check", tag = "收藏",
+    security(("bearer" = [])),
+    params(("recipe_id" = Uuid, Path, description = "菜谱ID")),
+    responses((status = 200, body = bool))
+)]
+pub async fn check_favorite(
+    State(state): State<AppState>,
+    auth: AuthUser,
+    Path(recipe_id): Path<Uuid>,
+) -> ApiResult<bool> {
+    let repo = PgFavoriteRepo::new(state.pool.clone());
+    let is_fav = repo.is_favorited(auth.user_id, recipe_id).await?;
+    ApiResponse::ok(is_fav)
 }
 
 /// 收藏菜谱（重复收藏不会报错，返回已有记录）
@@ -187,9 +185,8 @@ pub async fn toggle_like(
     auth: AuthUser,
     Path(recipe_id): Path<Uuid>,
 ) -> ApiResult<bool> {
-    let liked = crate::repo::like_repo::LikeRepo::toggle(&state.pool, auth.user_id, recipe_id)
-        .await
-        .map_err(culino_common::error::AppError::Internal)?;
+    let liked =
+        crate::repo::like_repo::LikeRepo::toggle(&state.pool, auth.user_id, recipe_id).await?;
     ApiResponse::ok(liked)
 }
 
@@ -206,12 +203,12 @@ pub async fn list_comments(
     Path(recipe_id): Path<Uuid>,
     Query(query): Query<CommentListQuery>,
 ) -> ApiResult<CommentListResp> {
-    let page = query.page.unwrap_or(1).max(1);
-    let page_size = query.page_size.unwrap_or(20).min(50);
+    let pagination = query.pagination();
+    let page = pagination.page();
+    let page_size = pagination.limit();
     let (comments, total) =
         crate::repo::comment_repo::CommentRepo::list(&state.pool, recipe_id, page, page_size)
-            .await
-            .map_err(culino_common::error::AppError::Internal)?;
+            .await?;
     ApiResponse::ok(CommentListResp {
         data: comments,
         total,
@@ -238,12 +235,11 @@ pub async fn create_comment(
         req.recipe_id,
         &req.content,
     )
-    .await
-    .map_err(culino_common::error::AppError::Internal)?;
+    .await?;
     ApiResponse::ok(comment)
 }
 
-/// 删除评论（仅评论作者可删除）
+/// 删除评论（评论作者可删除;管理员可删除任意评论处理违规内容）
 #[utoipa::path(delete, path = "/api/v1/social/comments/{id}", tag = "社交",
     security(("bearer" = [])),
     params(("id" = Uuid, Path, description = "评论ID")),
@@ -254,8 +250,10 @@ pub async fn delete_comment(
     auth: AuthUser,
     Path(id): Path<Uuid>,
 ) -> ApiResult<bool> {
-    let deleted = crate::repo::comment_repo::CommentRepo::delete(&state.pool, id, auth.user_id)
-        .await
-        .map_err(culino_common::error::AppError::Internal)?;
+    let deleted = if auth.is_admin() {
+        crate::repo::comment_repo::CommentRepo::delete_as_admin(&state.pool, id).await?
+    } else {
+        crate::repo::comment_repo::CommentRepo::delete(&state.pool, id, auth.user_id).await?
+    };
     ApiResponse::ok(deleted)
 }

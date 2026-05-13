@@ -7,6 +7,11 @@ import androidx.activity.compose.setContent
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContent { App(dataStorePath = filesDir.absolutePath) }
+        setContent {
+            App(
+                dataStorePath = filesDir.absolutePath,
+                debugLogging = BuildConfig.DEBUG
+            )
+        }
     }
 }

@@ -31,25 +31,36 @@ pub async fn create(
     let detail = svc.create(auth.user_id, &req).await?;
     tracing::info!("菜谱创建成功: recipe_id={}", detail.recipe.id);
 
-    // 异步触发营养分析
+    // 异步触发营养分析,独立任务,失败/超时都不影响创建返回
     let pool = state.pool.clone();
     let recipe_id = detail.recipe.id;
     let api_key = state.config.deepseek_api_key.clone();
 
     tokio::spawn(async move {
-        if let Some(key) = api_key {
-            tracing::info!("开始异步分析菜谱营养: recipe_id={}", recipe_id);
-            match culino_ai::nutrition::NutritionService::new(pool, key) {
-                Ok(ai_svc) => match ai_svc.analyze_recipe_nutrition(recipe_id, false).await {
-                    Ok(_) => tracing::info!("菜谱营养分析完成: recipe_id={}", recipe_id),
-                    Err(e) => {
-                        tracing::error!("菜谱营养分析失败: recipe_id={}, error={}", recipe_id, e)
-                    }
-                },
-                Err(e) => tracing::error!("创建营养分析服务失败: {}", e),
-            }
-        } else {
+        let Some(key) = api_key else {
             tracing::debug!("未配置 DeepSeek API Key，跳过营养分析");
+            return;
+        };
+        tracing::info!("开始异步分析菜谱营养: recipe_id={}", recipe_id);
+        let ai_svc = match culino_ai::nutrition::NutritionService::new(pool, key) {
+            Ok(s) => s,
+            Err(e) => {
+                tracing::error!("创建营养分析服务失败: {}", e);
+                return;
+            }
+        };
+        // 60s 超时护栏,避免 spawn 任务在 DeepSeek 偶发卡死时无限挂住
+        match tokio::time::timeout(
+            std::time::Duration::from_secs(60),
+            ai_svc.analyze_recipe_nutrition(recipe_id, false),
+        )
+        .await
+        {
+            Ok(Ok(_)) => tracing::info!("菜谱营养分析完成: recipe_id={}", recipe_id),
+            Ok(Err(e)) => {
+                tracing::error!("菜谱营养分析失败: recipe_id={}, error={}", recipe_id, e)
+            }
+            Err(_) => tracing::error!("菜谱营养分析超时(>60s): recipe_id={}", recipe_id),
         }
     });
 
@@ -128,8 +139,9 @@ pub async fn search(
         params.difficulty
     );
     let svc = RecipeService::new(state.pool.clone());
-    let page = params.page.unwrap_or(1).max(1);
-    let page_size = params.page_size.unwrap_or(20).clamp(1, 100);
+    let pagination = params.pagination();
+    let page = pagination.page();
+    let page_size = pagination.limit();
     let (data, total) = svc.search(&params).await?;
     tracing::debug!("搜索结果: total={}, page={}", total, page);
     ApiResponse::ok(PaginatedResponse {

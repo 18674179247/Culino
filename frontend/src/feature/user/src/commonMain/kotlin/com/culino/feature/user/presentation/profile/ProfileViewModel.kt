@@ -8,7 +8,6 @@ import com.culino.feature.recipe.data.RecipeRepository
 import com.culino.feature.social.data.SocialRepository
 import com.culino.feature.user.domain.GetProfileUseCase
 import io.github.aakira.napier.Napier
-import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -64,31 +63,25 @@ class ProfileViewModel(
         }
     }
 
-    private fun loadStats(userId: String) {
+    private fun loadStats(@Suppress("UNUSED_PARAMETER") userId: String) {
+        // 后端 GET /user/me/stats 单次返回三个计数,替代过去用
+        // getFavorites() + getCookingLogs() + searchRecipes(pageSize=1)
+        // 并发拉全量数据再 count 的反模式
         viewModelScope.launch {
-            val favoritesDeferred = async { socialRepository.getFavorites() }
-            val cookingLogsDeferred = async { socialRepository.getCookingLogs() }
-            val recipesDeferred = async { recipeRepository.searchRecipes(authorId = userId, page = 1, pageSize = 1) }
-
-            val favoriteCount = when (val r = favoritesDeferred.await()) {
-                is AppResult.Success -> r.data.size
-                is AppResult.Error -> 0
-            }
-            val cookingLogCount = when (val r = cookingLogsDeferred.await()) {
-                is AppResult.Success -> r.data.size
-                is AppResult.Error -> 0
-            }
-            val recipeCount = when (val r = recipesDeferred.await()) {
-                is AppResult.Success -> r.data.total.toInt()
-                is AppResult.Error -> 0
-            }
-
-            _state.update {
-                it.copy(stats = ProfileStats(
-                    recipeCount = recipeCount,
-                    favoriteCount = favoriteCount,
-                    cookingLogCount = cookingLogCount
-                ))
+            when (val r = getProfileUseCase.getMyStats()) {
+                is AppResult.Success -> {
+                    val s = r.data
+                    _state.update {
+                        it.copy(
+                            stats = ProfileStats(
+                                recipeCount = s.recipeCount.toInt(),
+                                favoriteCount = s.favoriteCount.toInt(),
+                                cookingLogCount = s.cookingLogCount.toInt()
+                            )
+                        )
+                    }
+                }
+                is AppResult.Error -> Napier.w("加载用户统计失败: ${r.message}")
             }
         }
     }

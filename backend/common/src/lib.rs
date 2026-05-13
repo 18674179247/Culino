@@ -11,5 +11,6 @@ pub mod pagination;
 pub mod redis;
 pub mod response;
 pub mod s3;
+pub mod sql;
 pub mod state;
 pub mod tx;

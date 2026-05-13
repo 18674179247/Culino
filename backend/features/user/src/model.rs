@@ -138,3 +138,13 @@ pub struct TokenResponse {
     pub token: String,
     pub user: UserResponse,
 }
+
+#[derive(Debug, Serialize, utoipa::ToSchema)]
+pub struct UserStats {
+    /// 用户发布的菜谱数(status=1 上架中)
+    pub recipe_count: i64,
+    /// 用户收藏的菜谱数
+    pub favorite_count: i64,
+    /// 用户的烹饪记录条数
+    pub cooking_log_count: i64,
+}

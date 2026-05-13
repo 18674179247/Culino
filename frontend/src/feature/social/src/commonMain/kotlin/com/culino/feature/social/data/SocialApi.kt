@@ -5,6 +5,7 @@ import com.culino.framework.network.ApiResponse
 
 interface SocialApi {
     suspend fun getFavorites(): ApiResponse<List<Favorite>>
+    suspend fun isFavorited(recipeId: String): ApiResponse<Boolean>
     suspend fun addFavorite(recipeId: String): ApiResponse<Favorite>
     suspend fun removeFavorite(recipeId: String): ApiResponse<Boolean>
 
@@ -22,6 +23,10 @@ interface SocialApi {
 class SocialApiImpl(private val client: ApiClient) : SocialApi {
     override suspend fun getFavorites(): ApiResponse<List<Favorite>> {
         return client.get("social/favorites")
+    }
+
+    override suspend fun isFavorited(recipeId: String): ApiResponse<Boolean> {
+        return client.get("social/favorites/$recipeId/check")
     }
 
     override suspend fun addFavorite(recipeId: String): ApiResponse<Favorite> {

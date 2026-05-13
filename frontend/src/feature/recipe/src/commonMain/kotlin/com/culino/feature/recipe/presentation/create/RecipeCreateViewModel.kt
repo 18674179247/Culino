@@ -16,6 +16,8 @@ import com.culino.feature.recipe.data.CreateRecipeRequest
 import com.culino.feature.recipe.data.CreateRecipeSeasoning
 import com.culino.feature.recipe.data.CreateRecipeStep
 import com.culino.feature.recipe.data.RecipeRepository
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -217,23 +219,30 @@ class RecipeCreateViewModel(
     }
 
     fun uploadRecipeImages(images: List<Triple<ByteArray, String, String>>) {
+        if (images.isEmpty()) return
         _formState.value = _formState.value.copy(isUploadingImages = true)
         viewModelScope.launch {
-            val urls = mutableListOf<String>()
-            for ((bytes, fileName, contentType) in images) {
-                when (val result = imageUploadApi.uploadImage(bytes, fileName, contentType)) {
-                    is AppResult.Success -> urls.add(result.data)
-                    is AppResult.Error -> {
-                        _formState.value = _formState.value.copy(isUploadingImages = false)
-                        _errorMessage.value = result.message
-                        return@launch
-                    }
+            // 并行上传,逐张结果独立处理;一张失败不拖累其它张
+            val results = images.map { (bytes, fileName, contentType) ->
+                async { imageUploadApi.uploadImage(bytes, fileName, contentType) }
+            }.awaitAll()
+
+            val successUrls = mutableListOf<String>()
+            val failedIndices = mutableListOf<Int>()
+            results.forEachIndexed { i, r ->
+                when (r) {
+                    is AppResult.Success -> successUrls.add(r.data)
+                    is AppResult.Error -> failedIndices.add(i + 1)
                 }
             }
+
             _formState.value = _formState.value.copy(
-                recipeImages = _formState.value.recipeImages + urls,
+                recipeImages = _formState.value.recipeImages + successUrls,
                 isUploadingImages = false
             )
+            if (failedIndices.isNotEmpty()) {
+                _errorMessage.value = "第 ${failedIndices.joinToString(", ")} 张图片上传失败,其它已保存"
+            }
         }
     }
 

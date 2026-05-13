@@ -8,7 +8,7 @@ use axum::{
     Json,
     extract::{Path, State},
 };
-use culino_common::auth::AuthUser;
+use culino_common::auth::AdminUser;
 use culino_common::error::AppError;
 use culino_common::response::{ApiResponse, ApiResult};
 use culino_common::state::AppState;
@@ -50,10 +50,9 @@ pub async fn get_by_id(
 )]
 pub async fn create(
     State(state): State<AppState>,
-    auth: AuthUser,
+    _admin: AdminUser,
     Json(req): Json<CreateIngredientReq>,
 ) -> ApiResult<Ingredient> {
-    auth.require_admin()?;
     tracing::info!("创建食材: name={}", req.name);
     let repo = PgIngredientRepo::new(state.pool.clone());
     let row = repo.create(&req).await?;
@@ -70,11 +69,10 @@ pub async fn create(
 )]
 pub async fn update(
     State(state): State<AppState>,
-    auth: AuthUser,
+    _admin: AdminUser,
     Path(id): Path<i32>,
     Json(req): Json<UpdateIngredientReq>,
 ) -> ApiResult<Ingredient> {
-    auth.require_admin()?;
     tracing::info!("更新食材: id={}", id);
     let repo = PgIngredientRepo::new(state.pool.clone());
     let row = repo.update(id, &req).await?;
@@ -89,10 +87,9 @@ pub async fn update(
 )]
 pub async fn remove(
     State(state): State<AppState>,
-    auth: AuthUser,
+    _admin: AdminUser,
     Path(id): Path<i32>,
 ) -> ApiResult<bool> {
-    auth.require_admin()?;
     tracing::info!("删除食材: id={}", id);
     let repo = PgIngredientRepo::new(state.pool.clone());
     repo.delete(id).await?;

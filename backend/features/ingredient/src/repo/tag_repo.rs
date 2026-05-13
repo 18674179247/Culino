@@ -58,13 +58,7 @@ impl TagRepo for PgTagRepo {
         .bind(&req.color)
         .bind(req.sort_order)
         .fetch_one(&self.pool)
-        .await
-        .map_err(|e| match e {
-            sqlx::Error::Database(ref db_err) if db_err.is_unique_violation() => {
-                AppError::Conflict("tag already exists".into())
-            }
-            _ => AppError::from(e),
-        })?;
+        .await?;
         Ok(row)
     }
 

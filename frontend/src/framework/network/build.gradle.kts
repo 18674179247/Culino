@@ -14,12 +14,11 @@ kotlin {
 
     sourceSets {
         commonMain.dependencies {
-            implementation(project(":common:util"))
-            implementation(project(":common:model"))
+            implementation(projects.common.util)
+            implementation(projects.common.model)
             implementation(libs.ktor.client.core)
             implementation(libs.ktor.client.content.negotiation)
             implementation(libs.ktor.serialization.json)
-            implementation(libs.ktor.client.auth)
             implementation(libs.ktor.client.logging)
             implementation(libs.kotlinx.coroutines.core)
             implementation(libs.kotlinx.serialization.json)

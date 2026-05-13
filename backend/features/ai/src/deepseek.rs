@@ -1,6 +1,20 @@
 use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
+use std::sync::OnceLock;
 use std::time::Duration;
+
+/// 全局共享的 reqwest::Client。
+/// reqwest 官方推荐:一个进程用一个 Client,内部维护连接池;每次 new() 都会重建 TLS 栈、DNS 缓存和连接池,
+/// 在高并发下造成不必要的资源消耗。通过 OnceLock 保证只构造一次。
+fn http_client() -> &'static reqwest::Client {
+    static CLIENT: OnceLock<reqwest::Client> = OnceLock::new();
+    CLIENT.get_or_init(|| {
+        reqwest::Client::builder()
+            .timeout(Duration::from_secs(60))
+            .build()
+            .expect("Failed to build shared reqwest Client")
+    })
+}
 
 /// DeepSeek API 客户端
 pub struct DeepSeekClient {
@@ -36,17 +50,12 @@ struct Choice {
 }
 
 impl DeepSeekClient {
-    /// 创建 DeepSeek 客户端
+    /// 创建 DeepSeek 客户端(复用进程级共享的 reqwest::Client)
     pub fn new(api_key: String) -> Result<Self> {
-        let client = reqwest::Client::builder()
-            .timeout(Duration::from_secs(60))
-            .build()
-            .context("Failed to create HTTP client")?;
-
         Ok(Self {
             api_key,
             base_url: "https://api.deepseek.com/v1".to_string(),
-            client,
+            client: http_client().clone(),
         })
     }
 

@@ -17,6 +17,7 @@ use utoipa::OpenApi;
 #[openapi(
     paths(
         handler::list_favorites,
+        handler::check_favorite,
         handler::add_favorite,
         handler::remove_favorite,
         handler::list_cooking_logs,
@@ -46,6 +47,7 @@ pub fn routes() -> Router<AppState> {
     Router::new()
         // favorites
         .route("/favorites", get(handler::list_favorites))
+        .route("/favorites/{recipe_id}/check", get(handler::check_favorite))
         .route(
             "/favorites/{recipe_id}",
             post(handler::add_favorite).delete(handler::remove_favorite),

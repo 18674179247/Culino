@@ -1,6 +1,7 @@
 package com.culino.feature.user.domain
 
 import com.culino.common.util.AppResult
+import com.culino.common.model.InviteCode
 import com.culino.common.model.User
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -13,10 +14,14 @@ class LoginUseCaseTest {
 
     private val successRepo = object : UserRepository {
         override suspend fun login(username: String, password: String) = AppResult.Success(fakeUser)
-        override suspend fun register(username: String, password: String, nickname: String?) = AppResult.Success(fakeUser)
+        override suspend fun register(username: String, password: String, nickname: String?, inviteCode: String) = AppResult.Success(fakeUser)
         override suspend fun getProfile() = AppResult.Success(fakeUser)
+        override suspend fun getMyStats() = AppResult.Success(UserStats(0, 0, 0))
         override suspend fun updateProfile(nickname: String?, avatar: String?) = AppResult.Success(fakeUser)
         override suspend fun logout() = AppResult.Success(Unit)
+        override suspend fun listInviteCodes() = AppResult.Success(emptyList<InviteCode>())
+        override suspend fun createInviteCode(maxUses: Int?, expiresAt: String?, note: String?) = AppResult.Error("not implemented")
+        override suspend fun revokeInviteCode(code: String) = AppResult.Success(Unit)
     }
 
     @Test

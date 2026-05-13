@@ -14,10 +14,6 @@
 /frontend/local.properties
 !frontend/gradle/wrapper/gradle-wrapper.jar
 
-# Bazel
-bazel-*
-.bazelisk/
-
 # IDE
 .idea/
 *.iml
@@ -30,6 +26,3 @@ bazel-*
 
 # Kotlin
 *.class
-
-# Build cache
-.buildcache/

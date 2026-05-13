@@ -45,8 +45,10 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.culino.app.di.AppComponent
-import com.culino.app.picker.rememberImagePickerLauncher
+import com.culino.framework.media.picker.rememberImagePickerLauncher
 import com.culino.framework.network.parseUserIdFromToken
 import com.culino.common.ui.component.LocalNavAnimatedVisibilityScope
 import com.culino.common.ui.component.LocalSharedTransitionScope
@@ -107,6 +109,18 @@ private val slideOutToRight = slideOutHorizontally(tween(ANIM_DURATION)) { it }
 private val tabFadeIn = fadeIn(tween(FADE_DURATION))
 private val tabFadeOut = fadeOut(tween(FADE_DURATION))
 
+/**
+ * 托管 ViewModel 到当前 NavBackStackEntry(或最近的 ViewModelStoreOwner) 的 ViewModelStore,
+ * 这样 Android 屏幕旋转 / 进程重建 / 导航返回时,状态不会丢失(不像 remember {} 随 Composition 销毁)。
+ *
+ * key 参数用于区分同屏多个同类型 VM(当前项目不需要,保留扩展位)。
+ */
+@Composable
+private inline fun <reified VM : ViewModel> rememberScopedViewModel(
+    key: String? = null,
+    crossinline factory: () -> VM
+): VM = viewModel(key = key) { factory() }
+
 @Composable
 fun CulinoNavHost(
     appComponent: AppComponent,
@@ -140,7 +154,7 @@ fun CulinoNavHost(
         popExitTransition = { fadeOut(tween(ANIM_DURATION)) }
     ) {
         composable(Routes.LOGIN) {
-            val viewModel = remember { appComponent.loginViewModel() }
+            val viewModel = rememberScopedViewModel { appComponent.loginViewModel() }
             LoginScreen(
                 viewModel = viewModel,
                 onLoginSuccess = {
@@ -153,7 +167,7 @@ fun CulinoNavHost(
         }
 
         composable(Routes.REGISTER) {
-            val viewModel = remember { appComponent.registerViewModel() }
+            val viewModel = rememberScopedViewModel { appComponent.registerViewModel() }
             RegisterScreen(
                 viewModel = viewModel,
                 onRegisterSuccess = {
@@ -319,7 +333,7 @@ fun MainScreen(
         ) {
             composable(Routes.RECIPES) {
                 CompositionLocalProvider(LocalNavAnimatedVisibilityScope provides this@composable) {
-                val viewModel = remember { appComponent.recipeListViewModel() }
+                val viewModel = rememberScopedViewModel { appComponent.recipeListViewModel() }
                 RecipeListScreen(
                     viewModel = viewModel,
                     onRecipeClick = { recipeId ->
@@ -342,7 +356,7 @@ fun MainScreen(
             }
 
             composable(Routes.FAVORITES) {
-                val viewModel = remember { appComponent.favoritesViewModel() }
+                val viewModel = rememberScopedViewModel { appComponent.favoritesViewModel() }
                 FavoritesScreen(
                     viewModel = viewModel,
                     onRecipeClick = { recipeId ->
@@ -352,7 +366,7 @@ fun MainScreen(
             }
 
             composable(Routes.PROFILE) {
-                val viewModel = remember { appComponent.profileViewModel() }
+                val viewModel = rememberScopedViewModel { appComponent.profileViewModel() }
                 val avatarPicker = rememberImagePickerLauncher(
                     onSingleResult = { image ->
                         image?.let {
@@ -395,7 +409,7 @@ fun MainScreen(
             ) { backStackEntry ->
                 CompositionLocalProvider(LocalNavAnimatedVisibilityScope provides this@composable) {
                 val recipeId = backStackEntry.arguments?.getString("recipeId") ?: return@CompositionLocalProvider
-                val viewModel = remember { appComponent.recipeDetailViewModel() }
+                val viewModel = rememberScopedViewModel { appComponent.recipeDetailViewModel() }
                 RecipeDetailScreen(
                     recipeId = recipeId,
                     viewModel = viewModel,
@@ -413,7 +427,7 @@ fun MainScreen(
                 popEnterTransition = { slideInFromLeft },
                 popExitTransition = { slideOutToRight }
             ) {
-                val viewModel = remember { appComponent.recipeCreateViewModel() }
+                val viewModel = rememberScopedViewModel { appComponent.recipeCreateViewModel() }
                 val coverPicker = rememberImagePickerLauncher(
                     onSingleResult = { image ->
                         image?.let { viewModel.uploadCoverImage(it.bytes, it.fileName, it.contentType) }
@@ -449,7 +463,7 @@ fun MainScreen(
                 popExitTransition = { slideOutToRight }
             ) { backStackEntry ->
                 val recipeId = backStackEntry.arguments?.getString("recipeId") ?: return@composable
-                val viewModel = remember { appComponent.recipeCreateViewModel() }
+                val viewModel = rememberScopedViewModel { appComponent.recipeCreateViewModel() }
                 LaunchedEffect(recipeId) { viewModel.loadForEdit(recipeId) }
                 val coverPicker = rememberImagePickerLauncher(
                     onSingleResult = { image -> image?.let { viewModel.uploadCoverImage(it.bytes, it.fileName, it.contentType) } },
@@ -475,7 +489,7 @@ fun MainScreen(
                 popEnterTransition = { slideInFromLeft },
                 popExitTransition = { slideOutToRight }
             ) {
-                val viewModel = remember { appComponent.cookingLogViewModel() }
+                val viewModel = rememberScopedViewModel { appComponent.cookingLogViewModel() }
                 com.culino.feature.social.presentation.cookinglog.CookingLogScreen(
                     viewModel = viewModel,
                     onBack = { navController.popBackStack() }
@@ -489,7 +503,7 @@ fun MainScreen(
                 popEnterTransition = { slideInFromLeft },
                 popExitTransition = { slideOutToRight }
             ) {
-                val viewModel = remember { appComponent.shoppingListViewModel() }
+                val viewModel = rememberScopedViewModel { appComponent.shoppingListViewModel() }
                 com.culino.feature.tool.presentation.shoppinglist.ShoppingListScreen(
                     viewModel = viewModel,
                     onBack = { navController.popBackStack() },
@@ -507,7 +521,7 @@ fun MainScreen(
                 popExitTransition = { slideOutToRight }
             ) { backStackEntry ->
                 val listId = backStackEntry.arguments?.getString("listId") ?: return@composable
-                val viewModel = remember { appComponent.shoppingListDetailViewModel() }
+                val viewModel = rememberScopedViewModel { appComponent.shoppingListDetailViewModel() }
                 com.culino.feature.tool.presentation.shoppinglist.ShoppingListDetailScreen(
                     listId = listId,
                     viewModel = viewModel,
@@ -522,7 +536,7 @@ fun MainScreen(
                 popEnterTransition = { slideInFromLeft },
                 popExitTransition = { slideOutToRight }
             ) {
-                val viewModel = remember { appComponent.mealPlanViewModel() }
+                val viewModel = rememberScopedViewModel { appComponent.mealPlanViewModel() }
                 com.culino.feature.tool.presentation.mealplan.MealPlanScreen(
                     viewModel = viewModel,
                     onBack = { navController.popBackStack() }
@@ -536,7 +550,7 @@ fun MainScreen(
                 popEnterTransition = { slideInFromLeft },
                 popExitTransition = { slideOutToRight }
             ) {
-                val viewModel = remember { appComponent.fridgeSearchViewModel() }
+                val viewModel = rememberScopedViewModel { appComponent.fridgeSearchViewModel() }
                 FridgeSearchScreen(
                     viewModel = viewModel,
                     onBack = { navController.popBackStack() },
@@ -553,7 +567,7 @@ fun MainScreen(
                 popEnterTransition = { slideInFromLeft },
                 popExitTransition = { slideOutToRight }
             ) {
-                val viewModel = remember { appComponent.inviteCodeViewModel() }
+                val viewModel = rememberScopedViewModel { appComponent.inviteCodeViewModel() }
                 InviteCodeScreen(
                     viewModel = viewModel,
                     onBack = { navController.popBackStack() }

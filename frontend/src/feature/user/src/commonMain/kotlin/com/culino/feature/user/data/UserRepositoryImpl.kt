@@ -4,6 +4,7 @@ import com.culino.common.util.AppResult
 import com.culino.common.model.*
 import com.culino.framework.network.TokenProvider
 import com.culino.feature.user.domain.UserRepository
+import com.culino.feature.user.domain.UserStats
 
 class UserRepositoryImpl(
     private val userApi: UserApi,
@@ -56,6 +57,27 @@ class UserRepositoryImpl(
                     AppResult.Success(userData.toDomain())
                 } else {
                     AppResult.Error(response.error ?: "Failed to get profile")
+                }
+            }
+            is AppResult.Error -> result
+        }
+    }
+
+    override suspend fun getMyStats(): AppResult<UserStats> {
+        return when (val result = userApi.getMyStats()) {
+            is AppResult.Success -> {
+                val response = result.data
+                val data = response.data
+                if (response.ok && data != null) {
+                    AppResult.Success(
+                        UserStats(
+                            recipeCount = data.recipeCount,
+                            favoriteCount = data.favoriteCount,
+                            cookingLogCount = data.cookingLogCount
+                        )
+                    )
+                } else {
+                    AppResult.Error(response.error ?: "Failed to get stats")
                 }
             }
             is AppResult.Error -> result

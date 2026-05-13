@@ -18,6 +18,8 @@ pub trait FavoriteRepo: Send + Sync {
     async fn add(&self, user_id: Uuid, recipe_id: Uuid) -> Result<Favorite, AppError>;
     /// 取消收藏
     async fn remove(&self, user_id: Uuid, recipe_id: Uuid) -> Result<(), AppError>;
+    /// 是否已收藏某菜谱
+    async fn is_favorited(&self, user_id: Uuid, recipe_id: Uuid) -> Result<bool, AppError>;
 }
 
 /// PostgreSQL 收藏仓储实现
@@ -34,12 +36,13 @@ impl PgFavoriteRepo {
 #[async_trait]
 impl FavoriteRepo for PgFavoriteRepo {
     /// 查询用户的所有收藏，按时间倒序，JOIN 菜谱表获取摘要信息
+    /// 只返回上架中(status=1)的菜谱,下架/软删的收藏记录不展示
     async fn list_by_user(&self, user_id: Uuid) -> Result<Vec<FavoriteWithTitle>, AppError> {
         let rows = sqlx::query_as::<_, FavoriteWithTitle>(
             "SELECT f.user_id, f.recipe_id, f.created_at, \
              r.title as recipe_title, r.cover_image, r.difficulty, r.cooking_time, r.servings \
-             FROM favorites f LEFT JOIN recipes r ON f.recipe_id = r.id \
-             WHERE f.user_id = $1 ORDER BY f.created_at DESC",
+             FROM favorites f INNER JOIN recipes r ON f.recipe_id = r.id \
+             WHERE f.user_id = $1 AND r.status = 1 ORDER BY f.created_at DESC",
         )
         .bind(user_id)
         .fetch_all(&self.pool)
@@ -79,5 +82,16 @@ impl FavoriteRepo for PgFavoriteRepo {
             .execute(&self.pool)
             .await?;
         Ok(())
+    }
+
+    async fn is_favorited(&self, user_id: Uuid, recipe_id: Uuid) -> Result<bool, AppError> {
+        let exists: Option<i32> = sqlx::query_scalar(
+            "SELECT 1 FROM favorites WHERE user_id = $1 AND recipe_id = $2 LIMIT 1",
+        )
+        .bind(user_id)
+        .bind(recipe_id)
+        .fetch_optional(&self.pool)
+        .await?;
+        Ok(exists.is_some())
     }
 }

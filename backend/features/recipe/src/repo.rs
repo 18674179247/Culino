@@ -7,7 +7,8 @@
 use anyhow::Context;
 use async_trait::async_trait;
 use culino_common::error::AppError;
-use culino_common::pagination::paginate_sql;
+use culino_common::pagination::{OrderBy, paginate_sql};
+use culino_common::sql::escape_ilike;
 use culino_common::tx::with_tx;
 use sqlx::PgPool;
 use uuid::Uuid;
@@ -171,14 +172,15 @@ impl RecipeRepo for PgRecipeRepo {
     }
 
     async fn find_by_id(&self, id: Uuid) -> Result<Option<RecipeDetail>, AppError> {
-        let recipe = match sqlx::query_as::<_, Recipe>("SELECT * FROM recipes WHERE id = $1")
-            .bind(id)
-            .fetch_optional(&self.pool)
-            .await?
-        {
-            Some(r) => r,
-            None => return Ok(None),
-        };
+        let recipe =
+            match sqlx::query_as::<_, Recipe>("SELECT * FROM recipes WHERE id = $1 AND status = 1")
+                .bind(id)
+                .fetch_optional(&self.pool)
+                .await?
+            {
+                Some(r) => r,
+                None => return Ok(None),
+            };
 
         let ingredients = sqlx::query_as::<_, RecipeIngredient>(
             "SELECT ri.id, ri.recipe_id, ri.ingredient_id, i.name as ingredient_name, ri.amount, ri.unit, ri.note, ri.sort_order FROM recipe_ingredients ri JOIN ingredients i ON i.id = ri.ingredient_id WHERE ri.recipe_id = $1 ORDER BY ri.sort_order",
@@ -408,8 +410,10 @@ impl RecipeRepo for PgRecipeRepo {
 
         let has_keyword = params.keyword.as_ref().is_some_and(|k| !k.is_empty());
         if has_keyword {
+            // 使用 ESCAPE '\' 并对用户输入的 \ % _ 做字符级转义,防止通配符退化为全表扫描
             conditions.push(format!(
-                "(title ILIKE '%' || ${param_index} || '%' OR description ILIKE '%' || ${param_index} || '%')"
+                "(title ILIKE '%' || ${param_index} || '%' ESCAPE '\\' \
+                 OR description ILIKE '%' || ${param_index} || '%' ESCAPE '\\')"
             ));
             param_index += 1;
         }
@@ -431,9 +435,9 @@ impl RecipeRepo for PgRecipeRepo {
 
         let where_clause = conditions.join(" AND ");
 
-        let page = params.page.unwrap_or(1).max(1);
-        let page_size = params.page_size.unwrap_or(20).clamp(1, 100);
-        let offset = (page - 1) * page_size;
+        let pagination = params.pagination();
+        let page_size = pagination.limit();
+        let offset = pagination.offset();
 
         // 单次查询：用 COUNT(*) OVER() 同时获取数据和总数
         let base_sql = format!(
@@ -441,10 +445,10 @@ impl RecipeRepo for PgRecipeRepo {
         );
         let data_sql = paginate_sql(
             &base_sql,
-            "_inner.created_at DESC",
+            OrderBy::CreatedAtDesc,
             param_index,
             param_index + 1,
-        )?;
+        );
 
         let mut query = sqlx::query_as::<_, RecipeListItemCounted>(&data_sql);
         if has_tags {
@@ -454,7 +458,8 @@ impl RecipeRepo for PgRecipeRepo {
             query = query.bind(&ingredient_ids);
         }
         if has_keyword {
-            query = query.bind(params.keyword.as_deref().unwrap_or(""));
+            let escaped = escape_ilike(params.keyword.as_deref().unwrap_or(""));
+            query = query.bind(escaped);
         }
         if let Some(d) = params.difficulty {
             query = query.bind(d);

@@ -50,13 +50,7 @@ impl SeasoningRepo for PgSeasoningRepo {
         .bind(&req.unit)
         .bind(&req.image)
         .fetch_one(&self.pool)
-        .await
-        .map_err(|e| match e {
-            sqlx::Error::Database(ref db_err) if db_err.is_unique_violation() => {
-                AppError::Conflict("seasoning already exists".into())
-            }
-            _ => AppError::from(e),
-        })?;
+        .await?;
         Ok(row)
     }
 

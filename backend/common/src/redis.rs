@@ -5,6 +5,7 @@
 use anyhow::Context;
 use redis::AsyncCommands;
 use redis::aio::MultiplexedConnection;
+use sha2::{Digest, Sha256};
 
 use crate::error::AppError;
 
@@ -46,8 +47,12 @@ const TOKEN_PREFIX: &str = "token:";
 /// Token 默认 TTL：7 天
 const TOKEN_TTL: u64 = 7 * 24 * 60 * 60;
 
+/// 对 Token 做 SHA256 摘要后再作为 Redis key,避免 Redis 备份 / 快照 / RDB
+/// 落盘时明文 JWT 泄漏即等同 Token 泄漏。
 fn token_key(token: &str) -> String {
-    format!("{TOKEN_PREFIX}{token}")
+    let digest = Sha256::digest(token.as_bytes());
+    let hex: String = digest.iter().map(|b| format!("{:02x}", b)).collect();
+    format!("{TOKEN_PREFIX}{hex}")
 }
 
 /// 保存 Token 到 Redis（TTL 7 天）
