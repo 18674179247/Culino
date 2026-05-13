@@ -6,7 +6,7 @@ use axum::extract::Path;
 use axum::http::HeaderMap;
 use axum::{Json, extract::State};
 
-use culino_common::auth::{AuthUser, encode_jwt, hash_password, verify_password};
+use culino_common::auth::{AdminUser, AuthUser, encode_jwt, hash_password, verify_password};
 use culino_common::error::AppError;
 use culino_common::redis::{revoke_token, save_token};
 use culino_common::response::{ApiResponse, ApiResult};
@@ -216,10 +216,10 @@ pub async fn logout(
 )]
 pub async fn create_invite_code(
     State(state): State<AppState>,
-    auth: AuthUser,
+    admin: AdminUser,
     Json(req): Json<CreateInviteCodeReq>,
 ) -> ApiResult<InviteCode> {
-    auth.require_admin()?;
+    
     req.validate()?;
 
     let repo = PgInviteCodeRepo::new(state.pool.clone());
@@ -228,7 +228,7 @@ pub async fn create_invite_code(
     let invite = repo
         .create(
             &code,
-            auth.user_id,
+            admin.user_id,
             max_uses,
             req.expires_at,
             req.note.as_deref(),
@@ -238,7 +238,7 @@ pub async fn create_invite_code(
     tracing::info!(
         "邀请码创建: code={}, created_by={}, max_uses={}",
         invite.code,
-        auth.user_id,
+        admin.user_id,
         max_uses
     );
     ApiResponse::ok(invite)
@@ -251,9 +251,9 @@ pub async fn create_invite_code(
 )]
 pub async fn list_invite_codes(
     State(state): State<AppState>,
-    auth: AuthUser,
+    _admin: AdminUser,
 ) -> ApiResult<Vec<InviteCode>> {
-    auth.require_admin()?;
+    
     let repo = PgInviteCodeRepo::new(state.pool.clone());
     let codes = repo.list().await?;
     ApiResponse::ok(codes)
@@ -267,13 +267,13 @@ pub async fn list_invite_codes(
 )]
 pub async fn revoke_invite_code(
     State(state): State<AppState>,
-    auth: AuthUser,
+    admin: AdminUser,
     Path(code): Path<String>,
 ) -> ApiResult<bool> {
-    auth.require_admin()?;
+    
     let repo = PgInviteCodeRepo::new(state.pool.clone());
     repo.revoke(&code).await?;
-    tracing::info!("邀请码已吊销: code={}, by={}", code, auth.user_id);
+    tracing::info!("邀请码已吊销: code={}, by={}", code, admin.user_id);
     ApiResponse::ok(true)
 }
 

@@ -8,7 +8,7 @@ use axum::{
     Json,
     extract::{Path, State},
 };
-use culino_common::auth::AuthUser;
+use culino_common::auth::AdminUser;
 use culino_common::response::{ApiResponse, ApiResult};
 use culino_common::state::AppState;
 
@@ -31,10 +31,10 @@ pub async fn list(State(state): State<AppState>) -> ApiResult<Vec<Seasoning>> {
 )]
 pub async fn create(
     State(state): State<AppState>,
-    auth: AuthUser,
+    _admin: AdminUser,
     Json(req): Json<CreateSeasoningReq>,
 ) -> ApiResult<Seasoning> {
-    auth.require_admin()?;
+
     tracing::info!("创建调料: name={}", req.name);
     let repo = PgSeasoningRepo::new(state.pool.clone());
     let row = repo.create(&req).await?;
@@ -51,11 +51,11 @@ pub async fn create(
 )]
 pub async fn update(
     State(state): State<AppState>,
-    auth: AuthUser,
+    _admin: AdminUser,
     Path(id): Path<i32>,
     Json(req): Json<UpdateSeasoningReq>,
 ) -> ApiResult<Seasoning> {
-    auth.require_admin()?;
+
     tracing::info!("更新调料: id={}", id);
     let repo = PgSeasoningRepo::new(state.pool.clone());
     let row = repo.update(id, &req).await?;
@@ -70,10 +70,10 @@ pub async fn update(
 )]
 pub async fn remove(
     State(state): State<AppState>,
-    auth: AuthUser,
+    _admin: AdminUser,
     Path(id): Path<i32>,
 ) -> ApiResult<bool> {
-    auth.require_admin()?;
+
     tracing::info!("删除调料: id={}", id);
     let repo = PgSeasoningRepo::new(state.pool.clone());
     repo.delete(id).await?;

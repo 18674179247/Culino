@@ -145,6 +145,35 @@ pub fn verify_password(password: &str, hash: &str) -> Result<bool, AppError> {
         .is_ok())
 }
 
+/// 已认证且为管理员的用户,作为 Axum 提取器使用。
+///
+/// 用法:handler 签名写 `admin: AdminUser` 即自动要求管理员身份,
+/// 省去 `auth.require_admin()?;` 的 12+ 处重复调用。
+#[derive(Debug, Clone)]
+pub struct AdminUser(pub AuthUser);
+
+impl FromRequestParts<AppState> for AdminUser {
+    type Rejection = AppError;
+
+    async fn from_request_parts(
+        parts: &mut Parts,
+        state: &AppState,
+    ) -> Result<Self, Self::Rejection> {
+        let auth = AuthUser::from_request_parts(parts, state).await?;
+        if !auth.is_admin() {
+            return Err(AppError::Forbidden("insufficient permissions".into()));
+        }
+        Ok(AdminUser(auth))
+    }
+}
+
+impl std::ops::Deref for AdminUser {
+    type Target = AuthUser;
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
 /// 全局鉴权中间件：要求请求携带合法的 Bearer Token，未验证的 token 或已撤销的 token 一律拒绝。
 /// 用于包住所有"必须登录"的路由分组，作为 `AuthUser` 提取器的兜底防线，
 /// 确保即使 handler 忘记声明 `auth: AuthUser` 也不会放行匿名请求。

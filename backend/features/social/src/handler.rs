@@ -186,8 +186,7 @@ pub async fn toggle_like(
     Path(recipe_id): Path<Uuid>,
 ) -> ApiResult<bool> {
     let liked = crate::repo::like_repo::LikeRepo::toggle(&state.pool, auth.user_id, recipe_id)
-        .await
-        ?;
+        .await?;
     ApiResponse::ok(liked)
 }
 

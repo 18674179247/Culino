@@ -8,7 +8,7 @@ use axum::{
     Json,
     extract::{Path, Query, State},
 };
-use culino_common::auth::AuthUser;
+use culino_common::auth::AdminUser;
 use culino_common::response::{ApiResponse, ApiResult};
 use culino_common::state::AppState;
 use serde::Deserialize;
@@ -41,10 +41,10 @@ pub async fn list(State(state): State<AppState>, Query(q): Query<TagQuery>) -> A
 )]
 pub async fn create(
     State(state): State<AppState>,
-    auth: AuthUser,
+    _admin: AdminUser,
     Json(req): Json<CreateTagReq>,
 ) -> ApiResult<Tag> {
-    auth.require_admin()?;
+
     tracing::info!("创建标签: name={}, type={}", req.name, req.tag_type);
     let repo = PgTagRepo::new(state.pool.clone());
     let row = repo.create(&req).await?;
@@ -61,11 +61,11 @@ pub async fn create(
 )]
 pub async fn update(
     State(state): State<AppState>,
-    auth: AuthUser,
+    _admin: AdminUser,
     Path(id): Path<i32>,
     Json(req): Json<UpdateTagReq>,
 ) -> ApiResult<Tag> {
-    auth.require_admin()?;
+
     tracing::info!("更新标签: id={}", id);
     let repo = PgTagRepo::new(state.pool.clone());
     let row = repo.update(id, &req).await?;
@@ -80,10 +80,10 @@ pub async fn update(
 )]
 pub async fn remove(
     State(state): State<AppState>,
-    auth: AuthUser,
+    _admin: AdminUser,
     Path(id): Path<i32>,
 ) -> ApiResult<bool> {
-    auth.require_admin()?;
+
     tracing::info!("删除标签: id={}", id);
     let repo = PgTagRepo::new(state.pool.clone());
     repo.delete(id).await?;
