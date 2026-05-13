@@ -68,6 +68,7 @@ impl AppError {
 /// - foreign_key_violation (23503) → BadRequest
 /// - check_violation (23514) → BadRequest
 /// - not_null_violation (23502) → BadRequest
+///
 /// 其余非 RowNotFound 错误视为 Internal,避免数据库错误原文暴露到前端。
 impl From<sqlx::Error> for AppError {
     fn from(e: sqlx::Error) -> Self {
