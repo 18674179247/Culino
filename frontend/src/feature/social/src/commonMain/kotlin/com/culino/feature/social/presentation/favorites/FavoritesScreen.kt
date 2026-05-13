@@ -20,6 +20,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import com.culino.common.ui.component.CulinoTopBar
+import com.culino.common.ui.component.ShimmerBox
 import com.culino.feature.social.data.Favorite
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -36,11 +37,30 @@ fun FavoritesScreen(
     ) { padding ->
         when (val currentState = state) {
             is FavoritesState.Loading -> {
-                Box(
+                LazyColumn(
                     modifier = Modifier.fillMaxSize().padding(padding),
-                    contentAlignment = Alignment.Center
+                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+                    items(5) {
+                        Card(
+                            shape = RoundedCornerShape(12.dp),
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Row(Modifier.padding(12.dp)) {
+                                ShimmerBox(modifier = Modifier.size(72.dp), cornerRadius = 8.dp, height = 72.dp)
+                                Spacer(Modifier.width(12.dp))
+                                Column(Modifier.weight(1f)) {
+                                    ShimmerBox(modifier = Modifier.fillMaxWidth(0.6f), height = 16.dp)
+                                    Spacer(Modifier.height(8.dp))
+                                    ShimmerBox(modifier = Modifier.fillMaxWidth(0.8f), height = 14.dp)
+                                    Spacer(Modifier.height(10.dp))
+                                    ShimmerBox(modifier = Modifier.width(80.dp), height = 12.dp)
+                                }
+                            }
+                        }
+                    }
                 }
             }
 

@@ -37,10 +37,20 @@ fun IngredientSelectorContent(
     dismiss: () -> Unit
 ) {
     var query by remember { mutableStateOf("") }
+    var debouncedQuery by remember { mutableStateOf("") }
 
-    val filtered = remember(query, ingredients) {
-        if (query.isBlank()) ingredients
-        else ingredients.filter { it.name.contains(query, ignoreCase = true) }
+    LaunchedEffect(query) {
+        if (query.isBlank()) {
+            debouncedQuery = ""
+        } else {
+            kotlinx.coroutines.delay(200L)
+            debouncedQuery = query
+        }
+    }
+
+    val filtered = remember(debouncedQuery, ingredients) {
+        if (debouncedQuery.isBlank()) ingredients
+        else ingredients.filter { it.name.contains(debouncedQuery, ignoreCase = true) }
     }
 
     val grouped = remember(filtered, categories) {

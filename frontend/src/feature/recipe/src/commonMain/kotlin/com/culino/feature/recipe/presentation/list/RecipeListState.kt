@@ -1,5 +1,8 @@
 package com.culino.feature.recipe.presentation.list
 
+import com.culino.feature.ingredient.data.Ingredient
+import com.culino.feature.ingredient.data.IngredientCategory
+import com.culino.feature.ingredient.data.Tag
 import com.culino.feature.recipe.data.RecipeListItem
 
 sealed interface RecipeListState {
@@ -12,6 +15,12 @@ sealed interface RecipeListState {
     data class Error(val message: String) : RecipeListState
 }
 
+data class FilterData(
+    val tags: List<Tag> = emptyList(),
+    val ingredients: List<Ingredient> = emptyList(),
+    val categories: List<IngredientCategory> = emptyList()
+)
+
 data class RecipeListUiState(
     val state: RecipeListState = RecipeListState.Loading,
     val searchKeyword: String = "",
@@ -20,5 +29,6 @@ data class RecipeListUiState(
     val selectedTagIds: List<Int> = emptyList(),
     val maxCookingTime: Int? = null,
     val selectedIngredientIds: List<Int> = emptyList(),
-    val isFilterActive: Boolean = false
+    val isFilterActive: Boolean = false,
+    val filterData: FilterData = FilterData()
 )

@@ -53,14 +53,15 @@ fun RecipeDetailScreen(
     currentUserId: String? = null,
     onEdit: ((String) -> Unit)? = null
 ) {
-    val state by viewModel.state.collectAsState()
-    val deleteState by viewModel.deleteState.collectAsState()
-    val isFavorited by viewModel.isFavorited.collectAsState()
-    val isLiked by viewModel.isLiked.collectAsState()
-    val likeCount by viewModel.likeCount.collectAsState()
-    val comments by viewModel.comments.collectAsState()
-    val commentCount by viewModel.commentCount.collectAsState()
-    val actionError by viewModel.actionError.collectAsState()
+    val uiState by viewModel.uiState.collectAsState()
+    val state = uiState.contentState
+    val deleteState = uiState.deleteState
+    val isFavorited = uiState.isFavorited
+    val isLiked = uiState.isLiked
+    val likeCount = uiState.likeCount
+    val comments = uiState.comments
+    val commentCount = uiState.commentCount
+    val actionError = uiState.actionError
     val sheetState = rememberCulinoBottomSheetState()
 
     LaunchedEffect(recipeId) { viewModel.loadRecipeDetail(recipeId) }

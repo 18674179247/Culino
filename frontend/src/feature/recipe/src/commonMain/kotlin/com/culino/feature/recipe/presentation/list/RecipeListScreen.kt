@@ -30,6 +30,7 @@ import coil3.compose.AsyncImage
 import com.culino.common.ui.component.CulinoBottomSheetHost
 import com.culino.common.ui.component.LocalNavAnimatedVisibilityScope
 import com.culino.common.ui.component.LocalSharedTransitionScope
+import com.culino.common.ui.component.ShimmerBox
 import com.culino.common.ui.component.rememberCulinoBottomSheetState
 import com.culino.feature.recipe.data.RecipeListItem
 
@@ -42,9 +43,9 @@ fun RecipeListScreen(
     enableSharedElement: Boolean = true
 ) {
     val uiState by viewModel.uiState.collectAsState()
-    val tags by viewModel.availableTags.collectAsState()
-    val filterIngredients by viewModel.availableIngredients.collectAsState()
-    val filterCategories by viewModel.availableCategories.collectAsState()
+    val tags = uiState.filterData.tags
+    val filterIngredients = uiState.filterData.ingredients
+    val filterCategories = uiState.filterData.categories
     val listState = rememberLazyListState()
     var isSearchActive by remember { mutableStateOf(false) }
     val focusRequester = remember { FocusRequester() }
@@ -173,11 +174,34 @@ fun RecipeListScreen(
     ) { padding ->
         when (val state = uiState.state) {
             is RecipeListState.Loading -> {
-                Box(
+                LazyColumn(
                     modifier = Modifier.fillMaxSize().padding(padding),
-                    contentAlignment = Alignment.Center
+                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+                    items(6) {
+                        androidx.compose.material3.Card(
+                            shape = RoundedCornerShape(12.dp),
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Row(Modifier.padding(12.dp)) {
+                                ShimmerBox(modifier = Modifier.size(80.dp), cornerRadius = 8.dp, height = 80.dp)
+                                Spacer(Modifier.width(12.dp))
+                                Column(Modifier.weight(1f)) {
+                                    ShimmerBox(modifier = Modifier.fillMaxWidth(0.7f), height = 18.dp)
+                                    Spacer(Modifier.height(8.dp))
+                                    ShimmerBox(modifier = Modifier.fillMaxWidth(0.9f), height = 14.dp)
+                                    Spacer(Modifier.height(12.dp))
+                                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                        ShimmerBox(modifier = Modifier.width(48.dp), height = 20.dp, cornerRadius = 10.dp)
+                                        ShimmerBox(modifier = Modifier.width(56.dp), height = 20.dp, cornerRadius = 10.dp)
+                                        ShimmerBox(modifier = Modifier.width(48.dp), height = 20.dp, cornerRadius = 10.dp)
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
             }
 

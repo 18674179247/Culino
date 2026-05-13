@@ -1,9 +1,7 @@
 package com.culino.app
 
 import androidx.compose.animation.*
-import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -36,7 +34,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavDestination.Companion.hierarchy
@@ -101,13 +98,13 @@ sealed class BottomNavItem(
 private const val ANIM_DURATION = 300
 private const val FADE_DURATION = 200
 
-private val slideInFromRight = slideInHorizontally(tween(ANIM_DURATION)) { it }
-private val slideOutToLeft = slideOutHorizontally(tween(ANIM_DURATION)) { -it / 3 } + fadeOut(tween(FADE_DURATION))
-private val slideInFromLeft = slideInHorizontally(tween(ANIM_DURATION)) { -it / 3 } + fadeIn(tween(FADE_DURATION))
-private val slideOutToRight = slideOutHorizontally(tween(ANIM_DURATION)) { it }
+private val slideInFromRight = slideInHorizontally(tween(ANIM_DURATION, easing = androidx.compose.animation.core.FastOutSlowInEasing)) { it }
+private val slideOutToLeft = slideOutHorizontally(tween(ANIM_DURATION, easing = androidx.compose.animation.core.FastOutSlowInEasing)) { -it / 4 } + fadeOut(tween(FADE_DURATION))
+private val slideInFromLeft = slideInHorizontally(tween(ANIM_DURATION, easing = androidx.compose.animation.core.FastOutSlowInEasing)) { -it / 4 } + fadeIn(tween(FADE_DURATION))
+private val slideOutToRight = slideOutHorizontally(tween(ANIM_DURATION, easing = androidx.compose.animation.core.FastOutSlowInEasing)) { it }
 
-private val tabFadeIn = fadeIn(tween(FADE_DURATION))
-private val tabFadeOut = fadeOut(tween(FADE_DURATION))
+private val tabFadeIn = fadeIn(tween(FADE_DURATION)) + scaleIn(tween(FADE_DURATION), initialScale = 0.96f)
+private val tabFadeOut = fadeOut(tween(FADE_DURATION)) + scaleOut(tween(FADE_DURATION), targetScale = 0.96f)
 
 /**
  * 托管 ViewModel 到当前 NavBackStackEntry(或最近的 ViewModelStoreOwner) 的 ViewModelStore,
@@ -607,25 +604,15 @@ fun MainScreen(
                     .padding(bottom = innerPadding.calculateBottomPadding() + 72.dp)
             ) {
                 actions.forEachIndexed { index, (icon, label, route) ->
-                    val delay = (actions.size - 1 - index) * 50
-                    val alpha = remember { Animatable(0f) }
-                    LaunchedEffect(Unit) {
-                        kotlinx.coroutines.delay(delay.toLong())
-                        alpha.animateTo(1f, tween(150))
-                    }
-                    val offsetY = remember { Animatable(40f) }
-                    LaunchedEffect(Unit) {
-                        kotlinx.coroutines.delay(delay.toLong())
-                        offsetY.animateTo(
-                            0f,
-                            spring(dampingRatio = 0.75f, stiffness = 600f)
-                        )
-                    }
+                    val delay = (actions.size - 1 - index) * 40
+                    AnimatedVisibility(
+                        visible = true,
+                        enter = fadeIn(tween(150, delayMillis = delay)) +
+                                slideInVertically(tween(200, delayMillis = delay)) { it / 2 }
+                    ) {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier
-                            .offset(y = offsetY.value.dp)
-                            .graphicsLayer { this.alpha = alpha.value }
                             .clickable(
                                 interactionSource = remember { MutableInteractionSource() },
                                 indication = null
@@ -662,6 +649,7 @@ fun MainScreen(
                                 )
                             }
                         }
+                    }
                     }
                 }
             }

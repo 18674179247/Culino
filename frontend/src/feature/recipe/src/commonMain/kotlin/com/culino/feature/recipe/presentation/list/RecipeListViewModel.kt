@@ -4,9 +4,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.culino.common.util.AppResult
 import com.culino.feature.ingredient.data.IngredientRepository
-import com.culino.feature.ingredient.data.Tag
-import com.culino.feature.ingredient.data.Ingredient
-import com.culino.feature.ingredient.data.IngredientCategory
 import com.culino.feature.recipe.domain.GetRandomRecipesUseCase
 import com.culino.feature.recipe.domain.SearchRecipesUseCase
 import kotlinx.coroutines.Job
@@ -27,15 +24,6 @@ class RecipeListViewModel(
     private val _uiState = MutableStateFlow(RecipeListUiState())
     val uiState: StateFlow<RecipeListUiState> = _uiState.asStateFlow()
 
-    private val _availableTags = MutableStateFlow<List<Tag>>(emptyList())
-    val availableTags: StateFlow<List<Tag>> = _availableTags.asStateFlow()
-
-    private val _availableIngredients = MutableStateFlow<List<Ingredient>>(emptyList())
-    val availableIngredients: StateFlow<List<Ingredient>> = _availableIngredients.asStateFlow()
-
-    private val _availableCategories = MutableStateFlow<List<IngredientCategory>>(emptyList())
-    val availableCategories: StateFlow<List<IngredientCategory>> = _availableCategories.asStateFlow()
-
     private var searchJob: Job? = null
 
     init {
@@ -45,22 +33,19 @@ class RecipeListViewModel(
 
     private fun loadFilterData() {
         viewModelScope.launch {
-            when (val result = ingredientRepository.getTags()) {
-                is AppResult.Success -> _availableTags.value = result.data
-                is AppResult.Error -> {}
+            val tags = when (val r = ingredientRepository.getTags()) {
+                is AppResult.Success -> r.data
+                is AppResult.Error -> emptyList()
             }
-        }
-        viewModelScope.launch {
-            when (val result = ingredientRepository.getIngredients()) {
-                is AppResult.Success -> _availableIngredients.value = result.data
-                is AppResult.Error -> {}
+            val ingredients = when (val r = ingredientRepository.getIngredients()) {
+                is AppResult.Success -> r.data
+                is AppResult.Error -> emptyList()
             }
-        }
-        viewModelScope.launch {
-            when (val result = ingredientRepository.getCategories()) {
-                is AppResult.Success -> _availableCategories.value = result.data
-                is AppResult.Error -> {}
+            val categories = when (val r = ingredientRepository.getCategories()) {
+                is AppResult.Success -> r.data
+                is AppResult.Error -> emptyList()
             }
+            _uiState.update { it.copy(filterData = FilterData(tags, ingredients, categories)) }
         }
     }
 
