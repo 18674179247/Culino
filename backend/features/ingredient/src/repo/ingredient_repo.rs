@@ -63,13 +63,7 @@ impl IngredientRepo for PgIngredientRepo {
             .bind(&req.unit)
             .bind(&req.image)
             .fetch_one(&self.pool)
-            .await
-            .map_err(|e| match e {
-                sqlx::Error::Database(ref db_err) if db_err.is_unique_violation() => {
-                    AppError::Conflict("ingredient already exists".into())
-                }
-                _ => AppError::from(e),
-            })?;
+            .await?;
         Ok(row)
     }
 

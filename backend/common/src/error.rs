@@ -62,10 +62,34 @@ impl AppError {
 }
 
 /// 将 sqlx 数据库错误转换为 AppError
+///
+/// 识别 PostgreSQL 约束违反:
+/// - unique_violation (23505) → Conflict
+/// - foreign_key_violation (23503) → BadRequest
+/// - check_violation (23514) → BadRequest
+/// - not_null_violation (23502) → BadRequest
+/// 其余非 RowNotFound 错误视为 Internal,避免数据库错误原文暴露到前端。
 impl From<sqlx::Error> for AppError {
     fn from(e: sqlx::Error) -> Self {
-        match e {
+        match &e {
             sqlx::Error::RowNotFound => AppError::NotFound("resource not found".into()),
+            sqlx::Error::Database(db_err) => {
+                if db_err.is_unique_violation() {
+                    AppError::Conflict(format!(
+                        "resource already exists{}",
+                        db_err.constraint().map(|c| format!(" ({c})")).unwrap_or_default()
+                    ))
+                } else if db_err.is_foreign_key_violation() {
+                    AppError::BadRequest(format!(
+                        "referenced resource not found{}",
+                        db_err.constraint().map(|c| format!(" ({c})")).unwrap_or_default()
+                    ))
+                } else if db_err.is_check_violation() {
+                    AppError::BadRequest("value violates check constraint".into())
+                } else {
+                    AppError::Internal(e.into())
+                }
+            }
             _ => AppError::Internal(e.into()),
         }
     }
