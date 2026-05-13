@@ -5,6 +5,7 @@ edition = "2024"
 
 [dependencies]
 axum.workspace = true
+tokio.workspace = true
 sqlx.workspace = true
 uuid.workspace = true
 chrono.workspace = true

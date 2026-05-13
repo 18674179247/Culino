@@ -10,29 +10,11 @@ use axum::{
     extract::{Path, Query, State},
 };
 use culino_common::auth::AuthUser;
+use culino_common::behavior::spawn_behavior_log;
 use culino_common::response::{ApiResponse, ApiResult};
 use culino_common::state::AppState;
 use uuid::Uuid;
 use validator::Validate;
-
-/// 异步记录用户行为（fire-and-forget）
-fn spawn_behavior_log(
-    state: &AppState,
-    user_id: Uuid,
-    recipe_id: Uuid,
-    action: &'static str,
-    value: Option<serde_json::Value>,
-) {
-    if let Some(logger) = state.behavior_logger.clone() {
-        tokio::spawn(async move {
-            if let Err(e) = logger.log(user_id, recipe_id, action, value).await {
-                tracing::error!(
-                    "行为日志记录失败: user={user_id}, recipe={recipe_id}, action={action}, error={e}"
-                );
-            }
-        });
-    }
-}
 
 /// 获取当前用户的收藏列表
 #[utoipa::path(get, path = "/api/v1/social/favorites", tag = "收藏",
