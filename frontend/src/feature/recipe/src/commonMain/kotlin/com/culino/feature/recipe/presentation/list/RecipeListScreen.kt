@@ -40,7 +40,9 @@ fun RecipeListScreen(
     onRecipeClick: (String) -> Unit,
     viewModel: RecipeListViewModel,
     title: String = "首页",
-    enableSharedElement: Boolean = true
+    enableSharedElement: Boolean = true,
+    tabReselected: kotlinx.coroutines.flow.Flow<String>? = null,
+    tabRoute: String = ""
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val tags = uiState.filterData.tags
@@ -50,6 +52,18 @@ fun RecipeListScreen(
     var isSearchActive by remember { mutableStateOf(false) }
     val focusRequester = remember { FocusRequester() }
     val sheetState = rememberCulinoBottomSheetState()
+
+    LaunchedEffect(tabReselected) {
+        tabReselected?.collect { route ->
+            if (route == tabRoute) {
+                if (listState.firstVisibleItemIndex > 0) {
+                    listState.animateScrollToItem(0)
+                } else {
+                    viewModel.refresh()
+                }
+            }
+        }
+    }
 
     CulinoBottomSheetHost(sheetState)
 

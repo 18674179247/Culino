@@ -47,6 +47,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.culino.app.di.AppComponent
 import com.culino.framework.media.picker.rememberImagePickerLauncher
 import com.culino.framework.network.parseUserIdFromToken
+import com.culino.framework.network.parseRoleFromToken
 import com.culino.common.ui.component.LocalNavAnimatedVisibilityScope
 import com.culino.common.ui.component.LocalSharedTransitionScope
 import com.culino.feature.user.presentation.profile.ProfileIntent
@@ -206,13 +207,16 @@ fun MainScreen(
 ) {
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
+    val tabReselected = remember { kotlinx.coroutines.flow.MutableSharedFlow<String>(extraBufferCapacity = 1) }
     val currentDestination = navBackStackEntry?.destination
 
     // 获取当前用户 ID
     var currentUserId by remember { mutableStateOf<String?>(null) }
+    var isAdmin by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) {
         val token = appComponent.tokenProvider.getToken()
         currentUserId = token?.let { parseUserIdFromToken(it) }
+        isAdmin = token?.let { parseRoleFromToken(it) } == "admin"
     }
 
     val bottomNavItems = listOf(
@@ -250,10 +254,14 @@ fun MainScreen(
                             selected = selected,
                             onClick = {
                                 fabExpanded = false
-                                navController.navigate(item.route) {
-                                    popUpTo(Routes.RECIPES) { saveState = true }
-                                    launchSingleTop = true
-                                    restoreState = true
+                                if (selected) {
+                                    tabReselected.tryEmit(item.route)
+                                } else {
+                                    navController.navigate(item.route) {
+                                        popUpTo(Routes.RECIPES) { saveState = true }
+                                        launchSingleTop = true
+                                        restoreState = true
+                                    }
                                 }
                             },
                             colors = NavigationBarItemDefaults.colors(
@@ -300,10 +308,14 @@ fun MainScreen(
                             selected = selected,
                             onClick = {
                                 fabExpanded = false
-                                navController.navigate(item.route) {
-                                    popUpTo(Routes.RECIPES) { saveState = true }
-                                    launchSingleTop = true
-                                    restoreState = true
+                                if (selected) {
+                                    tabReselected.tryEmit(item.route)
+                                } else {
+                                    navController.navigate(item.route) {
+                                        popUpTo(Routes.RECIPES) { saveState = true }
+                                        launchSingleTop = true
+                                        restoreState = true
+                                    }
                                 }
                             },
                             colors = NavigationBarItemDefaults.colors(
@@ -339,7 +351,9 @@ fun MainScreen(
                     viewModel = viewModel,
                     onRecipeClick = { recipeId ->
                         navController.navigate(Routes.recipeDetail(recipeId))
-                    }
+                    },
+                    tabReselected = tabReselected,
+                    tabRoute = Routes.RECIPES
                 )
                 }
             }
@@ -352,7 +366,9 @@ fun MainScreen(
                         navController.navigate(Routes.recipeDetail(recipeId))
                     },
                     title = "我的菜谱",
-                    enableSharedElement = false
+                    enableSharedElement = false,
+                    tabReselected = tabReselected,
+                    tabRoute = Routes.MY_RECIPES
                 )
             }
 
@@ -362,7 +378,9 @@ fun MainScreen(
                     viewModel = viewModel,
                     onRecipeClick = { recipeId ->
                         navController.navigate(Routes.recipeDetail(recipeId))
-                    }
+                    },
+                    tabReselected = tabReselected,
+                    tabRoute = Routes.FAVORITES
                 )
             }
 
@@ -416,6 +434,7 @@ fun MainScreen(
                     viewModel = viewModel,
                     onBack = { navController.popBackStack() },
                     currentUserId = currentUserId,
+                    isAdmin = isAdmin,
                     onEdit = { id -> navController.navigate(Routes.recipeEdit(id)) }
                 )
                 }

@@ -35,6 +35,8 @@ pub trait RecipeRepo: Send + Sync {
     ) -> Result<RecipeDetail, AppError>;
     /// 删除菜谱
     async fn delete(&self, id: Uuid, author_id: Uuid) -> Result<(), AppError>;
+    /// 管理员强制删除菜谱
+    async fn force_delete(&self, id: Uuid) -> Result<(), AppError>;
     /// 多条件搜索菜谱
     async fn search(
         &self,
@@ -362,6 +364,17 @@ impl RecipeRepo for PgRecipeRepo {
             return Err(AppError::NotFound(
                 "recipe not found or not owned by you".into(),
             ));
+        }
+        Ok(())
+    }
+
+    async fn force_delete(&self, id: Uuid) -> Result<(), AppError> {
+        let result = sqlx::query("DELETE FROM recipes WHERE id = $1")
+            .bind(id)
+            .execute(&self.pool)
+            .await?;
+        if result.rows_affected() == 0 {
+            return Err(AppError::NotFound("recipe not found".into()));
         }
         Ok(())
     }

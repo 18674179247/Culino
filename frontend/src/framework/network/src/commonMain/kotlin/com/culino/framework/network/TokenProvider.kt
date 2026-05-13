@@ -25,6 +25,16 @@ object AuthExpiredBus {
 
 @OptIn(ExperimentalEncodingApi::class)
 fun parseUserIdFromToken(token: String): String? {
+    return parseTokenField(token, "sub")
+}
+
+@OptIn(ExperimentalEncodingApi::class)
+fun parseRoleFromToken(token: String): String? {
+    return parseTokenField(token, "role_code")
+}
+
+@OptIn(ExperimentalEncodingApi::class)
+private fun parseTokenField(token: String, field: String): String? {
     return try {
         val parts = token.split(".")
         if (parts.size < 2) return null
@@ -32,10 +42,9 @@ fun parseUserIdFromToken(token: String): String? {
         val padded = payload + "=".repeat((4 - payload.length % 4) % 4)
         val decoded = Base64.decode(padded)
         val json = decoded.decodeToString()
-        // 简单解析 "sub":"xxx"
-        val subIndex = json.indexOf("\"sub\"")
-        if (subIndex == -1) return null
-        val colonIndex = json.indexOf(":", subIndex)
+        val fieldIndex = json.indexOf("\"$field\"")
+        if (fieldIndex == -1) return null
+        val colonIndex = json.indexOf(":", fieldIndex)
         val quoteStart = json.indexOf("\"", colonIndex + 1)
         val quoteEnd = json.indexOf("\"", quoteStart + 1)
         json.substring(quoteStart + 1, quoteEnd)

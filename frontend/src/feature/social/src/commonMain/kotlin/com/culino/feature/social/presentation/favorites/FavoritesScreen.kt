@@ -27,9 +27,24 @@ import com.culino.feature.social.data.Favorite
 @Composable
 fun FavoritesScreen(
     viewModel: FavoritesViewModel,
-    onRecipeClick: (String) -> Unit
+    onRecipeClick: (String) -> Unit,
+    tabReselected: kotlinx.coroutines.flow.Flow<String>? = null,
+    tabRoute: String = ""
 ) {
     val state by viewModel.state.collectAsState()
+    val listState = androidx.compose.foundation.lazy.rememberLazyListState()
+
+    LaunchedEffect(tabReselected) {
+        tabReselected?.collect { route ->
+            if (route == tabRoute) {
+                if (listState.firstVisibleItemIndex > 0) {
+                    listState.animateScrollToItem(0)
+                } else {
+                    viewModel.loadFavorites()
+                }
+            }
+        }
+    }
 
     Scaffold(
         topBar = { CulinoTopBar(title = "我的收藏") },
@@ -94,6 +109,7 @@ fun FavoritesScreen(
                     }
                 } else {
                     LazyColumn(
+                        state = listState,
                         modifier = Modifier.fillMaxSize().padding(padding),
                         contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
                         verticalArrangement = Arrangement.spacedBy(12.dp)

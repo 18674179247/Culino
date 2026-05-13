@@ -51,6 +51,7 @@ fun RecipeDetailScreen(
     onBack: () -> Unit,
     viewModel: RecipeDetailViewModel,
     currentUserId: String? = null,
+    isAdmin: Boolean = false,
     onEdit: ((String) -> Unit)? = null
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -280,7 +281,7 @@ fun RecipeDetailScreen(
                             likeCount = likeCount,
                             isFavorited = isFavorited,
                             commentCount = commentCount,
-                            isAuthor = currentUserId != null && detail.recipe.authorId == currentUserId,
+                            isAuthor = isAdmin || (currentUserId != null && detail.recipe.authorId == currentUserId),
                             onLike = { viewModel.toggleLike(recipeId) },
                             onFavorite = { viewModel.toggleFavorite(recipeId) },
                             onComment = {
