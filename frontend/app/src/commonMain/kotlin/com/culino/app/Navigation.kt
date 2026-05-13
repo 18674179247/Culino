@@ -132,8 +132,12 @@ fun CulinoNavHost(
 
     LaunchedEffect(Unit) {
         appComponent.tokenProvider.authExpiredEvent.collect {
-            navController.navigate(Routes.LOGIN) {
-                popUpTo(0) { inclusive = true }
+            try {
+                navController.navigate(Routes.LOGIN) {
+                    popUpTo(0) { inclusive = true }
+                }
+            } catch (_: Exception) {
+                // navController 可能还未就绪
             }
         }
     }
@@ -322,7 +326,7 @@ fun MainScreen(
         NavHost(
             navController = navController,
             startDestination = Routes.RECIPES,
-            modifier = Modifier.padding(innerPadding),
+            modifier = Modifier.padding(bottom = innerPadding.calculateBottomPadding()),
             enterTransition = { tabFadeIn },
             exitTransition = { tabFadeOut },
             popEnterTransition = { tabFadeIn },
@@ -575,7 +579,11 @@ fun MainScreen(
         }
 
         // FAB expanded overlay
-        if (fabExpanded) {
+        AnimatedVisibility(
+            visible = fabExpanded,
+            enter = fadeIn(tween(150)),
+            exit = fadeOut(tween(150))
+        ) {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
@@ -588,7 +596,11 @@ fun MainScreen(
         }
 
         // Vertical staggered FAB actions
-        if (fabExpanded) {
+        AnimatedVisibility(
+            visible = fabExpanded,
+            enter = fadeIn(tween(150)),
+            exit = fadeOut(tween(100))
+        ) {
             val actions = listOf(
                 Triple(Icons.Outlined.DateRange, "膳食计划", Routes.MEAL_PLANS),
                 Triple(Icons.Outlined.ShoppingCart, "购物清单", Routes.SHOPPING_LISTS),
