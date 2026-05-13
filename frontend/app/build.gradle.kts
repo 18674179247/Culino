@@ -40,6 +40,7 @@ kotlin {
             implementation(projects.common.ui)
             implementation(projects.framework.network)
             implementation(projects.framework.storage)
+            implementation(projects.framework.media)
             implementation(projects.feature.user)
             implementation(projects.feature.recipe)
             implementation(projects.feature.social)

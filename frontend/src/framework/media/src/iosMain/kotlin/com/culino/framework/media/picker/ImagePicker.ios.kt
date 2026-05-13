@@ -1,4 +1,4 @@
-package com.culino.app.picker
+package com.culino.framework.media.picker
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember

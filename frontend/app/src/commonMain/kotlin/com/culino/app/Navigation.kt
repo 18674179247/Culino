@@ -48,7 +48,7 @@ import androidx.navigation.compose.rememberNavController
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.culino.app.di.AppComponent
-import com.culino.app.picker.rememberImagePickerLauncher
+import com.culino.framework.media.picker.rememberImagePickerLauncher
 import com.culino.framework.network.parseUserIdFromToken
 import com.culino.common.ui.component.LocalNavAnimatedVisibilityScope
 import com.culino.common.ui.component.LocalSharedTransitionScope

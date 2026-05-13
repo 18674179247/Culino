@@ -1,4 +1,4 @@
-package com.culino.app.picker
+package com.culino.framework.media.picker
 
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
