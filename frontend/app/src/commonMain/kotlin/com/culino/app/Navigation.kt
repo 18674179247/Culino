@@ -618,7 +618,8 @@ fun MainScreen(
         AnimatedVisibility(
             visible = fabExpanded,
             enter = fadeIn(tween(150)),
-            exit = fadeOut(tween(100))
+            exit = fadeOut(tween(100)),
+            modifier = Modifier.align(Alignment.BottomCenter)
         ) {
             val actions = listOf(
                 Triple(Icons.Outlined.DateRange, "膳食计划", Routes.MEAL_PLANS),
@@ -631,7 +632,6 @@ fun MainScreen(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(12.dp),
                 modifier = Modifier
-                    .align(Alignment.BottomCenter)
                     .padding(bottom = innerPadding.calculateBottomPadding() + 72.dp)
             ) {
                 actions.forEachIndexed { index, (icon, label, route) ->

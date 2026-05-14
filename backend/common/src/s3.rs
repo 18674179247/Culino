@@ -10,8 +10,32 @@ use s3::creds::Credentials;
 use crate::config::AppConfig;
 use crate::error::AppError;
 
+/// 公开访问 URL 前缀（启动时由 main 写入，避免每次访问都从配置读）
+static mut S3_PUBLIC_BASE: String = String::new();
+
+pub fn set_public_base(base: &str) {
+    // SAFETY: 仅在启动时调用一次,运行期不变
+    #[allow(static_mut_refs)]
+    unsafe {
+        S3_PUBLIC_BASE = base.trim_end_matches('/').to_string();
+    }
+}
+
+fn public_base() -> &'static str {
+    #[allow(static_mut_refs)]
+    unsafe {
+        &S3_PUBLIC_BASE
+    }
+}
+
 /// 从应用配置创建 S3 Bucket 客户端
 pub fn create_s3_bucket(config: &AppConfig) -> Result<Box<Bucket>, AppError> {
+    set_public_base(&format!(
+        "{}/{}",
+        config.s3_public_endpoint.trim_end_matches('/'),
+        config.s3_bucket
+    ));
+
     let region = Region::Custom {
         region: config.s3_region.clone(),
         endpoint: config.s3_endpoint.clone(),
@@ -56,7 +80,13 @@ pub async fn delete_object(bucket: &Bucket, key: &str) -> Result<(), AppError> {
 
 /// 拼接对象的公开访问 URL
 ///
-/// path-style 时 `bucket.url()` 已包含 bucket 名称，如 `http://localhost:9000/culino`
-pub fn object_url(bucket: &Bucket, key: &str) -> String {
-    format!("{}/{}", bucket.url(), key)
+/// 优先使用 `S3_PUBLIC_ENDPOINT` 配置的客户端可访问地址，
+/// 而非 `S3_ENDPOINT`（可能是 Docker 内网地址，客户端访问不到）。
+pub fn object_url(_bucket: &Bucket, key: &str) -> String {
+    let base = public_base();
+    if base.is_empty() {
+        // fallback：如果没设置（不该发生），降级到 bucket.url()
+        return format!("{}/{}", _bucket.url(), key);
+    }
+    format!("{base}/{key}")
 }
