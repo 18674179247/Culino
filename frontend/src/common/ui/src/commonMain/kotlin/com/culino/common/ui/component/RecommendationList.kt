@@ -31,7 +31,7 @@ fun RecommendationList(
         verticalArrangement = Arrangement.spacedBy(12.dp),
         contentPadding = PaddingValues(16.dp)
     ) {
-        items(recommendations) { item ->
+        items(recommendations, key = { it.recipeId }) { item ->
             RecommendationCard(
                 item = item,
                 onClick = { onRecipeClick(item.recipeId) }

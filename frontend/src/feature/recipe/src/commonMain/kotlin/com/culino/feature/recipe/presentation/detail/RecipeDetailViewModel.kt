@@ -11,7 +11,19 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+
+data class RecipeDetailUiState(
+    val contentState: RecipeDetailState = RecipeDetailState.Loading,
+    val deleteState: DeleteState = DeleteState.Idle,
+    val isFavorited: Boolean = false,
+    val isLiked: Boolean = false,
+    val likeCount: Long = 0,
+    val comments: List<RecipeComment> = emptyList(),
+    val commentCount: Long = 0,
+    val actionError: String? = null
+)
 
 class RecipeDetailViewModel(
     private val getRecipeDetailUseCase: GetRecipeDetailUseCase,
@@ -19,46 +31,29 @@ class RecipeDetailViewModel(
     private val socialRepository: SocialRepository
 ) : ViewModel() {
 
-    private val _state = MutableStateFlow<RecipeDetailState>(RecipeDetailState.Loading)
-    val state: StateFlow<RecipeDetailState> = _state.asStateFlow()
+    private val _uiState = MutableStateFlow(RecipeDetailUiState())
+    val uiState: StateFlow<RecipeDetailUiState> = _uiState.asStateFlow()
 
-    private val _deleteState = MutableStateFlow<DeleteState>(DeleteState.Idle)
-    val deleteState: StateFlow<DeleteState> = _deleteState.asStateFlow()
-
-    private val _isFavorited = MutableStateFlow(false)
-    val isFavorited: StateFlow<Boolean> = _isFavorited.asStateFlow()
-
-    private val _isLiked = MutableStateFlow(false)
-    val isLiked: StateFlow<Boolean> = _isLiked.asStateFlow()
-
-    private val _likeCount = MutableStateFlow(0L)
-    val likeCount: StateFlow<Long> = _likeCount.asStateFlow()
-
-    private val _comments = MutableStateFlow<List<RecipeComment>>(emptyList())
-    val comments: StateFlow<List<RecipeComment>> = _comments.asStateFlow()
-
-    private val _commentCount = MutableStateFlow(0L)
-    val commentCount: StateFlow<Long> = _commentCount.asStateFlow()
-
-    private val _actionError = MutableStateFlow<String?>(null)
-    val actionError: StateFlow<String?> = _actionError.asStateFlow()
-
-    fun clearActionError() { _actionError.value = null }
+    fun clearActionError() { _uiState.update { it.copy(actionError = null) } }
 
     fun loadRecipeDetail(id: String) {
         viewModelScope.launch {
-            _state.value = RecipeDetailState.Loading
+            _uiState.update { it.copy(contentState = RecipeDetailState.Loading) }
             when (val result = getRecipeDetailUseCase(id)) {
                 is AppResult.Success -> {
                     val detail = result.data
-                    _state.value = RecipeDetailState.Success(detail)
-                    _likeCount.value = detail.likeCount ?: 0
-                    _commentCount.value = detail.commentCount ?: 0
+                    _uiState.update {
+                        it.copy(
+                            contentState = RecipeDetailState.Success(detail),
+                            likeCount = detail.likeCount ?: 0,
+                            commentCount = detail.commentCount ?: 0
+                        )
+                    }
                     checkIfFavorited(id)
                     loadComments(id)
                 }
                 is AppResult.Error -> {
-                    _state.value = RecipeDetailState.Error(result.message)
+                    _uiState.update { it.copy(contentState = RecipeDetailState.Error(result.message)) }
                 }
             }
         }
@@ -67,20 +62,18 @@ class RecipeDetailViewModel(
     private fun checkIfFavorited(recipeId: String) {
         viewModelScope.launch {
             when (val result = socialRepository.isFavorited(recipeId)) {
-                is AppResult.Success -> _isFavorited.value = result.data
-                is AppResult.Error -> _isFavorited.value = false
+                is AppResult.Success -> _uiState.update { it.copy(isFavorited = result.data) }
+                is AppResult.Error -> _uiState.update { it.copy(isFavorited = false) }
             }
         }
     }
 
-    // 同一菜谱的 toggle 正在飞行时,下一次点击先取消上一次,避免连点造成"点两次抵消了"的乱序结果
     private var favoriteJob: Job? = null
     private var likeJob: Job? = null
 
     fun toggleFavorite(recipeId: String) {
-        val prev = _isFavorited.value
-        // 乐观 UI: 先翻转本地状态,给用户即时反馈
-        _isFavorited.value = !prev
+        val prev = _uiState.value.isFavorited
+        _uiState.update { it.copy(isFavorited = !prev) }
         favoriteJob?.cancel()
         favoriteJob = viewModelScope.launch {
             val result = if (prev) {
@@ -89,35 +82,31 @@ class RecipeDetailViewModel(
                 socialRepository.addFavorite(recipeId)
             }
             if (result is AppResult.Error) {
-                // 回滚并提示,网络失败不让 UI 停留在错误状态
-                _isFavorited.value = prev
-                _actionError.value = result.message
+                _uiState.update { it.copy(isFavorited = prev, actionError = result.message) }
             }
         }
     }
 
     fun toggleLike(recipeId: String) {
-        val prevLiked = _isLiked.value
-        val prevCount = _likeCount.value
-        // 乐观 UI: 立即翻转并调整计数
-        _isLiked.value = !prevLiked
-        _likeCount.value = prevCount + if (prevLiked) -1 else 1
+        val prevLiked = _uiState.value.isLiked
+        val prevCount = _uiState.value.likeCount
+        _uiState.update { it.copy(isLiked = !prevLiked, likeCount = prevCount + if (prevLiked) -1 else 1) }
         likeJob?.cancel()
         likeJob = viewModelScope.launch {
             when (val result = socialRepository.toggleLike(recipeId)) {
                 is AppResult.Success -> {
-                    // 以服务端权威结果为准,乐观值若与 server 不一致则对齐
                     val serverLiked = result.data
-                    if (serverLiked != _isLiked.value) {
-                        _isLiked.value = serverLiked
-                        // 计数按 server 状态 vs 进入时基线计算
-                        _likeCount.value = prevCount + if (serverLiked == prevLiked) 0 else if (serverLiked) 1 else -1
+                    if (serverLiked != _uiState.value.isLiked) {
+                        _uiState.update {
+                            it.copy(
+                                isLiked = serverLiked,
+                                likeCount = prevCount + if (serverLiked == prevLiked) 0 else if (serverLiked) 1 else -1
+                            )
+                        }
                     }
                 }
                 is AppResult.Error -> {
-                    _isLiked.value = prevLiked
-                    _likeCount.value = prevCount
-                    _actionError.value = result.message
+                    _uiState.update { it.copy(isLiked = prevLiked, likeCount = prevCount, actionError = result.message) }
                 }
             }
         }
@@ -127,8 +116,7 @@ class RecipeDetailViewModel(
         viewModelScope.launch {
             when (val result = socialRepository.getComments(recipeId, page)) {
                 is AppResult.Success -> {
-                    _comments.value = result.data.data
-                    _commentCount.value = result.data.total
+                    _uiState.update { it.copy(comments = result.data.data, commentCount = result.data.total) }
                 }
                 is AppResult.Error -> {}
             }
@@ -139,10 +127,11 @@ class RecipeDetailViewModel(
         viewModelScope.launch {
             when (val result = socialRepository.createComment(CreateCommentRequest(recipeId, content))) {
                 is AppResult.Success -> {
-                    _comments.value = listOf(result.data) + _comments.value
-                    _commentCount.value += 1
+                    _uiState.update {
+                        it.copy(comments = listOf(result.data) + it.comments, commentCount = it.commentCount + 1)
+                    }
                 }
-                is AppResult.Error -> _actionError.value = result.message
+                is AppResult.Error -> _uiState.update { it.copy(actionError = result.message) }
             }
         }
     }
@@ -151,25 +140,26 @@ class RecipeDetailViewModel(
         viewModelScope.launch {
             when (val result = socialRepository.deleteComment(commentId)) {
                 is AppResult.Success -> {
-                    _comments.value = _comments.value.filter { it.id != commentId }
-                    _commentCount.value -= 1
+                    _uiState.update {
+                        it.copy(comments = it.comments.filter { c -> c.id != commentId }, commentCount = it.commentCount - 1)
+                    }
                 }
-                is AppResult.Error -> _actionError.value = result.message
+                is AppResult.Error -> _uiState.update { it.copy(actionError = result.message) }
             }
         }
     }
 
     fun deleteRecipe(id: String) {
         viewModelScope.launch {
-            _deleteState.value = DeleteState.Loading
+            _uiState.update { it.copy(deleteState = DeleteState.Loading) }
             when (val result = repository.deleteRecipe(id)) {
-                is AppResult.Success -> _deleteState.value = DeleteState.Success
-                is AppResult.Error -> _deleteState.value = DeleteState.Error(result.message)
+                is AppResult.Success -> _uiState.update { it.copy(deleteState = DeleteState.Success) }
+                is AppResult.Error -> _uiState.update { it.copy(deleteState = DeleteState.Error(result.message)) }
             }
         }
     }
 
-    fun resetDeleteState() { _deleteState.value = DeleteState.Idle }
+    fun resetDeleteState() { _uiState.update { it.copy(deleteState = DeleteState.Idle) } }
 }
 
 sealed class DeleteState {

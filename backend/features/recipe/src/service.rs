@@ -166,6 +166,10 @@ impl RecipeService {
         self.repo.delete(id, author_id).await
     }
 
+    pub async fn force_delete(&self, id: Uuid) -> Result<(), AppError> {
+        self.repo.force_delete(id).await
+    }
+
     /// 多条件搜索菜谱，返回分页数据
     pub async fn search(
         &self,

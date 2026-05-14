@@ -117,9 +117,18 @@ pub async fn delete(
     auth: AuthUser,
     Path(id): Path<Uuid>,
 ) -> ApiResult<bool> {
-    tracing::info!("删除菜谱: recipe_id={}, user_id={}", id, auth.user_id);
+    tracing::info!(
+        "删除菜谱: recipe_id={}, user_id={}, is_admin={}",
+        id,
+        auth.user_id,
+        auth.is_admin()
+    );
     let svc = RecipeService::new(state.pool.clone());
-    svc.delete(id, auth.user_id).await?;
+    if auth.is_admin() {
+        svc.force_delete(id).await?;
+    } else {
+        svc.delete(id, auth.user_id).await?;
+    }
     tracing::info!("菜谱删除成功: recipe_id={}", id);
     ApiResponse::ok(true)
 }

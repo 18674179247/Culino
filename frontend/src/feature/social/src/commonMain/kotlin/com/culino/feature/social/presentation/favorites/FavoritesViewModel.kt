@@ -39,7 +39,10 @@ class FavoritesViewModel(
     fun removeFavorite(recipeId: String) {
         viewModelScope.launch {
             when (repository.removeFavorite(recipeId)) {
-                is AppResult.Success -> loadFavorites()
+                is AppResult.Success -> {
+                    val current = (_state.value as? FavoritesState.Success)?.favorites ?: return@launch
+                    _state.value = FavoritesState.Success(current.filter { it.recipeId != recipeId })
+                }
                 is AppResult.Error -> {
                     // 可以显示错误提示
                 }

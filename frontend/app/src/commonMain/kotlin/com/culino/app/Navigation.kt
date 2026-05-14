@@ -1,9 +1,7 @@
 package com.culino.app
 
 import androidx.compose.animation.*
-import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -36,7 +34,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavDestination.Companion.hierarchy
@@ -50,6 +47,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.culino.app.di.AppComponent
 import com.culino.framework.media.picker.rememberImagePickerLauncher
 import com.culino.framework.network.parseUserIdFromToken
+import com.culino.framework.network.parseRoleFromToken
 import com.culino.common.ui.component.LocalNavAnimatedVisibilityScope
 import com.culino.common.ui.component.LocalSharedTransitionScope
 import com.culino.feature.user.presentation.profile.ProfileIntent
@@ -101,13 +99,13 @@ sealed class BottomNavItem(
 private const val ANIM_DURATION = 300
 private const val FADE_DURATION = 200
 
-private val slideInFromRight = slideInHorizontally(tween(ANIM_DURATION)) { it }
-private val slideOutToLeft = slideOutHorizontally(tween(ANIM_DURATION)) { -it / 3 } + fadeOut(tween(FADE_DURATION))
-private val slideInFromLeft = slideInHorizontally(tween(ANIM_DURATION)) { -it / 3 } + fadeIn(tween(FADE_DURATION))
-private val slideOutToRight = slideOutHorizontally(tween(ANIM_DURATION)) { it }
+private val slideInFromRight = slideInHorizontally(tween(ANIM_DURATION, easing = androidx.compose.animation.core.FastOutSlowInEasing)) { it }
+private val slideOutToLeft = slideOutHorizontally(tween(ANIM_DURATION, easing = androidx.compose.animation.core.FastOutSlowInEasing)) { -it / 4 } + fadeOut(tween(FADE_DURATION))
+private val slideInFromLeft = slideInHorizontally(tween(ANIM_DURATION, easing = androidx.compose.animation.core.FastOutSlowInEasing)) { -it / 4 } + fadeIn(tween(FADE_DURATION))
+private val slideOutToRight = slideOutHorizontally(tween(ANIM_DURATION, easing = androidx.compose.animation.core.FastOutSlowInEasing)) { it }
 
-private val tabFadeIn = fadeIn(tween(FADE_DURATION))
-private val tabFadeOut = fadeOut(tween(FADE_DURATION))
+private val tabFadeIn = fadeIn(tween(FADE_DURATION)) + scaleIn(tween(FADE_DURATION), initialScale = 0.96f)
+private val tabFadeOut = fadeOut(tween(FADE_DURATION)) + scaleOut(tween(FADE_DURATION), targetScale = 0.96f)
 
 /**
  * 托管 ViewModel 到当前 NavBackStackEntry(或最近的 ViewModelStoreOwner) 的 ViewModelStore,
@@ -135,8 +133,12 @@ fun CulinoNavHost(
 
     LaunchedEffect(Unit) {
         appComponent.tokenProvider.authExpiredEvent.collect {
-            navController.navigate(Routes.LOGIN) {
-                popUpTo(0) { inclusive = true }
+            try {
+                navController.navigate(Routes.LOGIN) {
+                    popUpTo(0) { inclusive = true }
+                }
+            } catch (_: Exception) {
+                // navController 可能还未就绪
             }
         }
     }
@@ -205,13 +207,16 @@ fun MainScreen(
 ) {
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
+    val tabReselected = remember { kotlinx.coroutines.flow.MutableSharedFlow<String>(extraBufferCapacity = 1) }
     val currentDestination = navBackStackEntry?.destination
 
     // 获取当前用户 ID
     var currentUserId by remember { mutableStateOf<String?>(null) }
+    var isAdmin by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) {
         val token = appComponent.tokenProvider.getToken()
         currentUserId = token?.let { parseUserIdFromToken(it) }
+        isAdmin = token?.let { parseRoleFromToken(it) } == "admin"
     }
 
     val bottomNavItems = listOf(
@@ -249,10 +254,14 @@ fun MainScreen(
                             selected = selected,
                             onClick = {
                                 fabExpanded = false
-                                navController.navigate(item.route) {
-                                    popUpTo(Routes.RECIPES) { saveState = true }
-                                    launchSingleTop = true
-                                    restoreState = true
+                                if (selected) {
+                                    tabReselected.tryEmit(item.route)
+                                } else {
+                                    navController.navigate(item.route) {
+                                        popUpTo(Routes.RECIPES) { saveState = true }
+                                        launchSingleTop = true
+                                        restoreState = true
+                                    }
                                 }
                             },
                             colors = NavigationBarItemDefaults.colors(
@@ -299,10 +308,14 @@ fun MainScreen(
                             selected = selected,
                             onClick = {
                                 fabExpanded = false
-                                navController.navigate(item.route) {
-                                    popUpTo(Routes.RECIPES) { saveState = true }
-                                    launchSingleTop = true
-                                    restoreState = true
+                                if (selected) {
+                                    tabReselected.tryEmit(item.route)
+                                } else {
+                                    navController.navigate(item.route) {
+                                        popUpTo(Routes.RECIPES) { saveState = true }
+                                        launchSingleTop = true
+                                        restoreState = true
+                                    }
                                 }
                             },
                             colors = NavigationBarItemDefaults.colors(
@@ -325,7 +338,7 @@ fun MainScreen(
         NavHost(
             navController = navController,
             startDestination = Routes.RECIPES,
-            modifier = Modifier.padding(innerPadding),
+            modifier = Modifier.padding(bottom = innerPadding.calculateBottomPadding()),
             enterTransition = { tabFadeIn },
             exitTransition = { tabFadeOut },
             popEnterTransition = { tabFadeIn },
@@ -338,7 +351,9 @@ fun MainScreen(
                     viewModel = viewModel,
                     onRecipeClick = { recipeId ->
                         navController.navigate(Routes.recipeDetail(recipeId))
-                    }
+                    },
+                    tabReselected = tabReselected,
+                    tabRoute = Routes.RECIPES
                 )
                 }
             }
@@ -351,7 +366,9 @@ fun MainScreen(
                         navController.navigate(Routes.recipeDetail(recipeId))
                     },
                     title = "我的菜谱",
-                    enableSharedElement = false
+                    enableSharedElement = false,
+                    tabReselected = tabReselected,
+                    tabRoute = Routes.MY_RECIPES
                 )
             }
 
@@ -361,7 +378,9 @@ fun MainScreen(
                     viewModel = viewModel,
                     onRecipeClick = { recipeId ->
                         navController.navigate(Routes.recipeDetail(recipeId))
-                    }
+                    },
+                    tabReselected = tabReselected,
+                    tabRoute = Routes.FAVORITES
                 )
             }
 
@@ -415,6 +434,7 @@ fun MainScreen(
                     viewModel = viewModel,
                     onBack = { navController.popBackStack() },
                     currentUserId = currentUserId,
+                    isAdmin = isAdmin,
                     onEdit = { id -> navController.navigate(Routes.recipeEdit(id)) }
                 )
                 }
@@ -578,7 +598,11 @@ fun MainScreen(
         }
 
         // FAB expanded overlay
-        if (fabExpanded) {
+        AnimatedVisibility(
+            visible = fabExpanded,
+            enter = fadeIn(tween(150)),
+            exit = fadeOut(tween(150))
+        ) {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
@@ -591,7 +615,12 @@ fun MainScreen(
         }
 
         // Vertical staggered FAB actions
-        if (fabExpanded) {
+        AnimatedVisibility(
+            visible = fabExpanded,
+            enter = fadeIn(tween(150)),
+            exit = fadeOut(tween(100)),
+            modifier = Modifier.align(Alignment.BottomCenter)
+        ) {
             val actions = listOf(
                 Triple(Icons.Outlined.DateRange, "膳食计划", Routes.MEAL_PLANS),
                 Triple(Icons.Outlined.ShoppingCart, "购物清单", Routes.SHOPPING_LISTS),
@@ -603,29 +632,18 @@ fun MainScreen(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(12.dp),
                 modifier = Modifier
-                    .align(Alignment.BottomCenter)
                     .padding(bottom = innerPadding.calculateBottomPadding() + 72.dp)
             ) {
                 actions.forEachIndexed { index, (icon, label, route) ->
-                    val delay = (actions.size - 1 - index) * 50
-                    val alpha = remember { Animatable(0f) }
-                    LaunchedEffect(Unit) {
-                        kotlinx.coroutines.delay(delay.toLong())
-                        alpha.animateTo(1f, tween(150))
-                    }
-                    val offsetY = remember { Animatable(40f) }
-                    LaunchedEffect(Unit) {
-                        kotlinx.coroutines.delay(delay.toLong())
-                        offsetY.animateTo(
-                            0f,
-                            spring(dampingRatio = 0.75f, stiffness = 600f)
-                        )
-                    }
+                    val delay = (actions.size - 1 - index) * 40
+                    AnimatedVisibility(
+                        visible = true,
+                        enter = fadeIn(tween(150, delayMillis = delay)) +
+                                slideInVertically(tween(200, delayMillis = delay)) { it / 2 }
+                    ) {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier
-                            .offset(y = offsetY.value.dp)
-                            .graphicsLayer { this.alpha = alpha.value }
                             .clickable(
                                 interactionSource = remember { MutableInteractionSource() },
                                 indication = null
@@ -662,6 +680,7 @@ fun MainScreen(
                                 )
                             }
                         }
+                    }
                     }
                 }
             }

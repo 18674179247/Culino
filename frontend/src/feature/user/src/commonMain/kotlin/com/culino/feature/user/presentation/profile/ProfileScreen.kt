@@ -170,9 +170,11 @@ private fun ProfileHeader(state: ProfileState, onPickAvatar: () -> Unit) {
             Spacer(Modifier.height(12.dp))
             state.user?.let { user ->
                 Text(user.nickname ?: user.username, style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onPrimary, fontWeight = FontWeight.Bold)
-                Spacer(Modifier.height(4.dp))
-                Surface(shape = RoundedCornerShape(12.dp), color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.2f)) {
-                    Text(user.roleCode, modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onPrimary)
+                if (user.roleCode == "admin") {
+                    Spacer(Modifier.height(4.dp))
+                    Surface(shape = RoundedCornerShape(12.dp), color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.2f)) {
+                        Text("管理员", modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onPrimary)
+                    }
                 }
             }
         }

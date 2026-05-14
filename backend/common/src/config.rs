@@ -34,6 +34,8 @@ pub struct AppConfig {
     pub log_dir: String,
     /// S3 端点地址
     pub s3_endpoint: String,
+    /// S3 公开访问端点（客户端访问图片用，可与 s3_endpoint 不同）
+    pub s3_public_endpoint: String,
     /// S3 区域
     pub s3_region: String,
     /// S3 存储桶名称
@@ -90,6 +92,10 @@ impl AppConfig {
             log_level: env::var("LOG_LEVEL").unwrap_or_else(|_| "info".into()),
             log_dir: env::var("LOG_DIR").unwrap_or_else(|_| "logs".into()),
             s3_endpoint: require_env("S3_ENDPOINT"),
+            s3_public_endpoint: env::var("S3_PUBLIC_ENDPOINT")
+                .ok()
+                .filter(|s| !s.is_empty())
+                .unwrap_or_else(|| require_env("S3_ENDPOINT")),
             s3_region: env::var("S3_REGION").unwrap_or_else(|_| "us-east-1".into()),
             s3_bucket: env::var("S3_BUCKET").unwrap_or_else(|_| "culino".into()),
             s3_access_key: require_env("S3_ACCESS_KEY"),
