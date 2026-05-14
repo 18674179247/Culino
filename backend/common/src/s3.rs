@@ -64,10 +64,19 @@ pub async fn upload_object(
     data: &[u8],
     content_type: &str,
 ) -> Result<String, AppError> {
-    bucket
+    let resp = bucket
         .put_object_with_content_type(key, data, content_type)
         .await
         .context("S3 上传失败")?;
+
+    if !(200..300).contains(&resp.status_code()) {
+        let body = String::from_utf8_lossy(resp.bytes());
+        return Err(AppError::Internal(anyhow::anyhow!(
+            "S3 上传失败 status={} body={}",
+            resp.status_code(),
+            body
+        )));
+    }
 
     Ok(object_url(bucket, key))
 }
